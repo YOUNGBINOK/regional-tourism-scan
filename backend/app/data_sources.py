@@ -4,7 +4,7 @@ Endpoint paths stay configurable because the approved service/API product can
 differ by Data Lab account and competition scope.
 """
 from dataclasses import dataclass
-from urllib.parse import urljoin
+from urllib.parse import urljoin, unquote
 import httpx
 from .settings import get_settings
 
@@ -45,8 +45,24 @@ async def fetch_provider_json(provider: str, endpoint: str, params: dict[str, st
     if endpoint.startswith(("http://", "https://")) or ".." in endpoint:
         raise ValueError("Endpoint must be a relative provider path")
     base_url, api_key, api_key_param = _provider_config(provider)
-    query = {**params, api_key_param: api_key}
+    # Public Data Portal shows the supplied key as "URL Encode". Decode once
+    # before httpx creates the query string, preventing % from becoming %25.
+    query = {**params, api_key_param: unquote(api_key)}
     async with httpx.AsyncClient(timeout=30) as client:
         response = await client.get(urljoin(base_url, endpoint.lstrip("/")), params=query, headers={"Accept": "application/json"})
         response.raise_for_status()
-        return response.json()
+        content_type = response.headers.get("content-type", "").lower()
+        if "json" in content_type:
+            return response.json()
+        # The gateway supports JSON + XML. Preserve XML rather than treating a
+        # valid XML response as a JSON decoding error; normalization follows in ETL.
+        return {"format": "xml", "data": response.text}
+
+async def fetch_kto_regional_visitors(scope: str, start_ymd: str, end_ymd: str,
+                                      page_no: int = 1, num_rows: int = 1000) -> object:
+    endpoints = {"metro": "metcoRegnVisitrDDList", "local": "locgoRegnVisitrDDList"}
+    if scope not in endpoints: raise ValueError("scope must be 'metro' or 'local'")
+    return await fetch_provider_json("kto_tourism_datalab", endpoints[scope], {
+        "numOfRows": str(num_rows), "pageNo": str(page_no), "MobileOS": "ETC",
+        "MobileApp": "RGAP", "startYmd": start_ymd, "endYmd": end_ymd,
+    })

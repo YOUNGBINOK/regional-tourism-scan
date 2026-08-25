@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: regional-tourism-scan-api
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DATABASE_URL
+        sync: false
+      - key: CORS_ORIGINS
+        value: https://regional-tourism-scan.vercel.app
+      - key: KTO_TOURISM_DATALAB_API_KEY
+        sync: false
+      - key: KTO_TOURISM_DATALAB_BASE_URL
+        sync: false
+      - key: PUBLIC_DATA_PORTAL_API_KEY
+        sync: false
+      - key: LOCAL_FINANCE365_API_KEY
+        sync: false

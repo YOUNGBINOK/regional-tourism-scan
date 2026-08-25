@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     """Only backend reads provider keys; never expose them through React."""
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     database_url: str = "postgresql+psycopg://rgap:rgap_local_only@localhost:5432/rgap"
+    cors_origins: str = "http://localhost:5173"
     kto_tourism_datalab_api_key: str = Field(default="")
     kto_tourism_datalab_base_url: str = Field(default="")
     kto_tourism_datalab_api_key_param: str = Field(default="serviceKey")
@@ -18,3 +19,6 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings: return Settings()
+
+def cors_origin_list() -> list[str]:
+    return [origin.strip() for origin in get_settings().cors_origins.split(",") if origin.strip()]

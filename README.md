@@ -23,7 +23,24 @@ API 키는 프로젝트 루트의 `.env`에 입력합니다. 키는 브라우저
 
 공급자마다 승인된 API 상품의 엔드포인트가 다르므로, `.env`의 `*_BASE_URL`에 문서상 기본 URL을 입력한 뒤 `POST /v1/data-sources/fetch`에 상대 경로와 필터를 전달합니다. 키 파라미터명이 다르면 `*_API_KEY_PARAM`도 문서에 맞게 변경합니다. API 키는 응답·프론트엔드에 절대 노출되지 않습니다.
 
+한국관광공사 빅데이터 지역별 방문자수 GW는 `KTO_TOURISM_DATALAB_BASE_URL=https://apis.data.go.kr/B551011/DataLabService`와 `serviceKey` 방식으로 사전 구성했습니다. 제공 포털의 활용신청 상세 화면에서 개별 오퍼레이션 경로와 필수 조회조건을 확인한 뒤, `/v1/data-sources/fetch`에 상대 경로와 조건을 전달합니다.
+
+전용 방문자수 API도 제공합니다. `POST /v1/data-sources/kto/regional-visitors`에 아래처럼 요청합니다.
+
+```json
+{"scope":"local","start_ymd":"20260701","end_ymd":"20260731","page_no":1,"num_rows":1000}
+```
+
+- `scope: metro` → 광역 지자체 `/metcoRegnVisitrDDList`
+- `scope: local` → 기초 지자체 `/locgoRegnVisitrDDList`
+
 웹 앱은 `http://localhost:5173`, API 문서는 `http://localhost:8000/docs`에서 확인합니다.
+
+## Production deployment
+
+- Frontend: https://regional-tourism-scan.vercel.app/
+- Backend: Render에서 이 저장소를 **Blueprint**로 연결하고 `render.yaml`을 선택합니다.
+- Render 환경변수 `CORS_ORIGINS`에는 프론트 주소를, Vercel의 `VITE_API_BASE_URL`에는 Render API 주소를 입력합니다.
 
 ## Included specification coverage
 
