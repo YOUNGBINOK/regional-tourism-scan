@@ -87,7 +87,8 @@ async def kto_metric(payload: KtoMetricRequest):
     except ValueError as error: raise HTTPException(status_code=422, detail=str(error))
     except Exception as error: raise HTTPException(status_code=502, detail=f"KTO metric request failed: {error}")
 
-async def area_metric(dataset: str, metric: str, payload: KtoAreaMetricRequest):
+async def area_metric(dataset: str, metric: str, payload: KtoAreaMetricRequest,
+                      index_filter: dict[str, str] | None = None):
     index_filters = {
         ("demand_intensity", "stay"): {"tarSjrnDsIxCd": "21"},
         ("demand_intensity", "spend"): {"tarExpDsIxCd": "22"},
@@ -107,7 +108,7 @@ async def area_metric(dataset: str, metric: str, payload: KtoAreaMetricRequest):
         # a successful but empty response.
         **region_params,
         "pageNo": str(payload.page_no), "numOfRows": str(payload.num_rows), "_type": "json",
-        **index_filters.get((dataset, metric), {}),
+        **(index_filter if index_filter is not None else index_filters.get((dataset, metric), {})),
     })
     return normalize_kto_xml(raw)
 
@@ -175,9 +176,14 @@ async def live_visitor_analysis(payload: LiveVisitorRequest):
     """Live KTO visitor analysis, explicitly separated from incomplete R-GAP inputs."""
     try:
         metric_payload = KtoAreaMetricRequest(area_cd=payload.area_cd, base_ym=payload.base_ymd[:6])
-        raw, stay, spend, visitor_diversity, spend_diversity, international_diversity, concentration_raw = await asyncio.gather(
+        (raw, stay, lodging_share, one_night, two_nights, three_plus_nights,
+         spend, visitor_diversity, spend_diversity, international_diversity, concentration_raw) = await asyncio.gather(
             fetch_kto_regional_visitors("local", payload.base_ymd, payload.base_ymd, 1, 1000),
             area_metric("demand_intensity", "stay", metric_payload),
+            area_metric("demand_intensity", "stay", metric_payload, {"tarSjrnDsIxCd": "2102"}),
+            area_metric("demand_intensity", "stay", metric_payload, {"tarSjrnDsIxCd": "2103"}),
+            area_metric("demand_intensity", "stay", metric_payload, {"tarSjrnDsIxCd": "2104"}),
+            area_metric("demand_intensity", "stay", metric_payload, {"tarSjrnDsIxCd": "2105"}),
             area_metric("demand_intensity", "spend", metric_payload),
             area_metric("tourism_diversity", "visitor", metric_payload),
             area_metric("tourism_diversity", "spend", metric_payload),
@@ -205,6 +211,10 @@ async def live_visitor_analysis(payload: LiveVisitorRequest):
             "base_ym": payload.base_ymd[:6],
             "aggregation": "전주시 2개 구 단순평균" if payload.area_cd == "52110" else "해당 시군구",
             "stay_intensity": first_metric(stay, "tarSjrnDsIxVal"),
+            "lodging_share_index": first_metric(lodging_share, "tarSjrnDsIxVal"),
+            "one_night_index": first_metric(one_night, "tarSjrnDsIxVal"),
+            "two_nights_index": first_metric(two_nights, "tarSjrnDsIxVal"),
+            "three_plus_nights_index": first_metric(three_plus_nights, "tarSjrnDsIxVal"),
             "spend_intensity": first_metric(spend, "tarExpDsIxVal"),
             "visitor_diversity": first_metric(visitor_diversity, "touDivIxVal"),
             "spend_diversity": first_metric(spend_diversity, "expDivIxVal"),
@@ -214,13 +224,13 @@ async def live_visitor_analysis(payload: LiveVisitorRequest):
         }
         available = sum(1 for key, value in snapshot["observed_indices"].items()
                         if key not in {"base_ym", "aggregation", "spatial_dispersion_detail"} and value is not None)
-        missing_inputs = ["숙박공급·접근성 (미승인 KTO 상품)", "월별 계절성(연 단위)", "75분위 프론티어"]
+        missing_inputs = ["숙박시설 공급량·객실수 (별도 데이터 필요)", "월별 계절성(연 단위)", "75분위 프론티어"]
         if dispersion is None:
             missing_inputs.insert(0, "관광지 집중도")
         snapshot["analysis"] = {
             **snapshot["analysis"],
             "status": "partial" if available else "visitor_only",
-            "message": f"방문자·관광수요·다양성·공간확산 지표 {available}종을 최신 데이터로 반영했습니다. 계절성(연 단위)·숙박공급·프론티어 모형이 갖춰지면 TCEI와 R-GAP을 산출합니다.",
+            "message": f"방문자·체류·숙박·소비·다양성·공간확산 지표 {available}종을 최신 데이터로 반영했습니다. 계절성(연 단위)·숙박시설 공급·프론티어 모형이 갖춰지면 TCEI와 R-GAP을 산출합니다.",
             "missing_inputs": missing_inputs,
         }
         return snapshot
