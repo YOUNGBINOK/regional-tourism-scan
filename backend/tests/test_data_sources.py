@@ -1,6 +1,7 @@
 from app.data_sources import (compute_hub_spatial_spread, compute_visitor_stability,
                               summarize_attraction_concentration,
-                              summarize_mois_tourism_business)
+                              summarize_mois_tourism_business,
+                              mois_tourism_business_regions)
 
 
 def test_concentration_forecast_is_not_spatial_dispersion():
@@ -44,3 +45,9 @@ def test_mois_lodging_supply_is_business_count_not_room_count():
     result = summarize_mois_tourism_business(payload)
     assert result["operating_tourism_accommodation_business_count"] == 1
     assert result["not_a_room_count"] is True
+
+
+def test_mois_region_choices_do_not_expose_provider_authority_code():
+    options = mois_tourism_business_regions()
+    assert {option["name"] for option in options} >= {"경주시", "강릉시", "제주시", "전주시"}
+    assert all("open_authority_code" not in option for option in options)

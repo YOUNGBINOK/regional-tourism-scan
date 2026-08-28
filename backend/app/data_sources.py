@@ -21,6 +21,22 @@ KTO_SERVICE_CATALOG = {
     "tourism_resource_demand": {"service": "AreaTarResDemService", "endpoints": {}, "coverage": ["SNS·카드·내비 기반 관광 자원 수요"], "integration_status": "awaiting_operation_name", "note": "승인된 동일 키를 사용합니다. 활용신청 상세의 오퍼레이션명만 환경변수에 입력하면 호출됩니다."},
 }
 
+# 행정안전부 지방행정 인허가 데이터의 개방자치단체코드. 화면에는 지역명만
+# 노출하고 서버에서 코드로 변환한다. 현재 KTO 실시간 진단에 제공 중인 4개
+# 지역부터 시작하며, 전국 적재 단계에서 공식 코드표 전체로 확장한다.
+MOIS_TOURISM_BUSINESS_REGIONS = {
+    "47130": {"name": "경주시", "province": "경상북도", "open_authority_code": "5050000"},
+    "51150": {"name": "강릉시", "province": "강원특별자치도", "open_authority_code": "4201000"},
+    "50110": {"name": "제주시", "province": "제주특별자치도", "open_authority_code": "6510000"},
+    "52110": {"name": "전주시", "province": "전북특별자치도", "open_authority_code": "4641000"},
+}
+
+
+def mois_tourism_business_regions() -> list[dict[str, str]]:
+    """Public safe choices for the UI; never expose provider-only code values."""
+    return [{"id": region_id, "name": row["name"], "province": row["province"]}
+            for region_id, row in MOIS_TOURISM_BUSINESS_REGIONS.items()]
+
 def kto_catalog_with_readiness() -> dict[str, object]:
     """Return safe, deployment-ready configuration state without any key value."""
     catalog = deepcopy(KTO_SERVICE_CATALOG)
@@ -165,6 +181,18 @@ async def fetch_mois_tourism_business(operation: str, open_authority_code: str,
         if "json" in response.headers.get("content-type", "").lower():
             return response.json()
         return {"format": "xml", "data": response.text}
+
+
+async def fetch_mois_tourism_business_for_region(region_id: str, operation: str,
+                                                 base_date: str | None = None,
+                                                 page_no: int = 1,
+                                                 num_rows: int = 100) -> object:
+    """User-facing regional lookup: resolve a verified provider code server-side."""
+    region = MOIS_TOURISM_BUSINESS_REGIONS.get(region_id)
+    if not region:
+        raise ValueError("This municipality is not available in the tourism-business list yet")
+    return await fetch_mois_tourism_business(operation, region["open_authority_code"],
+                                             base_date, page_no, num_rows)
 
 
 def summarize_mois_tourism_business(payload: object) -> dict[str, object]:

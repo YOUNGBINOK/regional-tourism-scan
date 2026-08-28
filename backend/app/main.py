@@ -11,7 +11,8 @@ from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_reg
                            fetch_municipal_hub_attractions, compute_hub_spatial_spread,
                            fetch_visitor_window, compute_visitor_stability,
                            fetch_kosis_statistics, fetch_mois_tourism_business,
-                           summarize_mois_tourism_business)
+                           summarize_mois_tourism_business, mois_tourism_business_regions,
+                           fetch_mois_tourism_business_for_region)
 from .settings import cors_origin_list
 
 app = FastAPI(title="R-GAP API", version="0.1.0")
@@ -79,7 +80,7 @@ async def kosis_dataset(dataset: str):
     except Exception as error:
         raise HTTPException(status_code=502, detail=f"KOSIS {dataset} request failed: {error}")
 
-@app.get("/v1/data-sources/mois/tourism-business/{operation}")
+@app.get("/v1/data-sources/mois/tourism-business/raw/{operation}")
 async def mois_tourism_business(operation: str, open_authority_code: str,
                                 base_date: str | None = None, page_no: int = 1,
                                 num_rows: int = 100):
@@ -89,6 +90,32 @@ async def mois_tourism_business(operation: str, open_authority_code: str,
             raise ValueError("page_no must be >= 1 and num_rows must be 1..100")
         return summarize_mois_tourism_business(await fetch_mois_tourism_business(
             operation, open_authority_code, base_date, page_no, num_rows))
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+    except Exception as error:
+        raise HTTPException(status_code=502, detail=f"MOIS tourism-business request failed: {error}")
+
+
+@app.get("/v1/data-sources/mois/tourism-business/regions")
+def mois_tourism_business_region_list():
+    """Safe region choices for the UI. Provider opening-authority codes stay private."""
+    return {"regions": mois_tourism_business_regions()}
+
+
+@app.get("/v1/data-sources/mois/tourism-business/region/{region_id}/{operation}")
+async def mois_tourism_business_for_region(region_id: str, operation: str,
+                                           base_date: str | None = None,
+                                           page_no: int = 1, num_rows: int = 100):
+    """User-facing lookup by municipality rather than OPN_ATMY_GRP_CD."""
+    try:
+        if page_no < 1 or not 1 <= num_rows <= 100:
+            raise ValueError("page_no must be >= 1 and num_rows must be 1..100")
+        data = await fetch_mois_tourism_business_for_region(
+            region_id, operation, base_date, page_no, num_rows)
+        result = summarize_mois_tourism_business(data)
+        result["region"] = next((region for region in mois_tourism_business_regions()
+                                 if region["id"] == region_id), None)
+        return result
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error))
     except Exception as error:
