@@ -43,16 +43,16 @@
         </table>
       </section>
       <section>
-        <h2>누수 기반 예산 포트폴리오</h2>
-        <p class="report-note">증분 관광예산 <b id="report-budget">--</b> · 누수 기여도에 따른 권고안</p>
+        <h2>정책 우선순위</h2>
+        <p class="report-note">취약지표와 원인진단에 따른 우선 검토 과제</p>
         <table>
-          <thead><tr><th>정책 항목</th><th>누수 기여도</th><th>권고 배분</th></tr></thead>
+          <thead><tr><th>우선순위</th><th>정책 과제</th><th>판단 근거</th></tr></thead>
           <tbody id="report-allocation"></tbody>
         </table>
       </section>
       <section class="report-caution">
         <h2>해석 및 활용 유의사항</h2>
-        <p>방문자수는 이동통신 자료 기반의 한국관광공사 추정치이며 관광객 실인원과 동일하지 않습니다. 체류·소비·숙박 지수는 비율이나 인원수가 아닌 KTO 지수점수입니다. 예산 포트폴리오는 전국 프론티어가 완성되기 전까지 표본 비교 결손도 기반 시나리오이며 R-GAP 자동추천으로 해석하지 않습니다.</p>
+        <p>방문자수는 이동통신 자료 기반의 한국관광공사 추정치이며 관광객 실인원과 동일하지 않습니다. 체류·소비·숙박 지수는 비율이나 인원수가 아닌 KTO 지수점수입니다. 정책 우선순위는 취약지표와 원인진단의 규칙기반 결과이며, 예산 배분액이나 효과예측을 뜻하지 않습니다.</p>
       </section>
       <footer>R-GAP · Regional Recoverable Tourism Value Gap Engine · KTO Tourism Data Challenge</footer>
     </article>
@@ -80,9 +80,10 @@
             '제주특별자치도 제주시': [[68, 74], [49, 73], [35, 70], [60, 75]],
             '전북특별자치도 전주시': [[43, 68], [51, 72], [63, 69], [61, 73]],
           };
-          const allocations = Array.from(document.querySelectorAll('.allocation')).map((item) => ({
-            name: item.querySelector('span')?.textContent?.trim() || '--',
-            amount: item.querySelector(':scope > b')?.textContent?.trim() || '--',
+          const priorities = Array.from(document.querySelectorAll('#priority .cards article')).map((item, index) => ({
+            rank: `${index + 1}순위`,
+            name: item.querySelector('strong')?.textContent?.trim() || '--',
+            evidence: item.querySelector('p')?.textContent?.trim() || '--',
           }));
           const liveMode = Boolean(document.querySelector('[data-live-analysis]'));
           const liveMetrics = Array.from(document.querySelectorAll('.live-stats article')).map((item) => ({
@@ -97,15 +98,14 @@
           document.querySelector('#report-frontier').textContent = liveMode ? '표본 4개 지역 중앙값 비교' : frontier;
           document.querySelector('#report-room').textContent = liveMode ? '숙박 비중·숙박일수 지수 연동' : room;
           document.querySelector('#report-tags').textContent = tags.join(' · ') || '--';
-          document.querySelector('#report-priority').textContent = liveMode ? (allocations.length ? '사용자 조정 정책 시나리오' : '필수 4대 지표 적재 후 R-GAP 산출') : (leaks.length ? `${leaks[0].name} (${leaks[0].value})` : '--');
-          document.querySelector('#report-budget').textContent = text('.budget > label > b');
+          document.querySelector('#report-priority').textContent = liveMode ? (priorities[0]?.name || '필수 데이터 적재 후 정책 우선순위 산출') : (leaks.length ? `${leaks[0].name} (${leaks[0].value})` : '--');
           document.querySelector('#report-profile').innerHTML = liveMode ? liveMetrics.map((item) => row([item.label, item.value, item.caption, '원천/파생'])).join('') : profile.map((label, index) => {
             const values = profiles[selectedName]?.[index];
             return row(values ? [label, values[0], values[1], `${values[1] - values[0]}p`] : [label, '--', '--', '--']);
           }).join('');
-          document.querySelector('#report-allocation').innerHTML = liveMode ? (allocations.length
-            ? allocations.map((item) => row([item.name, '사용자 입력 시나리오', item.amount])).join('')
-            : row(['TCEI / R-GAP', '필수 지표 적재 대기', '산출 보류'])) : allocations.length
+          document.querySelector('#report-allocation').innerHTML = liveMode ? (priorities.length
+            ? priorities.map((item) => row([item.rank, item.name, item.evidence])).join('')
+            : row(['--', '정책 우선순위 산출 대기', '전국·Peer 데이터 적재 필요'])) : allocations.length
             ? allocations.map((item, index) => row([item.name, leaks[index]?.value || '--', item.amount])).join('')
             : row(['--', '--', '--']);
         };

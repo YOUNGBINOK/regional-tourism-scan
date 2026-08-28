@@ -70,13 +70,7 @@ function App() {
   const [stability, setStability] = useState<StabilitySnapshot | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [budget, setBudget] = useState(10);
-  const [weights, setWeights] = useState([40, 25, 20, 15]);
-  const [weightsTouched, setWeightsTouched] = useState(false);
   const region = useMemo(() => regions.find((item) => item.id === regionId)!, [regionId]);
-  const policyItems = ['체류·숙박', '관광소비', '공간연계', '야간·계절'];
-  const weightTotal = weights.reduce((total, value) => total + value, 0);
-  const allocations = policyItems.map((name, index) => ({ name, weight: weights[index], amount: budget * weights[index] / weightTotal }));
 
   const loadAll = async () => {
     setLoading(true);
@@ -181,15 +175,6 @@ function App() {
   const promotionLowPriority = demandDiff != null && demandDiff >= -5;
   const chartData = axes.filter((axis) => axis.diff != null).map((axis) => ({ name: axis.label, diff: (axis.diff as number) / axis.threshold }));
 
-  useEffect(() => {
-    if (weightsTouched || !snapshot) return;
-    const byKey = Object.fromEntries(axes.map((axis) => [axis.key, severity(axis)]));
-    const raw = [byKey.stay + byKey.stayShare, byKey.spend, byKey.dispersion, byKey.stability];
-    const totalSeverity = raw.reduce((sum, value) => sum + value, 0);
-    setWeights(totalSeverity > 0 ? raw.map((value) => Math.max(1, Math.round(100 * value / totalSeverity))) : [25, 25, 25, 25]);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [regionId, stayDiff, lodgingDiff, spendDiff, dispersionDiff, stabilityDiff]);
-
   const stats = snapshot ? [
     ['외지인 방문자', formatNumber.format(snapshot.area.outside_visitors), '선택 기준일 · 통신자료 기반 KTO 추정치', 'measured' as DataTier],
     ['관광 체류 강도', snapshot.observed_indices.stay_intensity?.toFixed(2) || '--', `${snapshot.observed_indices.base_ym} · ${snapshot.observed_indices.aggregation}`, 'derived' as DataTier],
@@ -213,13 +198,13 @@ function App() {
     ['중심지 공간확산', '내비게이션 연계 중심 관광지 좌표가 지리적 중심에서 얼마나 넓게 퍼져 있는지를 RMS 거리(km)로 계산합니다. 실제 방문자 점유율의 균등도를 뜻하는 정식 공간분산 D와는 구분합니다.'],
     ['단기 수요 안정성', '최근 7일 외지인 방문자의 변동계수(CV)를 100×(1−CV)로 역산한 파생지표입니다. 연간 계절성을 대신하지 않습니다.'],
     ['표본 중앙값 비교', '현재 4개 표본지역 중 선택지역을 제외한 3개 지역의 중앙값과 비교합니다. 아직 전국 유사 관광구조 군집이나 프론티어 비교는 아닙니다.'],
-    ['취약도·예산배분', '축별 음의 편차를 임계값으로 나눈 표준화 결손도입니다. 체류·숙박, 소비, 공간, 단기 안정성 결손도의 합 대비 비중으로 초기 예산안을 배분합니다.'],
+    ['취약도', '축별 음의 편차를 임계값으로 나눈 표준화 결손도입니다. 체류·숙박, 소비, 공간, 단기 안정성의 취약 정도를 비교해 정책 개입 순서를 정합니다. 예산 배분 비율이나 효과 예측이 아닙니다.'],
     ['TCEI', '체류(S)·소비(C)·공간분산(D)·계절안정성(B)의 백분위 기하평균입니다. 현재는 연간 계절성과 소비 잔차가 완성되지 않아 산출하지 않습니다.'],
     ['R-GAP', '유사 관광구조 75분위 프론티어 TCEI와 실제 TCEI의 양(+)의 차이입니다. 현재 화면의 규칙기반 유형·우선순위와 동일한 점수가 아닙니다.'],
   ];
 
   return <>
-    <header><div className="logo"><b>R</b>Regional Tourism Scan<i /></div><nav><a href="#map">기준일 방문자 현황</a><a href="#diagnosis">관광현황 진단</a><a href="#priority">정책 우선순위</a><a href="#methodology">용어·알고리즘</a><a href="#simulator">예산 시뮬레이터</a></nav><button type="button">정책 브리프 PDF ↗</button></header>
+    <header><div className="logo"><b>R</b>Regional Tourism Scan<i /></div><nav><a href="#map">전국 관광수요</a><a href="#diagnosis">관광현황 진단</a><a href="#peer">지역 비교</a><a href="#priority">정책 우선순위</a><a href="#methodology">용어·알고리즘</a></nav><button type="button">정책 브리프 PDF ↗</button></header>
     <main data-live-analysis="true">
       <section className="hero live-hero"><small>● DATA LAB CONNECTION · KTO TOURISM DATA LAB</small><div><article><h1>지금은 <em>Data Lab API 자료</em>로<br />확인합니다.</h1><p>선택한 기준일과 지자체의 한국관광공사 통신 기반 방문자 추정치와 관광지수를 서버에서 조회합니다. 표본 비교를 통해 &ldquo;무엇이 상대적으로 부족한가&rdquo;를 진단합니다.</p><a href="#map">기준일 데이터 보기 ↓</a></article><aside><span>DATA STATUS <b>{loading ? 'LOADING' : snapshot ? 'CONNECTED' : 'CONNECTION REQUIRED'}</b></span><strong>{snapshot ? 'OK' : '--'}</strong><div className="bars">{[28, 42, 36, 58, 49, 68, 57, 79].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}</div><p><b>{snapshot ? snapshot.source : 'KTO API 연결 확인 필요'}</b><span>{snapshot?.base_ymd || date.replace(/-/g, '.')}</span></p></aside></div></section>
       <section id="map" className="section"><div className="heading"><div><small>01 / REGION SELECT</small><h2>지역을 선택하면,<br /><em>진단이 시작됩니다</em></h2></div><div className="live-controls"><label>기준일<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><button type="button" onClick={() => void loadAll()} disabled={loading}>{loading ? '조회 중' : '기준일 데이터 조회'}</button></div></div>
@@ -251,7 +236,6 @@ function App() {
         {promotionLowPriority && <p className="insight low-priority">[우선순위 낮음] 추가 관광홍보 — 방문수요가 표본 중앙값 수준이므로, 홍보 확대보다 위 우선순위 항목을 먼저 검토합니다.</p>}
       </section>
       <section id="methodology" className="section live-section methodology"><div className="heading"><div><small>05 / TERMS &amp; ALGORITHM</small><h2>용어와 계산법을<br /><em>투명하게 공개합니다</em></h2></div><p>현재 제공값과 향후 R-GAP 산출을 구분합니다.\n각 값의 단위·비교범위·한계를 함께 확인하세요.</p></div><div className="term-grid">{methodologyTerms.map(([term, description]) => <article key={term}><h3>{term}</h3><p>{description}</p></article>)}</div></section>
-      <section id="simulator" className="sim"><div className="inside"><div className="heading"><div><small>06 / BUDGET PORTFOLIO SIMULATOR (보조 기능)</small><h2>다음 <em>{budget}억</em>은<br />어디에 배분할까요?</h2></div><p>표준화 결손도 비중을 초기값으로 제안합니다. 예산 시뮬레이터는 진단 이후 의사결정을 탐색하는 보조 도구이며 효과예측 모형이 아닙니다.</p></div><div className="simgrid"><article className="budget"><label>증분 관광예산 <b>{budget}억 원</b><input type="range" min="3" max="30" value={budget} onChange={(event) => setBudget(Number(event.target.value))} /></label><small>3억 <span>30억</span></small><p>정책 항목별 가중치 <em>합계 {weightTotal}</em></p>{allocations.map((item, index) => <div className="allocation" key={item.name}><span>{item.name}</span><input aria-label={`${item.name} 가중치`} type="range" min="1" max="80" value={item.weight} onChange={(event) => { setWeightsTouched(true); setWeights((current) => current.map((value, itemIndex) => itemIndex === index ? Number(event.target.value) : value)); }} /><b>{item.amount.toFixed(1)}억</b></div>)}</article><aside className="impact"><small>SCENARIO PORTFOLIO</small><h3>현재 배분안</h3><strong>{budget}억</strong><span>{weightsTouched ? '실무자 조정 가중치 기준' : '표준화 결손도 기반 초기값'}</span>{allocations.map((item) => <p key={item.name}><span>{item.name}</span><b>{Math.round(item.weight / weightTotal * 100)}%</b></p>)}<em>현재 배분은 표본 비교 진단에 따른 시나리오입니다. 75분위 프론티어가 완성되면 R-GAP 누수 기여도 기반 자동추천으로 전환합니다.</em></aside></div></div></section>
       <section id="tshift" className="section"><div className="heading"><div><small>07 / 정책 시행 후 효과검증 프레임</small><h2>정책은 실험하고,<br /><em>효과는 증명합니다.</em></h2></div><p>현재 정책 성과가 아닌, 야간·계절 누수 정책의 사전 등록과 DiD 사후검증을 위한 실행 템플릿입니다.</p></div><div className="did">{[['01', '정책 패키지 설계', '체류 동선·야간 콘텐츠·지역 상권을 하나의 전환 여정으로 설계합니다.'], ['02', '비교지역 선정 · 변화 가설 등록', '성과지표, 대상·비교지역, 관찰기간을 사업 시작 전 고정합니다.'], ['03', '사전/사후 데이터 수집 · DiD 효과 리포트', '정책 전후 변화와 비교군 차이를 비교해 순효과를 검증합니다.']].map(([step, title, description]) => <article key={step}><small>{step}</small><h3>{title}</h3><p>{description}</p></article>)}</div></section>
       <section className="meta"><small>DATA INTERPRETATION / REQUIRED META INFO</small><div><b>원천자료·파생지표·규칙기반 진단을 구분합니다.</b><p>방문자수는 이동통신 자료 기반의 KTO 추정치이며 관광객 실인원과 동일하지 않습니다. 체류·소비·숙박 지수는 비율이나 인원수가 아닌 KTO 지수점수입니다. 관광지 혼잡도는 KTO 예측값이며, 중심지 공간확산은 내비게이션 중심 관광지 좌표로 계산한 거리 기반 보조지표입니다. 표본 비교 유형·우선순위는 규칙기반 진단입니다. 실제 관광지별 방문점유율, 전국 유사구조 군집, 연간 계절성, 소비 잔차와 75분위 프론티어가 완성되기 전에는 TCEI·R-GAP으로 표시하지 않습니다.</p></div></section>
     </main><footer><div className="logo"><b>R</b>Regional Tourism Scan</div><small>Regional Tourism Scan · Regional Recoverable Tourism Value Gap Engine · KTO Tourism Data Challenge</small></footer>

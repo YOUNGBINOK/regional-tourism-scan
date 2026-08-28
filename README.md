@@ -5,7 +5,7 @@ AGENTS.md의 명세를 기준으로 구성한 공모전 제출용 풀스택 프�
 | Layer | Implementation |
 |---|---|
 | Frontend | React + TypeScript + Vite, React-Leaflet, Recharts |
-| Backend | FastAPI (KTO 수집·정규화 / 지표 진단 / 예산 시나리오 API) |
+| Backend | FastAPI (KTO 수집·정규화 / 전국·Peer 진단 API) |
 | Database | PostgreSQL 16 + PostGIS 3.4 |
 | Analysis | 동월·유사 관광구조 표준화, 소비 잔차, 75분위 프론티어를 위한 데이터 모델 |
 
@@ -70,7 +70,7 @@ POST /v1/data-sources/kto/tourism-diversity/international
 
 ## 정책 브리프 PDF
 
-대시보드 오른쪽 위의 **정책 브리프** 버튼을 누르면 선택한 지자체, 표본 비교 진단, 지표별 취약도, 예산 초기 시나리오를 A4 보고서 형식으로 구성한 인쇄 화면이 열립니다. 브라우저 인쇄 창에서 **PDF로 저장**을 선택하면 됩니다. 보고서에는 원천자료·파생지표·규칙기반 진단의 구분과 데이터 해석 유의사항을 함께 표기합니다.
+대시보드 오른쪽 위의 **정책 브리프** 버튼을 누르면 선택한 지자체, 전국·Peer 비교 진단, 취약지표, 원인진단과 정책 우선순위를 A4 보고서 형식으로 구성한 인쇄 화면이 열립니다. 브라우저 인쇄 창에서 **PDF로 저장**을 선택하면 됩니다. 보고서에는 원천자료·파생지표·규칙기반 진단의 구분과 데이터 해석 유의사항을 함께 표기합니다.
 
 ## Production deployment
 
@@ -83,7 +83,7 @@ POST /v1/data-sources/kto/tourism-diversity/international
 
 - Leaflet 기반 지자체 선택 지도와 표본 비교 진단 유형 배지
 - Recharts 기반 표본 중앙값 대비 표준화 취약도 차트
-- 숙박 공급 비교 패널과 예산 자동 배분 및 실무자 조정 슬라이더
+- 숙박 공급 원인진단, 구조 기반 Peer Group, 정책 우선순위
 - T-Shift 정책 실험의 DiD 사후검증 데이터 모델
 - PostGIS 지자체 경계, 월별 관광지표, R-GAP 결과, 정책실험 스키마
 - 원시 방문객당 소비액을 쓰지 않는 소비 잔차 필드 및 데이터 해석 경고 UI
