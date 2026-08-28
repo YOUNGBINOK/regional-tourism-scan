@@ -18,9 +18,9 @@ type LiveSnapshot = {
 
 const regions: Region[] = [
   { id: '47130', name: '경주시', province: '경상북도', lat: 35.856, lng: 129.224 },
-  { id: '42150', name: '강릉시', province: '강원특별자치도', lat: 37.752, lng: 128.876 },
+  { id: '51150', name: '강릉시', province: '강원특별자치도', lat: 37.752, lng: 128.876 },
   { id: '50110', name: '제주시', province: '제주특별자치도', lat: 33.499, lng: 126.531 },
-  { id: '45111', name: '전주시', province: '전북특별자치도', lat: 35.824, lng: 127.148 },
+  { id: '52110', name: '전주시', province: '전북특별자치도', lat: 35.824, lng: 127.148 },
 ];
 const apiBase = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 const formatNumber = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 });
