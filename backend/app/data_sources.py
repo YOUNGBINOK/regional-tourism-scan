@@ -171,11 +171,12 @@ def build_live_visitor_snapshot(payload: object, area_cd: str, base_ymd: str) ->
             "resident_visitors": 0.0, "outside_visitors": 0.0, "foreign_visitors": 0.0,
         })
         category = item.get("touDivNm", "")
-        if category == "외지인":
+        # The KTO GW labels include category codes, e.g. "외지인(b)".
+        if category.startswith("외지인"):
             entry["outside_visitors"] = float(entry["outside_visitors"]) + value
-        elif category == "외국인":
+        elif category.startswith("외국인"):
             entry["foreign_visitors"] = float(entry["foreign_visitors"]) + value
-        elif category == "현지인":
+        elif category.startswith("현지인"):
             entry["resident_visitors"] = float(entry["resident_visitors"]) + value
     target = by_area.get(area_cd)
     if not target:
