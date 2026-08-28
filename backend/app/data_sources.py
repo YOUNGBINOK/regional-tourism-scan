@@ -6,7 +6,7 @@ differ by Data Lab account and competition scope.
 from dataclasses import dataclass
 from copy import deepcopy
 import asyncio
-from urllib.parse import urljoin, unquote
+from urllib.parse import parse_qsl, urljoin, unquote, urlsplit
 from xml.etree import ElementTree
 from math import asin, cos, radians, sin, sqrt
 import httpx
@@ -50,6 +50,7 @@ def provider_statuses() -> list[ProviderStatus]:
         ProviderStatus("public_data_portal", bool(s.public_data_portal_api_key or s.kto_tourism_datalab_api_key), bool(s.public_data_portal_base_url)),
         ProviderStatus("local_finance365", bool(s.local_finance365_api_key), bool(s.local_finance365_base_url)),
         ProviderStatus("kosis", bool(s.kosis_api_key), bool(s.kosis_base_url)),
+        ProviderStatus("mois_tourism_business", bool(s.kto_tourism_datalab_api_key), bool(s.mois_tourism_business_base_url)),
     ]
 
 def provider_headers(provider: str) -> dict[str, str]:
@@ -89,6 +90,50 @@ async def fetch_provider_json(provider: str, endpoint: str, params: dict[str, st
             return response.json()
         # The gateway supports JSON + XML. Preserve XML rather than treating a
         # valid XML response as a JSON decoding error; normalization follows in ETL.
+        return {"format": "xml", "data": response.text}
+
+def _configured_query(raw_query: str, key_name: str, api_key: str) -> dict[str, str]:
+    """Parse a generated provider query safely and replace any copied secret."""
+    parsed = dict(parse_qsl(raw_query.lstrip("?"), keep_blank_values=True))
+    parsed.pop(key_name, None)
+    parsed[key_name] = unquote(api_key)
+    return parsed
+
+async def fetch_kosis_statistics(query: str) -> object:
+    """Call a user-configured KOSIS statistics query without exposing its key."""
+    s = get_settings()
+    if not s.kosis_api_key:
+        raise ValueError("KOSIS API key is not configured")
+    if not query:
+        raise ValueError("KOSIS generated query is not configured")
+    params = _configured_query(query, "apiKey", s.kosis_api_key)
+    params.setdefault("method", "getList")
+    params.setdefault("format", "json")
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.get(f"{s.kosis_base_url.rstrip('/')}/statisticsData.do", params=params,
+                                    headers={"Accept": "application/json"})
+        if response.is_error:
+            raise RuntimeError(f"KOSIS returned HTTP {response.status_code}")
+        return response.json()
+
+async def fetch_mois_tourism_business() -> object:
+    """Fetch approved MOIS tourism-business records once its detail URL is configured."""
+    s = get_settings()
+    if not s.kto_tourism_datalab_api_key:
+        raise ValueError("Data.go.kr API key is not configured")
+    if not s.mois_tourism_business_base_url:
+        raise ValueError("MOIS tourism-business endpoint is not configured")
+    url = urlsplit(s.mois_tourism_business_base_url)
+    base_url = f"{url.scheme}://{url.netloc}{url.path}"
+    params = dict(parse_qsl(url.query, keep_blank_values=True))
+    params.update(_configured_query(s.mois_tourism_business_query, "serviceKey", s.kto_tourism_datalab_api_key))
+    params.setdefault("serviceKey", unquote(s.kto_tourism_datalab_api_key))
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.get(base_url, params=params, headers={"Accept": "application/json"})
+        if response.is_error:
+            raise RuntimeError(f"MOIS tourism-business service returned HTTP {response.status_code}")
+        if "json" in response.headers.get("content-type", "").lower():
+            return response.json()
         return {"format": "xml", "data": response.text}
 
 async def fetch_kto_regional_visitors(scope: str, start_ymd: str, end_ymd: str,

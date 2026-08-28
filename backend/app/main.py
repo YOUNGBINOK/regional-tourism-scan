@@ -9,7 +9,8 @@ from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_reg
                            normalize_kto_xml, kto_catalog_with_readiness, build_live_visitor_snapshot,
                            fetch_attraction_concentration, summarize_attraction_concentration,
                            fetch_municipal_hub_attractions, compute_hub_spatial_spread,
-                           fetch_visitor_window, compute_visitor_stability)
+                           fetch_visitor_window, compute_visitor_stability,
+                           fetch_kosis_statistics, fetch_mois_tourism_business)
 from .settings import cors_origin_list
 
 app = FastAPI(title="R-GAP API", version="0.1.0")
@@ -61,6 +62,31 @@ def health(): return {"status": "ok", "service": "R-GAP API"}
 def data_source_status():
     """Safe status only: API credentials are never returned to the client."""
     return {"sources": [status.__dict__ for status in provider_statuses()]}
+
+@app.get("/v1/data-sources/kosis/{dataset}")
+async def kosis_dataset(dataset: str):
+    """Safe KOSIS preview for the configured structural Peer variables."""
+    from .settings import get_settings
+    query = {"population": get_settings().kosis_population_query,
+             "area": get_settings().kosis_area_query}.get(dataset)
+    if query is None:
+        raise HTTPException(status_code=422, detail="dataset must be population or area")
+    try:
+        return await fetch_kosis_statistics(query)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+    except Exception as error:
+        raise HTTPException(status_code=502, detail=f"KOSIS {dataset} request failed: {error}")
+
+@app.get("/v1/data-sources/mois/tourism-business")
+async def mois_tourism_business():
+    """Raw, server-side preview of the approved tourism-business service."""
+    try:
+        return normalize_kto_xml(await fetch_mois_tourism_business())
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+    except Exception as error:
+        raise HTTPException(status_code=502, detail=f"MOIS tourism-business request failed: {error}")
 
 @app.post("/v1/data-sources/fetch")
 async def data_source_fetch(payload: ProviderFetchRequest):
