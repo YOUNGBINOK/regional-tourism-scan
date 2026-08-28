@@ -1,1 +1,7 @@
--r backend/requirements.txt
+# Vercel serverless runtime only needs the API request stack. PostgreSQL and
+# PostGIS drivers remain in backend/requirements.txt for the persistent-worker
+# deployment, but are intentionally excluded here.
+fastapi==0.115.0
+httpx==0.27.2
+pydantic==2.9.2
+pydantic-settings==2.5.2
