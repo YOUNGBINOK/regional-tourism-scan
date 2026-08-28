@@ -34,7 +34,41 @@ API 키는 프로젝트 루트의 `.env`에 입력합니다. 키는 브라우저
 - `scope: metro` → 광역 지자체 `/metcoRegnVisitrDDList`
 - `scope: local` → 기초 지자체 `/locgoRegnVisitrDDList`
 
+같은 KTO 키로 활용신청 후 연결되는 R-GAP 핵심 데이터셋은 `GET /v1/data-sources/kto/catalog`에서 확인할 수 있습니다. 이 응답은 키를 노출하지 않고 각 데이터셋의 연결 준비 상태만 보여 줍니다. 체류·소비 강도는 `POST /v1/data-sources/kto/metric`으로 조회합니다.
+
+```json
+{"dataset":"demand_intensity","metric":"stay","params":{"pageNo":"1","numOfRows":"100"}}
+```
+
+대시보드 적재 전용 조회 경로는 다음과 같으며, XML을 정규화한 JSON을 반환합니다.
+
+```text
+POST /v1/data-sources/kto/demand-intensity/stay
+POST /v1/data-sources/kto/demand-intensity/spend
+POST /v1/data-sources/kto/tourism-diversity/visitor
+POST /v1/data-sources/kto/tourism-diversity/spend
+POST /v1/data-sources/kto/tourism-diversity/international
+```
+
+각 요청 본문은 `{"area_cd":"47130","base_ym":"202607"}` 형식입니다.
+
+한 지자체의 검증 완료 지표를 한 번에 수집하려면 `POST /v1/data-sources/kto/region-snapshot`을 사용합니다.
+
+```json
+{"area_cd":"47130","base_ym":"202607","start_ymd":"20260701","end_ymd":"20260731"}
+```
+
+이 요청은 지역별 방문자수, 체류·소비 강도, 관광 다양성 3개 서비스의 6개 지표를 병렬 조회합니다. 응답은 적재 전 정규화 JSON이며, 이후 TCEI·R-GAP 계산 파이프라인의 입력값으로 사용할 수 있습니다.
+
+`TatsCnctrRateService`(관광지 집중률)와 `AreaTarResDemService`(관광 자원 수요)는 활용신청 승인 후에도 상세기능 화면에 표시되는 **오퍼레이션명**이 필요합니다. 키는 기존 `KTO_TOURISM_DATALAB_API_KEY`를 그대로 쓰며, 해당 이름만 `.env`의 `KTO_ATTRACTION_CONCENTRATION_ENDPOINT`, `KTO_TOURISM_RESOURCE_DEMAND_ENDPOINT`에 넣으면 `POST /v1/data-sources/kto/configured/{dataset}`으로 호출할 수 있습니다. 전체 URL이나 키를 프론트엔드에 넣지 마세요.
+
+지방재정365와 KOSIS 키도 서버 환경변수에 등록돼 있습니다. 지방재정365는 기관별 실제 API 기본 URL, KOSIS는 필요한 통계표 ID(`statId`)를 선택하면 같은 공급자 어댑터에 연결할 수 있습니다. `PUBLIC_DATA_PORTAL_API_KEY`는 비워 두어도 KTO 키를 자동 재사용하므로 중복 발급할 필요가 없습니다.
+
 웹 앱은 `http://localhost:5173`, API 문서는 `http://localhost:8000/docs`에서 확인합니다.
+
+## 정책 브리프 PDF
+
+대시보드 오른쪽 위의 **정책 브리프** 버튼을 누르면 선택한 지자체, R-GAP 진단, 전환력 비교, 누수 기반 예산 포트폴리오를 A4 보고서 형식으로 구성한 인쇄 화면이 열립니다. 브라우저 인쇄 창에서 **PDF로 저장**을 선택하면 됩니다. 보고서에는 현재 화면의 시연용 데이터 여부와 데이터 해석 유의사항을 함께 표기합니다.
 
 ## Production deployment
 

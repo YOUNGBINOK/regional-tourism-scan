@@ -15,9 +15,7 @@ services:
         value: https://regional-tourism-scan.vercel.app
       - key: KTO_TOURISM_DATALAB_API_KEY
         sync: false
-      - key: KTO_TOURISM_DATALAB_BASE_URL
-        sync: false
-      - key: PUBLIC_DATA_PORTAL_API_KEY
-        sync: false
       - key: LOCAL_FINANCE365_API_KEY
+        sync: false
+      - key: KOSIS_API_KEY
         sync: false

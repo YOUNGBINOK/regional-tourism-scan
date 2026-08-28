@@ -1,1 +1,115 @@
-<!doctype html><html lang="ko"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>R-GAP | 관광 회수가능가치 진단</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>R-GAP | 관광 회수가능가치 진단</title>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <article id="print-report" aria-hidden="true">
+      <header class="report-header">
+        <div class="report-brand">R-GAP <span>POLICY BRIEF</span></div>
+        <p id="report-issued-at"></p>
+      </header>
+      <section class="report-title">
+        <p>Regional Recoverable Tourism Value Gap Engine</p>
+        <h1 id="report-region">지자체 관광가치 회수 진단 보고서</h1>
+        <strong id="report-gap">R-GAP --</strong>
+        <span>동월·유사 관광구조 집단의 프론티어 대비 회수가능가치 격차</span>
+      </section>
+      <section class="report-grid">
+        <div>
+          <h2>핵심 진단</h2>
+          <dl>
+            <div><dt>TCEI 종합</dt><dd id="report-tcei">--</dd></div>
+            <div><dt>프론티어 대비</dt><dd id="report-frontier">--</dd></div>
+            <div><dt>숙박 공급</dt><dd id="report-room">--</dd></div>
+          </dl>
+        </div>
+        <div>
+          <h2>자동 분류 유형</h2>
+          <p id="report-tags" class="report-tags">--</p>
+          <h2 class="report-subtitle">우선 개입</h2>
+          <p id="report-priority">--</p>
+        </div>
+      </section>
+      <section>
+        <h2>전환력 프로파일</h2>
+        <table>
+          <thead><tr><th>영역</th><th>현재</th><th>프론티어</th><th>격차</th></tr></thead>
+          <tbody id="report-profile"></tbody>
+        </table>
+      </section>
+      <section>
+        <h2>누수 기반 예산 포트폴리오</h2>
+        <p class="report-note">증분 관광예산 <b id="report-budget">--</b> · 누수 기여도에 따른 권고안</p>
+        <table>
+          <thead><tr><th>정책 항목</th><th>누수 기여도</th><th>권고 배분</th></tr></thead>
+          <tbody id="report-allocation"></tbody>
+        </table>
+      </section>
+      <section class="report-caution">
+        <h2>해석 및 활용 유의사항</h2>
+        <p>소비전환은 단순 방문객당 소비액이 아니라 관광수요 대비 신용카드 관광소비의 표준화 잔차로 해석합니다. 내비게이션은 차량 이동 편향이 있으며 SNS는 절대 규모보다 추세 해석에 적합합니다. 본 보고서의 현재 수치는 시연용 시드 데이터이며, 운영 배포 시 한국관광 데이터랩 적재값으로 대체됩니다.</p>
+      </section>
+      <footer>R-GAP · Regional Recoverable Tourism Value Gap Engine · KTO Tourism Data Challenge</footer>
+    </article>
+
+    <script>
+      (() => {
+        const text = (selector) => document.querySelector(selector)?.textContent?.trim() || '--';
+        const row = (cells) => `<tr>${cells.map((cell) => `<td>${cell}</td>`).join('')}</tr>`;
+        const refreshReport = () => {
+          const selected = document.querySelector('.heading select');
+          const selectedName = selected?.selectedOptions?.[0]?.textContent?.trim() || text('.summary h3');
+          const score = text('.summary > strong');
+          const tcei = text('.stat b');
+          const frontier = text('.stat em').replace('프론티어 대비', '').trim();
+          const room = `${text('.supply > strong')} ${text('.supply > span')}`;
+          const tags = Array.from(document.querySelectorAll('.badges span')).map((item) => item.textContent?.trim()).filter(Boolean);
+          const leaks = Array.from(document.querySelectorAll('.pie p')).map((item) => ({
+            name: Array.from(item.childNodes).filter((node) => node.nodeType === Node.TEXT_NODE).map((node) => node.textContent?.trim()).join('') || '--',
+            value: item.querySelector('b')?.textContent?.trim() || '--',
+          }));
+          const profile = ['체류 전환', '소비 전환', '공간 분산', '시간 안정성'];
+          const profiles = {
+            '경상북도 경주시': [[44, 68], [39, 70], [45, 64], [58, 65]],
+            '강원특별자치도 강릉시': [[57, 68], [47, 68], [55, 65], [38, 67]],
+            '제주특별자치도 제주시': [[68, 74], [49, 73], [35, 70], [60, 75]],
+            '전북특별자치도 전주시': [[43, 68], [51, 72], [63, 69], [61, 73]],
+          };
+          const allocations = Array.from(document.querySelectorAll('.allocation')).map((item) => ({
+            name: item.querySelector('span')?.textContent?.trim() || '--',
+            amount: item.querySelector(':scope > b')?.textContent?.trim() || '--',
+          }));
+          document.querySelector('#report-issued-at').textContent = `출력일 ${new Date().toLocaleDateString('ko-KR')}`;
+          document.querySelector('#report-region').textContent = `${selectedName} 관광가치 회수 진단 보고서`;
+          document.querySelector('#report-gap').textContent = `R-GAP ${score}`;
+          document.querySelector('#report-tcei').textContent = tcei;
+          document.querySelector('#report-frontier').textContent = frontier;
+          document.querySelector('#report-room').textContent = room;
+          document.querySelector('#report-tags').textContent = tags.join(' · ') || '--';
+          document.querySelector('#report-priority').textContent = leaks.length ? `${leaks[0].name} (${leaks[0].value})` : '--';
+          document.querySelector('#report-budget').textContent = text('.budget > label > b');
+          document.querySelector('#report-profile').innerHTML = profile.map((label, index) => {
+            const values = profiles[selectedName]?.[index];
+            return row(values ? [label, values[0], values[1], `${values[1] - values[0]}p`] : [label, '--', '--', '--']);
+          }).join('');
+          document.querySelector('#report-allocation').innerHTML = allocations.length
+            ? allocations.map((item, index) => row([item.name, leaks[index]?.value || '--', item.amount])).join('')
+            : row(['--', '--', '--']);
+        };
+        document.addEventListener('click', (event) => {
+          if (event.target.closest('header > button')) {
+            refreshReport();
+            window.setTimeout(() => window.print(), 0);
+          }
+        });
+        window.addEventListener('beforeprint', refreshReport);
+      })();
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

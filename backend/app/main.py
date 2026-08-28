@@ -1,8 +1,11 @@
+import asyncio
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 from .models import TceiInput, BudgetRequest, calculate_tcei, calculate_r_gap, allocate_budget
-from .data_sources import provider_statuses, fetch_provider_json, fetch_kto_regional_visitors
+from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_regional_visitors,
+                           fetch_kto_catalog_service, fetch_kto_configured_service,
+                           normalize_kto_xml, kto_catalog_with_readiness)
 from .settings import cors_origin_list
 
 app = FastAPI(title="R-GAP API", version="0.1.0")
@@ -19,6 +22,24 @@ class VisitorFetchRequest(BaseModel):
     end_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260731"])
     page_no: int = Field(default=1, ge=1)
     num_rows: int = Field(default=1000, ge=1, le=1000)
+
+class KtoMetricRequest(BaseModel):
+    dataset: str = Field(pattern="^(demand_intensity|tourism_diversity)$")
+    metric: str
+    params: dict[str, str] = {}
+
+class KtoAreaMetricRequest(BaseModel):
+    area_cd: str = Field(pattern=r"^\d{5}$", examples=["47130"])
+    base_ym: str = Field(pattern=r"^\d{6}$", examples=["202607"])
+    page_no: int = Field(default=1, ge=1)
+    num_rows: int = Field(default=1000, ge=1, le=1000)
+
+class KtoRegionSnapshotRequest(KtoAreaMetricRequest):
+    start_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260701"])
+    end_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260731"])
+
+class KtoConfiguredDatasetRequest(BaseModel):
+    params: dict[str, str] = {}
 
 @app.get("/health")
 def health(): return {"status": "ok", "service": "R-GAP API"}
@@ -42,6 +63,76 @@ async def kto_regional_visitors(payload: VisitorFetchRequest):
         return await fetch_kto_regional_visitors(payload.scope, payload.start_ymd, payload.end_ymd, payload.page_no, payload.num_rows)
     except ValueError as error: raise HTTPException(status_code=422, detail=str(error))
     except Exception as error: raise HTTPException(status_code=502, detail=f"KTO visitor request failed: {error}")
+
+@app.get("/v1/data-sources/kto/catalog")
+def kto_catalog():
+    """Official KTO datasets mapped to R-GAP; no secret is included."""
+    return {"datasets": kto_catalog_with_readiness(), "key_source": "KTO_TOURISM_DATALAB_API_KEY"}
+
+@app.post("/v1/data-sources/kto/metric")
+async def kto_metric(payload: KtoMetricRequest):
+    try: return await fetch_kto_catalog_service(payload.dataset, payload.metric, payload.params)
+    except ValueError as error: raise HTTPException(status_code=422, detail=str(error))
+    except Exception as error: raise HTTPException(status_code=502, detail=f"KTO metric request failed: {error}")
+
+async def area_metric(dataset: str, metric: str, payload: KtoAreaMetricRequest):
+    raw = await fetch_kto_catalog_service(dataset, metric, {"areaCd": payload.area_cd, "baseYm": payload.base_ym,
+                                                             "pageNo": str(payload.page_no), "numOfRows": str(payload.num_rows)})
+    return normalize_kto_xml(raw)
+
+@app.post("/v1/data-sources/kto/demand-intensity/{metric}")
+async def demand_intensity(metric: str, payload: KtoAreaMetricRequest):
+    if metric not in ("stay", "spend"): raise HTTPException(status_code=422, detail="metric must be stay or spend")
+    try: return await area_metric("demand_intensity", metric, payload)
+    except Exception as error: raise HTTPException(status_code=502, detail=f"KTO demand-intensity request failed: {error}")
+
+@app.post("/v1/data-sources/kto/tourism-diversity/{metric}")
+async def tourism_diversity(metric: str, payload: KtoAreaMetricRequest):
+    if metric not in ("visitor", "spend", "international"): raise HTTPException(status_code=422, detail="metric must be visitor, spend, or international")
+    try: return await area_metric("tourism_diversity", metric, payload)
+    except Exception as error: raise HTTPException(status_code=502, detail=f"KTO diversity request failed: {error}")
+
+@app.post("/v1/data-sources/kto/configured/{dataset}")
+async def kto_configured_dataset(dataset: str, payload: KtoConfiguredDatasetRequest):
+    """Use the two newly approved products once their official operation name is set in .env."""
+    try:
+        return normalize_kto_xml(await fetch_kto_configured_service(dataset, payload.params))
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+    except Exception as error:
+        raise HTTPException(status_code=502, detail=f"KTO configured-dataset request failed: {error}")
+
+@app.post("/v1/data-sources/kto/region-snapshot")
+async def kto_region_snapshot(payload: KtoRegionSnapshotRequest):
+    """Fetch the verified KTO indicators required for one municipality/month in parallel."""
+    try:
+        visitor_raw, stay, demand_spend, visitor_diversity, spend_diversity, international_diversity = await asyncio.gather(
+            fetch_kto_regional_visitors("local", payload.start_ymd, payload.end_ymd),
+            area_metric("demand_intensity", "stay", payload),
+            area_metric("demand_intensity", "spend", payload),
+            area_metric("tourism_diversity", "visitor", payload),
+            area_metric("tourism_diversity", "spend", payload),
+            area_metric("tourism_diversity", "international", payload),
+        )
+        visitor_data = normalize_kto_xml(visitor_raw)
+        if isinstance(visitor_data, dict) and isinstance(visitor_data.get("items"), list):
+            visitor_data = {**visitor_data, "items": [
+                item for item in visitor_data["items"] if item.get("signguCode") == payload.area_cd
+            ]}
+        return {
+            "area_cd": payload.area_cd,
+            "base_ym": payload.base_ym,
+            "sources": {
+                "regional_visitors": visitor_data,
+                "demand_intensity_stay": stay,
+                "demand_intensity_spend": demand_spend,
+                "tourism_diversity_visitor": visitor_diversity,
+                "tourism_diversity_spend": spend_diversity,
+                "tourism_diversity_international": international_diversity,
+            },
+        }
+    except Exception as error:
+        raise HTTPException(status_code=502, detail=f"KTO region-snapshot request failed: {error}")
 
 @app.post("/v1/metrics/tcei")
 def tcei(payload: TceiInput): return calculate_tcei(payload)
