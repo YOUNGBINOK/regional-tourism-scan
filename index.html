@@ -52,7 +52,7 @@
       </section>
       <section class="report-caution">
         <h2>해석 및 활용 유의사항</h2>
-        <p>소비전환은 단순 방문객당 소비액이 아니라 관광수요 대비 신용카드 관광소비의 표준화 잔차로 해석합니다. 내비게이션은 차량 이동 편향이 있으며 SNS는 절대 규모보다 추세 해석에 적합합니다. 본 보고서의 현재 수치는 시연용 시드 데이터이며, 운영 배포 시 한국관광 데이터랩 적재값으로 대체됩니다.</p>
+        <p>방문자수는 한국관광공사 통신 기반 지역별 방문자수의 실측값입니다. 소비전환은 단순 방문객당 소비액이 아니라 관광수요 대비 신용카드 관광소비의 표준화 잔차로 해석합니다. 예산 포트폴리오는 R-GAP이 산출되기 전까지 사용자 조정 시나리오이며 자동 추천으로 해석하지 않습니다.</p>
       </section>
       <footer>R-GAP · Regional Recoverable Tourism Value Gap Engine · KTO Tourism Data Challenge</footer>
     </article>
@@ -91,19 +91,21 @@
             caption: item.querySelector('p')?.textContent?.trim() || '',
           }));
           document.querySelector('#report-issued-at').textContent = `출력일 ${new Date().toLocaleDateString('ko-KR')}`;
-          document.querySelector('#report-region').textContent = liveMode ? `${selectedName} 관광 방문자 실측 보고서` : `${selectedName} 관광가치 회수 진단 보고서`;
+          document.querySelector('#report-region').textContent = liveMode ? `${selectedName} 관광 방문자·정책 시나리오 보고서` : `${selectedName} 관광가치 회수 진단 보고서`;
           document.querySelector('#report-gap').textContent = liveMode ? `외지인 방문 ${score}` : `R-GAP ${score}`;
           document.querySelector('#report-tcei').textContent = liveMode ? text('.summary > p b') : tcei;
           document.querySelector('#report-frontier').textContent = liveMode ? '전국 지자체 비교' : frontier;
           document.querySelector('#report-room').textContent = liveMode ? '숙박·소비 지표 적재 대기' : room;
           document.querySelector('#report-tags').textContent = tags.join(' · ') || '--';
-          document.querySelector('#report-priority').textContent = liveMode ? '필수 4대 지표 적재 후 R-GAP 산출' : (leaks.length ? `${leaks[0].name} (${leaks[0].value})` : '--');
-          document.querySelector('#report-budget').textContent = liveMode ? 'R-GAP 산출 보류' : text('.budget > label > b');
+          document.querySelector('#report-priority').textContent = liveMode ? (allocations.length ? '사용자 조정 정책 시나리오' : '필수 4대 지표 적재 후 R-GAP 산출') : (leaks.length ? `${leaks[0].name} (${leaks[0].value})` : '--');
+          document.querySelector('#report-budget').textContent = text('.budget > label > b');
           document.querySelector('#report-profile').innerHTML = liveMode ? liveMetrics.map((item) => row([item.label, item.value, item.caption, '실측'])).join('') : profile.map((label, index) => {
             const values = profiles[selectedName]?.[index];
             return row(values ? [label, values[0], values[1], `${values[1] - values[0]}p`] : [label, '--', '--', '--']);
           }).join('');
-          document.querySelector('#report-allocation').innerHTML = liveMode ? row(['TCEI / R-GAP', '필수 지표 적재 대기', '산출 보류']) : allocations.length
+          document.querySelector('#report-allocation').innerHTML = liveMode ? (allocations.length
+            ? allocations.map((item) => row([item.name, '사용자 입력 시나리오', item.amount])).join('')
+            : row(['TCEI / R-GAP', '필수 지표 적재 대기', '산출 보류'])) : allocations.length
             ? allocations.map((item, index) => row([item.name, leaks[index]?.value || '--', item.amount])).join('')
             : row(['--', '--', '--']);
         };
