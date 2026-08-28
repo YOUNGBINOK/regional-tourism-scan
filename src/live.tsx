@@ -38,6 +38,13 @@ const formatSigned = (value: number) => `${value > 0 ? '+' : ''}${value.toFixed(
 // 취약영역 탐지 임계값: 표본 비교지역 평균 대비 ±10%p를 벗어나면 강점/취약으로 분류
 const classifyDiff = (diff: number | null) => diff == null ? '데이터 부족' : diff <= -10 ? '취약' : diff >= 10 ? '강점' : '보통';
 
+// 지역명 받침 유무에 따라 '은/는' 조사를 선택한다 (예: 경주시는 / 강릉시는 / 안산시는 / 전주시는).
+const topicParticle = (name: string) => {
+  const code = name.charCodeAt(name.length - 1) - 0xac00;
+  const hasBatchim = code >= 0 && code <= 11171 && code % 28 !== 0;
+  return `${name}${hasBatchim ? '은' : '는'}`;
+};
+
 type Axis = { key: string; label: string; diff: number | null; tier: DataTier; note: string };
 
 function App() {
@@ -107,19 +114,19 @@ function App() {
   if (demandDiff != null && stayDiff != null && spendDiff != null) {
     if (demandDiff >= -10 && stayDiff <= -10) {
       regionType = '체류전환 부족형';
-      diagnosisText = `${region.name}은(는) 관광수요는 표본 비교지역 평균 수준 이상이지만, 확보된 방문이 체류로 충분히 이어지지 않고 있습니다. 숙박·체류 콘텐츠 강화가 우선 과제입니다.`;
+      diagnosisText = `${topicParticle(region.name)} 관광수요는 표본 비교지역 평균 수준 이상이지만, 확보된 방문이 체류로 충분히 이어지지 않고 있습니다. 숙박·체류 콘텐츠 강화가 우선 과제입니다.`;
     } else if (stayDiff >= -10 && spendDiff <= -10) {
       regionType = '소비연결 부족형';
-      diagnosisText = `${region.name}은(는) 관광객 유입과 체류에는 문제가 없지만, 확보된 관광수요가 소비로 충분히 연결되지 않고 있습니다. 상권 연계·소비 유도 정책이 우선 과제입니다.`;
+      diagnosisText = `${topicParticle(region.name)} 관광객 유입과 체류에는 문제가 없지만, 확보된 관광수요가 소비로 충분히 연결되지 않고 있습니다. 상권 연계·소비 유도 정책이 우선 과제입니다.`;
     } else if (demandDiff <= -10 && stayDiff <= -10 && spendDiff <= -10) {
       regionType = '복합취약형';
-      diagnosisText = `${region.name}은(는) 수요·체류·소비 전 구간이 표본 비교지역 평균을 밑돌고 있어 개별 정책보다 구조적 진단이 우선 필요합니다.`;
+      diagnosisText = `${topicParticle(region.name)} 수요·체류·소비 전 구간이 표본 비교지역 평균을 밑돌고 있어 개별 정책보다 구조적 진단이 우선 필요합니다.`;
     } else if (demandDiff <= -10) {
       regionType = '수요부족형';
-      diagnosisText = `${region.name}은(는) 체류·소비 전환 자체는 양호하지만, 유입되는 관광수요 자체가 표본 비교지역 평균보다 적습니다.`;
+      diagnosisText = `${topicParticle(region.name)} 체류·소비 전환 자체는 양호하지만, 유입되는 관광수요 자체가 표본 비교지역 평균보다 적습니다.`;
     } else {
       regionType = '안정형';
-      diagnosisText = `${region.name}은(는) 수요·체류·소비 축 모두 표본 비교지역 평균과 비슷하거나 앞서 있습니다. 신규 유형 정책보다 세부 축(숙박·공간확산) 데이터 연동 후 재진단을 권장합니다.`;
+      diagnosisText = `${topicParticle(region.name)} 수요·체류·소비 축 모두 표본 비교지역 평균과 비슷하거나 앞서 있습니다. 신규 유형 정책보다 세부 축(숙박·공간확산) 데이터 연동 후 재진단을 권장합니다.`;
     }
   }
 
