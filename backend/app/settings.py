@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     local_finance365_api_key_param: str = Field(default="serviceKey")
     kosis_api_key: str = Field(default="")
     kosis_base_url: str = Field(default="https://kosis.kr/openapi")
+    kosis_statistics_endpoint: str = Field(default="Param/statisticsParameterData.do")
     # Generated KOSIS query strings exclude apiKey; the backend injects it.
     kosis_population_query: str = Field(default="")
     kosis_area_query: str = Field(default="")

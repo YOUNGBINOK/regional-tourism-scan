@@ -109,8 +109,11 @@ async def fetch_kosis_statistics(query: str) -> object:
     params = _configured_query(query, "apiKey", s.kosis_api_key)
     params.setdefault("method", "getList")
     params.setdefault("format", "json")
+    endpoint = s.kosis_statistics_endpoint.strip("/")
+    if endpoint.startswith(("http:", "https:", "..")):
+        raise ValueError("KOSIS statistics endpoint must be a relative official path")
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.get(f"{s.kosis_base_url.rstrip('/')}/statisticsData.do", params=params,
+        response = await client.get(f"{s.kosis_base_url.rstrip('/')}/{endpoint}", params=params,
                                     headers={"Accept": "application/json"})
         if response.is_error:
             raise RuntimeError(f"KOSIS returned HTTP {response.status_code}")
