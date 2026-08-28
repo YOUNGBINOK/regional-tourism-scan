@@ -63,7 +63,8 @@ type Axis = { key: string; label: string; diff: number | null; unit: '%' | 'p'; 
 
 function App() {
   const [regionId, setRegionId] = useState('47130');
-  const [date, setDate] = useState('2026-07-01');
+  // KTO GW는 제공 완료된 기준일만 조회할 수 있다. 검증된 최근 기준일을 초기값으로 둔다.
+  const [date, setDate] = useState('2025-08-25');
   const [snapshots, setSnapshots] = useState<Record<string, LiveSnapshot | null>>({});
   const [stability, setStability] = useState<StabilitySnapshot | null>(null);
   const [loading, setLoading] = useState(false);
