@@ -5,8 +5,10 @@ differ by Data Lab account and competition scope.
 """
 from dataclasses import dataclass
 from copy import deepcopy
+import asyncio
 from urllib.parse import urljoin, unquote
 from xml.etree import ElementTree
+from math import asin, cos, radians, sin, sqrt
 import httpx
 from .settings import get_settings
 
@@ -15,6 +17,7 @@ KTO_SERVICE_CATALOG = {
     "demand_intensity": {"service": "AreaTarDemDsService", "endpoints": {"stay": "areaTarSjrnDsList", "spend": "areaTarExpDsList"}, "coverage": ["숙박 비중·숙박일수별 방문자", "외지인 소비액·소비 비중·방문량 대비 소비"], "integration_status": "verified"},
     "tourism_diversity": {"service": "AreaTarDivService", "endpoints": {"visitor": "areaTouDivList", "spend": "areaExpDivList", "international": "areaIntlDivList"}, "coverage": ["연령별 방문객", "연령별 소비", "외국인 소비·국적 다양성"], "integration_status": "verified"},
     "attraction_concentration": {"service": "TatsCnctrRateService", "endpoints": {}, "coverage": ["관광지 30일 집중률 예측"], "integration_status": "awaiting_operation_name", "note": "승인된 동일 키를 사용합니다. 활용신청 상세의 오퍼레이션명만 환경변수에 입력하면 호출됩니다."},
+    "municipal_hub_attractions": {"service": "LocgoHubTarService1", "endpoints": {"default": "areaBasedList1"}, "coverage": ["내비게이션 연계 중심 관광지 순위·좌표"], "integration_status": "verified"},
     "tourism_resource_demand": {"service": "AreaTarResDemService", "endpoints": {}, "coverage": ["SNS·카드·내비 기반 관광 자원 수요"], "integration_status": "awaiting_operation_name", "note": "승인된 동일 키를 사용합니다. 활용신청 상세의 오퍼레이션명만 환경변수에 입력하면 호출됩니다."},
 }
 
@@ -173,6 +176,54 @@ async def fetch_attraction_concentration(area_cd: str) -> object | None:
         "areaCd": area_cd[:2], "signguCd": area_cd, "numOfRows": "1000", "pageNo": "1", "_type": "json",
     })
     return normalize_kto_xml(raw)
+
+async def fetch_municipal_hub_attractions(area_cd: str, base_ym: str) -> object:
+    """Fetch up to 100 navigation-network hub attractions for a municipality."""
+    # KTO exposes Jeonju through its two current district codes rather than the
+    # legacy city aggregate used by the daily visitor feed.
+    signgu_codes = ["52111", "52113"] if area_cd == "52110" else [area_cd]
+    responses = await asyncio.gather(*[
+        fetch_kto_catalog_service_by_path("LocgoHubTarService1", "areaBasedList1", {
+            "baseYm": base_ym, "areaCd": code[:2], "signguCd": code,
+            "numOfRows": "100", "pageNo": "1", "_type": "json",
+        }) for code in signgu_codes
+    ])
+    return {"items": [item for response in responses for item in _json_envelope_items(response)]}
+
+def compute_hub_spatial_spread(data: object) -> dict[str, object] | None:
+    """Calculate the geographic spread of navigation hub-attraction coordinates.
+
+    This is a transparent spatial-coverage proxy, not visit-share concentration:
+    the score is the root-mean-square haversine distance from the attractions'
+    geographic centroid, reported in kilometres. Hub rank is deliberately not
+    treated as a cardinal visit count.
+    """
+    points: list[tuple[float, float]] = []
+    items = _json_envelope_items(data)
+    for item in items:
+        try:
+            lon, lat = float(item.get("mapX")), float(item.get("mapY"))
+        except (TypeError, ValueError):
+            continue
+        if 124 <= lon <= 132 and 33 <= lat <= 39:
+            points.append((lon, lat))
+    if len(points) < 2:
+        return None
+    center_lon = sum(point[0] for point in points) / len(points)
+    center_lat = sum(point[1] for point in points) / len(points)
+
+    def distance_km(lon: float, lat: float) -> float:
+        d_lat, d_lon = radians(lat - center_lat), radians(lon - center_lon)
+        a = sin(d_lat / 2) ** 2 + cos(radians(center_lat)) * cos(radians(lat)) * sin(d_lon / 2) ** 2
+        return 6371.0088 * 2 * asin(sqrt(a))
+
+    distances = [distance_km(lon, lat) for lon, lat in points]
+    return {
+        "hub_count": len(points),
+        "spread_km": round(sqrt(sum(value ** 2 for value in distances) / len(distances)), 2),
+        "method": "중심 관광지 좌표의 지리적 중심으로부터 RMS 거리",
+        "is_visit_share_dispersion": False,
+    }
 
 def summarize_attraction_concentration(data: object) -> dict[str, object] | None:
     """Summarize KTO's per-attraction 30-day crowding forecasts.

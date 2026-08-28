@@ -1,4 +1,4 @@
-from app.data_sources import compute_visitor_stability, summarize_attraction_concentration
+from app.data_sources import compute_hub_spatial_spread, compute_visitor_stability, summarize_attraction_concentration
 
 
 def test_concentration_forecast_is_not_spatial_dispersion():
@@ -19,3 +19,15 @@ def test_constant_daily_visitors_are_fully_stable():
     ]
     result = compute_visitor_stability(items, ["47130"])
     assert result["47130"]["stability_index"] == 100.0
+
+
+def test_hub_spread_uses_coordinates_not_rank_as_visit_count():
+    payload = {"response": {"body": {"items": {"item": [
+        {"mapX": "129.20", "mapY": "35.80", "hubRank": "1"},
+        {"mapX": "129.30", "mapY": "35.80", "hubRank": "99"},
+    ]}}}}
+    result = compute_hub_spatial_spread(payload)
+    assert result is not None
+    assert result["hub_count"] == 2
+    assert result["spread_km"] > 0
+    assert result["is_visit_share_dispersion"] is False

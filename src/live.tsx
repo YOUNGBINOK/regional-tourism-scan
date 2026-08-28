@@ -22,6 +22,7 @@ type LiveSnapshot = {
     visitor_diversity: number | null; spend_diversity: number | null; international_diversity: number | null;
     attraction_crowding_forecast: number | null;
     spatial_dispersion: number | null;
+    spatial_dispersion_detail?: { hub_count: number; spread_km: number; method: string; is_visit_share_dispersion: false } | null;
   };
   analysis: { status: 'partial'; message: string; missing_inputs: string[] };
 };
@@ -126,7 +127,7 @@ function App() {
   const stayDiff = snapshot ? pointDiff(snapshot.observed_indices.stay_intensity, peerMedian((s) => s.observed_indices.stay_intensity)) : null;
   const lodgingDiff = snapshot ? pointDiff(snapshot.observed_indices.lodging_share_index, peerMedian((s) => s.observed_indices.lodging_share_index)) : null;
   const spendDiff = snapshot ? pointDiff(snapshot.observed_indices.spend_intensity, peerMedian((s) => s.observed_indices.spend_intensity)) : null;
-  const dispersionDiff = snapshot ? pointDiff(snapshot.observed_indices.spatial_dispersion, peerMedian((s) => s.observed_indices.spatial_dispersion)) : null;
+  const dispersionDiff = snapshot ? ratioDiff(snapshot.observed_indices.spatial_dispersion, peerMedian((s) => s.observed_indices.spatial_dispersion)) : null;
 
   // 단기 수요 안정성: 최근 7일 변동성에서 지역별 값을 뽑아 표본 중앙값과 비교한다.
   const stabilityValue = (id: string) => stability?.areas[id]?.stability_index ?? null;
@@ -141,7 +142,7 @@ function App() {
     { key: 'stay', label: '체류강도', diff: stayDiff, unit: 'p', threshold: 5, tier: 'derived', note: 'KTO 체류강도 지수 · 표본 비교지역 중앙값 대비 지수점수 차이' },
     { key: 'spend', label: '소비강도', diff: spendDiff, unit: 'p', threshold: 5, tier: 'derived', note: 'KTO 소비강도 지수 · 표본 비교지역 중앙값 대비 지수점수 차이' },
     { key: 'stayShare', label: '숙박비중', diff: lodgingDiff, unit: 'p', threshold: 5, tier: 'derived', note: 'KTO 숙박 비중 지수(2102) · 표본 비교지역 중앙값 대비 지수점수 차이' },
-    { key: 'dispersion', label: '공간분산', diff: dispersionDiff, unit: 'p', threshold: 5, tier: 'pending', note: '관광지별 실제 방문 점유율이 필요합니다. 30일 혼잡 예측값은 공간 점유율이 아니므로 대체하지 않습니다.' },
+    { key: 'dispersion', label: '중심지 공간확산', diff: dispersionDiff, unit: '%', threshold: 10, tier: snapshot?.observed_indices.spatial_dispersion != null ? 'derived' : 'pending', note: '내비게이션 중심 관광지 좌표의 RMS 확산거리 · 표본 중앙값 대비 증감률(방문점유율 기반 D는 아님)' },
     { key: 'stability', label: '단기 수요 안정성', diff: stabilityDiff, unit: 'p', threshold: 5, tier: 'derived', note: '최근 7일 외지인 방문자 변동계수 역산값 · 연간 계절성 지표가 아님' },
   ];
   const severity = (axis: Axis) => axis.diff == null ? 0 : Math.max(0, -axis.diff / axis.threshold);
@@ -203,12 +204,13 @@ function App() {
     ['외지인 수요 백분위', `${snapshot.national_comparison.outside_visitor_percentile}%`, `${snapshot.national_comparison.municipality_count}개 지역 비교`, 'derived' as DataTier],
     ['외지인 비중', `${snapshot.visitor_mix.outside_share}%`, '현지인·외지인·외국인 합계 대비', 'derived' as DataTier],
     ['관광지 혼잡 예측', snapshot.observed_indices.attraction_crowding_forecast?.toFixed(1) ?? '--', '관광지별 최혼잡 시점=100 · 향후 30일 평균', 'modeled' as DataTier],
+    ['중심지 공간확산', snapshot.observed_indices.spatial_dispersion != null ? `${snapshot.observed_indices.spatial_dispersion.toFixed(2)} km` : '--', snapshot.observed_indices.spatial_dispersion_detail ? `내비게이션 중심 관광지 ${snapshot.observed_indices.spatial_dispersion_detail.hub_count}개 좌표` : '중심 관광지 API 조회 대기', snapshot.observed_indices.spatial_dispersion != null ? 'derived' as DataTier : 'pending' as DataTier],
   ] : [];
   const methodologyTerms = [
     ['외지인 방문자', '이동통신 자료로 추정한 일별 방문자입니다. 관광 목적을 직접 확인한 관광객 수가 아니며 여러 날 체류하면 날짜별로 다시 집계될 수 있습니다.'],
     ['KTO 강도·숙박지수', '체류·소비·숙박 비중·숙박일수별 지표의 상대적 강도를 나타내는 지수점수입니다. 87.9를 숙박률 87.9%로 읽으면 안 됩니다.'],
     ['관광지 혼잡 예측', '각 관광지의 가장 붐비는 시기를 100으로 둔 향후 30일 상대 혼잡도입니다. 관광지 간 방문 점유율이 아니므로 공간분산 지수로 사용하지 않습니다.'],
-    ['공간분산', '지역 방문이 여러 관광지에 얼마나 고르게 분산됐는지를 뜻합니다. 관광지별 실제 방문 점유율이 확보되기 전까지 산출 대기 상태입니다.'],
+    ['중심지 공간확산', '내비게이션 연계 중심 관광지 좌표가 지리적 중심에서 얼마나 넓게 퍼져 있는지를 RMS 거리(km)로 계산합니다. 실제 방문자 점유율의 균등도를 뜻하는 정식 공간분산 D와는 구분합니다.'],
     ['단기 수요 안정성', '최근 7일 외지인 방문자의 변동계수(CV)를 100×(1−CV)로 역산한 파생지표입니다. 연간 계절성을 대신하지 않습니다.'],
     ['표본 중앙값 비교', '현재 4개 표본지역 중 선택지역을 제외한 3개 지역의 중앙값과 비교합니다. 아직 전국 유사 관광구조 군집이나 프론티어 비교는 아닙니다.'],
     ['취약도·예산배분', '축별 음의 편차를 임계값으로 나눈 표준화 결손도입니다. 체류·숙박, 소비, 공간, 단기 안정성 결손도의 합 대비 비중으로 초기 예산안을 배분합니다.'],
@@ -251,7 +253,7 @@ function App() {
       <section id="methodology" className="section live-section methodology"><div className="heading"><div><small>05 / TERMS &amp; ALGORITHM</small><h2>용어와 계산법을<br /><em>투명하게 공개합니다</em></h2></div><p>현재 제공값과 향후 R-GAP 산출을 구분합니다.\n각 값의 단위·비교범위·한계를 함께 확인하세요.</p></div><div className="term-grid">{methodologyTerms.map(([term, description]) => <article key={term}><h3>{term}</h3><p>{description}</p></article>)}</div></section>
       <section id="simulator" className="sim"><div className="inside"><div className="heading"><div><small>06 / BUDGET PORTFOLIO SIMULATOR (보조 기능)</small><h2>다음 <em>{budget}억</em>은<br />어디에 배분할까요?</h2></div><p>표준화 결손도 비중을 초기값으로 제안합니다. 예산 시뮬레이터는 진단 이후 의사결정을 탐색하는 보조 도구이며 효과예측 모형이 아닙니다.</p></div><div className="simgrid"><article className="budget"><label>증분 관광예산 <b>{budget}억 원</b><input type="range" min="3" max="30" value={budget} onChange={(event) => setBudget(Number(event.target.value))} /></label><small>3억 <span>30억</span></small><p>정책 항목별 가중치 <em>합계 {weightTotal}</em></p>{allocations.map((item, index) => <div className="allocation" key={item.name}><span>{item.name}</span><input aria-label={`${item.name} 가중치`} type="range" min="1" max="80" value={item.weight} onChange={(event) => { setWeightsTouched(true); setWeights((current) => current.map((value, itemIndex) => itemIndex === index ? Number(event.target.value) : value)); }} /><b>{item.amount.toFixed(1)}억</b></div>)}</article><aside className="impact"><small>SCENARIO PORTFOLIO</small><h3>현재 배분안</h3><strong>{budget}억</strong><span>{weightsTouched ? '실무자 조정 가중치 기준' : '표준화 결손도 기반 초기값'}</span>{allocations.map((item) => <p key={item.name}><span>{item.name}</span><b>{Math.round(item.weight / weightTotal * 100)}%</b></p>)}<em>현재 배분은 표본 비교 진단에 따른 시나리오입니다. 75분위 프론티어가 완성되면 R-GAP 누수 기여도 기반 자동추천으로 전환합니다.</em></aside></div></div></section>
       <section id="tshift" className="section"><div className="heading"><div><small>07 / 정책 시행 후 효과검증 프레임</small><h2>정책은 실험하고,<br /><em>효과는 증명합니다.</em></h2></div><p>현재 정책 성과가 아닌, 야간·계절 누수 정책의 사전 등록과 DiD 사후검증을 위한 실행 템플릿입니다.</p></div><div className="did">{[['01', '정책 패키지 설계', '체류 동선·야간 콘텐츠·지역 상권을 하나의 전환 여정으로 설계합니다.'], ['02', '비교지역 선정 · 변화 가설 등록', '성과지표, 대상·비교지역, 관찰기간을 사업 시작 전 고정합니다.'], ['03', '사전/사후 데이터 수집 · DiD 효과 리포트', '정책 전후 변화와 비교군 차이를 비교해 순효과를 검증합니다.']].map(([step, title, description]) => <article key={step}><small>{step}</small><h3>{title}</h3><p>{description}</p></article>)}</div></section>
-      <section className="meta"><small>DATA INTERPRETATION / REQUIRED META INFO</small><div><b>원천자료·파생지표·규칙기반 진단을 구분합니다.</b><p>방문자수는 이동통신 자료 기반의 KTO 추정치이며 관광객 실인원과 동일하지 않습니다. 체류·소비·숙박 지수는 비율이나 인원수가 아닌 KTO 지수점수입니다. 관광지 혼잡도는 KTO 예측값, 단기 안정성은 자체 파생지표이며 공간분산은 산출 대기입니다. 표본 비교 유형·우선순위는 규칙기반 진단입니다. 전국 유사구조 군집, 연간 계절성, 소비 잔차와 75분위 프론티어가 완성되기 전에는 TCEI·R-GAP으로 표시하지 않습니다.</p></div></section>
+      <section className="meta"><small>DATA INTERPRETATION / REQUIRED META INFO</small><div><b>원천자료·파생지표·규칙기반 진단을 구분합니다.</b><p>방문자수는 이동통신 자료 기반의 KTO 추정치이며 관광객 실인원과 동일하지 않습니다. 체류·소비·숙박 지수는 비율이나 인원수가 아닌 KTO 지수점수입니다. 관광지 혼잡도는 KTO 예측값이며, 중심지 공간확산은 내비게이션 중심 관광지 좌표로 계산한 거리 기반 보조지표입니다. 표본 비교 유형·우선순위는 규칙기반 진단입니다. 실제 관광지별 방문점유율, 전국 유사구조 군집, 연간 계절성, 소비 잔차와 75분위 프론티어가 완성되기 전에는 TCEI·R-GAP으로 표시하지 않습니다.</p></div></section>
     </main><footer><div className="logo"><b>R</b>Regional Tourism Scan</div><small>Regional Tourism Scan · Regional Recoverable Tourism Value Gap Engine · KTO Tourism Data Challenge</small></footer>
   </>;
 }

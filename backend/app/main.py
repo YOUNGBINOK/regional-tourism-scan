@@ -8,6 +8,7 @@ from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_reg
                            fetch_kto_catalog_service, fetch_kto_configured_service,
                            normalize_kto_xml, kto_catalog_with_readiness, build_live_visitor_snapshot,
                            fetch_attraction_concentration, summarize_attraction_concentration,
+                           fetch_municipal_hub_attractions, compute_hub_spatial_spread,
                            fetch_visitor_window, compute_visitor_stability)
 from .settings import cors_origin_list
 
@@ -171,13 +172,18 @@ async def _safe_attraction_concentration(area_cd: str):
     try: return await fetch_attraction_concentration(area_cd)
     except Exception: return None
 
+async def _safe_hub_attractions(area_cd: str, base_ym: str):
+    """Approved hub-attraction feed is best-effort so older empty months do not break the snapshot."""
+    try: return await fetch_municipal_hub_attractions(area_cd, base_ym)
+    except Exception: return None
+
 @app.post("/v1/analysis/live-visitor")
 async def live_visitor_analysis(payload: LiveVisitorRequest):
     """Live KTO visitor analysis, explicitly separated from incomplete R-GAP inputs."""
     try:
         metric_payload = KtoAreaMetricRequest(area_cd=payload.area_cd, base_ym=payload.base_ymd[:6])
         (raw, stay, lodging_share, one_night, two_nights, three_plus_nights,
-         spend, visitor_diversity, spend_diversity, international_diversity, concentration_raw) = await asyncio.gather(
+         spend, visitor_diversity, spend_diversity, international_diversity, concentration_raw, hubs_raw) = await asyncio.gather(
             fetch_kto_regional_visitors("local", payload.base_ymd, payload.base_ymd, 1, 1000),
             area_metric("demand_intensity", "stay", metric_payload),
             area_metric("demand_intensity", "stay", metric_payload, {"tarSjrnDsIxCd": "2102"}),
@@ -189,9 +195,11 @@ async def live_visitor_analysis(payload: LiveVisitorRequest):
             area_metric("tourism_diversity", "spend", metric_payload),
             area_metric("tourism_diversity", "international", metric_payload),
             _safe_attraction_concentration(payload.area_cd),
+            _safe_hub_attractions(payload.area_cd, payload.base_ymd[:6]),
         )
         snapshot = build_live_visitor_snapshot(raw, payload.area_cd, payload.base_ymd)
         concentration = summarize_attraction_concentration(concentration_raw)
+        hub_spread = compute_hub_spatial_spread(hubs_raw)
 
         def first_metric(response: object, value_key: str) -> float | None:
             if not isinstance(response, dict): return None
@@ -220,16 +228,16 @@ async def live_visitor_analysis(payload: LiveVisitorRequest):
             "spend_diversity": first_metric(spend_diversity, "expDivIxVal"),
             "international_diversity": first_metric(international_diversity, "intlDivIxVal"),
             "attraction_crowding_forecast": concentration["mean_crowding_rate"] if concentration else None,
-            "spatial_dispersion": None,
-            "spatial_dispersion_detail": None,
+            "spatial_dispersion": hub_spread["spread_km"] if hub_spread else None,
+            "spatial_dispersion_detail": hub_spread,
         }
         available = sum(1 for key, value in snapshot["observed_indices"].items()
                         if key not in {"base_ym", "aggregation", "spatial_dispersion_detail"} and value is not None)
-        missing_inputs = ["관광지별 방문 점유율(공간분산)", "숙박시설 공급량·객실수", "월별 계절성(연 단위)", "75분위 프론티어"]
+        missing_inputs = ["관광지별 실제 방문 점유율(정식 D 산출)", "숙박시설 공급량·객실수", "월별 계절성(연 단위)", "75분위 프론티어"]
         snapshot["analysis"] = {
             **snapshot["analysis"],
             "status": "partial" if available else "visitor_only",
-            "message": f"방문자·체류·숙박·소비·다양성·관광지 혼잡예측 지표 {available}종을 반영했습니다. 공간분산·연간 계절성·숙박시설 공급·프론티어 모형이 갖춰지면 TCEI와 R-GAP을 산출합니다.",
+            "message": f"방문자·체류·숙박·소비·다양성·혼잡예측·중심관광지 공간확산 지표 {available}종을 반영했습니다. 실제 방문점유율·연간 계절성·숙박시설 공급·프론티어 모형이 갖춰지면 TCEI와 R-GAP을 산출합니다.",
             "missing_inputs": missing_inputs,
         }
         return snapshot
