@@ -80,8 +80,21 @@ async def kto_metric(payload: KtoMetricRequest):
     except Exception as error: raise HTTPException(status_code=502, detail=f"KTO metric request failed: {error}")
 
 async def area_metric(dataset: str, metric: str, payload: KtoAreaMetricRequest):
-    raw = await fetch_kto_catalog_service(dataset, metric, {"areaCd": payload.area_cd, "baseYm": payload.base_ym,
-                                                             "pageNo": str(payload.page_no), "numOfRows": str(payload.num_rows)})
+    index_filters = {
+        ("demand_intensity", "stay"): {"tarSjrnDsIxCd": "21"},
+        ("demand_intensity", "spend"): {"tarExpDsIxCd": "22"},
+        ("tourism_diversity", "visitor"): {"touDivIxCd": "31"},
+        ("tourism_diversity", "spend"): {"expDivIxCd": "32"},
+        ("tourism_diversity", "international"): {"intlDivIxCd": "33"},
+    }
+    raw = await fetch_kto_catalog_service(dataset, metric, {
+        # KTO requires the 2-digit province code and 5-digit municipality
+        # code in separate fields. Passing the municipality as areaCd returns
+        # a successful but empty response.
+        "areaCd": payload.area_cd[:2], "signguCd": payload.area_cd, "baseYm": payload.base_ym,
+        "pageNo": str(payload.page_no), "numOfRows": str(payload.num_rows), "_type": "json",
+        **index_filters.get((dataset, metric), {}),
+    })
     return normalize_kto_xml(raw)
 
 @app.post("/v1/data-sources/kto/demand-intensity/{metric}")
@@ -142,8 +155,43 @@ async def kto_region_snapshot(payload: KtoRegionSnapshotRequest):
 async def live_visitor_analysis(payload: LiveVisitorRequest):
     """Live KTO visitor analysis, explicitly separated from incomplete R-GAP inputs."""
     try:
-        raw = await fetch_kto_regional_visitors("local", payload.base_ymd, payload.base_ymd, 1, 1000)
-        return build_live_visitor_snapshot(raw, payload.area_cd, payload.base_ymd)
+        metric_payload = KtoAreaMetricRequest(area_cd=payload.area_cd, base_ym=payload.base_ymd[:6])
+        raw, stay, spend, visitor_diversity, spend_diversity, international_diversity = await asyncio.gather(
+            fetch_kto_regional_visitors("local", payload.base_ymd, payload.base_ymd, 1, 1000),
+            area_metric("demand_intensity", "stay", metric_payload),
+            area_metric("demand_intensity", "spend", metric_payload),
+            area_metric("tourism_diversity", "visitor", metric_payload),
+            area_metric("tourism_diversity", "spend", metric_payload),
+            area_metric("tourism_diversity", "international", metric_payload),
+        )
+        snapshot = build_live_visitor_snapshot(raw, payload.area_cd, payload.base_ymd)
+
+        def first_metric(response: object, value_key: str) -> float | None:
+            if not isinstance(response, dict): return None
+            body = response.get("response", {}).get("body", {})
+            items = body.get("items") if isinstance(body, dict) else None
+            item = items.get("item") if isinstance(items, dict) else None
+            if isinstance(item, list): item = item[0] if item else None
+            if not isinstance(item, dict) or item.get(value_key) is None: return None
+            try: return float(item[value_key])
+            except (TypeError, ValueError): return None
+
+        snapshot["observed_indices"] = {
+            "base_ym": payload.base_ymd[:6],
+            "stay_intensity": first_metric(stay, "tarSjrnDsIxVal"),
+            "spend_intensity": first_metric(spend, "tarExpDsIxVal"),
+            "visitor_diversity": first_metric(visitor_diversity, "touDivIxVal"),
+            "spend_diversity": first_metric(spend_diversity, "expDivIxVal"),
+            "international_diversity": first_metric(international_diversity, "intlDivIxVal"),
+        }
+        available = sum(value is not None for key, value in snapshot["observed_indices"].items() if key != "base_ym")
+        snapshot["analysis"] = {
+            **snapshot["analysis"],
+            "status": "partial" if available else "visitor_only",
+            "message": f"방문자와 관광수요·다양성 지표 {available}종을 실시간 반영했습니다. 공간분산·계절성·프론티어 모형이 갖춰지면 TCEI와 R-GAP을 산출합니다.",
+            "missing_inputs": ["관광지 집중도", "월별 계절성", "숙박공급·접근성", "75분위 프론티어"],
+        }
+        return snapshot
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error))
     except Exception as error:
