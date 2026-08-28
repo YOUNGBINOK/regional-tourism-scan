@@ -1,11 +1,14 @@
 import asyncio
+from datetime import date, timedelta
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 from .models import TceiInput, BudgetRequest, calculate_tcei, calculate_r_gap, allocate_budget
 from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_regional_visitors,
                            fetch_kto_catalog_service, fetch_kto_configured_service,
-                           normalize_kto_xml, kto_catalog_with_readiness, build_live_visitor_snapshot)
+                           normalize_kto_xml, kto_catalog_with_readiness, build_live_visitor_snapshot,
+                           fetch_attraction_concentration, compute_spatial_dispersion,
+                           fetch_visitor_window, compute_visitor_stability)
 from .settings import cors_origin_list
 
 app = FastAPI(title="R-GAP API", version="0.1.0")
@@ -44,6 +47,11 @@ class KtoConfiguredDatasetRequest(BaseModel):
 class LiveVisitorRequest(BaseModel):
     area_cd: str = Field(pattern=r"^\d{5}$", examples=["47130"])
     base_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260701"])
+
+class VisitorStabilityRequest(BaseModel):
+    area_cds: list[str] = Field(min_length=1, max_length=12)
+    base_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260701"])
+    window_days: int = Field(default=7, ge=3, le=14)
 
 @app.get("/health")
 def health(): return {"status": "ok", "service": "R-GAP API"}
@@ -157,20 +165,27 @@ async def kto_region_snapshot(payload: KtoRegionSnapshotRequest):
     except Exception as error:
         raise HTTPException(status_code=502, detail=f"KTO region-snapshot request failed: {error}")
 
+async def _safe_attraction_concentration(area_cd: str):
+    """Concentration forecast is best-effort: missing/unapproved config must not fail the whole snapshot."""
+    try: return await fetch_attraction_concentration(area_cd)
+    except Exception: return None
+
 @app.post("/v1/analysis/live-visitor")
 async def live_visitor_analysis(payload: LiveVisitorRequest):
     """Live KTO visitor analysis, explicitly separated from incomplete R-GAP inputs."""
     try:
         metric_payload = KtoAreaMetricRequest(area_cd=payload.area_cd, base_ym=payload.base_ymd[:6])
-        raw, stay, spend, visitor_diversity, spend_diversity, international_diversity = await asyncio.gather(
+        raw, stay, spend, visitor_diversity, spend_diversity, international_diversity, concentration_raw = await asyncio.gather(
             fetch_kto_regional_visitors("local", payload.base_ymd, payload.base_ymd, 1, 1000),
             area_metric("demand_intensity", "stay", metric_payload),
             area_metric("demand_intensity", "spend", metric_payload),
             area_metric("tourism_diversity", "visitor", metric_payload),
             area_metric("tourism_diversity", "spend", metric_payload),
             area_metric("tourism_diversity", "international", metric_payload),
+            _safe_attraction_concentration(payload.area_cd),
         )
         snapshot = build_live_visitor_snapshot(raw, payload.area_cd, payload.base_ymd)
+        dispersion = compute_spatial_dispersion(concentration_raw)
 
         def first_metric(response: object, value_key: str) -> float | None:
             if not isinstance(response, dict): return None
@@ -194,20 +209,43 @@ async def live_visitor_analysis(payload: LiveVisitorRequest):
             "visitor_diversity": first_metric(visitor_diversity, "touDivIxVal"),
             "spend_diversity": first_metric(spend_diversity, "expDivIxVal"),
             "international_diversity": first_metric(international_diversity, "intlDivIxVal"),
+            "spatial_dispersion": dispersion["dispersion_index"] if dispersion else None,
+            "spatial_dispersion_detail": dispersion,
         }
-        available = sum(value is not None for key, value in snapshot["observed_indices"].items()
-                        if key not in {"base_ym", "aggregation"})
+        available = sum(1 for key, value in snapshot["observed_indices"].items()
+                        if key not in {"base_ym", "aggregation", "spatial_dispersion_detail"} and value is not None)
+        missing_inputs = ["숙박공급·접근성 (미승인 KTO 상품)", "월별 계절성(연 단위)", "75분위 프론티어"]
+        if dispersion is None:
+            missing_inputs.insert(0, "관광지 집중도")
         snapshot["analysis"] = {
             **snapshot["analysis"],
             "status": "partial" if available else "visitor_only",
-            "message": f"방문자와 관광수요·다양성 지표 {available}종을 실시간 반영했습니다. 공간분산·계절성·프론티어 모형이 갖춰지면 TCEI와 R-GAP을 산출합니다.",
-            "missing_inputs": ["관광지 집중도", "월별 계절성", "숙박공급·접근성", "75분위 프론티어"],
+            "message": f"방문자·관광수요·다양성·공간확산 지표 {available}종을 최신 데이터로 반영했습니다. 계절성(연 단위)·숙박공급·프론티어 모형이 갖춰지면 TCEI와 R-GAP을 산출합니다.",
+            "missing_inputs": missing_inputs,
         }
         return snapshot
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error))
     except Exception as error:
         raise HTTPException(status_code=502, detail=f"KTO live visitor analysis failed: {error}")
+
+@app.post("/v1/analysis/visitor-stability")
+async def visitor_stability(payload: VisitorStabilityRequest):
+    """Day-to-day outside-visitor volatility across a shared window, for every requested area at once.
+
+    One shared fetch covers all areas because the local-visitor feed isn't
+    filterable by municipality server-side (§4.1 계절/시간 안정성 axis).
+    """
+    try:
+        base = date(int(payload.base_ymd[:4]), int(payload.base_ymd[4:6]), int(payload.base_ymd[6:8]))
+        start = base - timedelta(days=payload.window_days - 1)
+        items = await fetch_visitor_window(start.strftime("%Y%m%d"), payload.base_ymd)
+        return {"window_days": payload.window_days, "start_ymd": start.strftime("%Y%m%d"), "end_ymd": payload.base_ymd,
+                "areas": compute_visitor_stability(items, payload.area_cds)}
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+    except Exception as error:
+        raise HTTPException(status_code=502, detail=f"KTO visitor stability request failed: {error}")
 
 @app.post("/v1/metrics/tcei")
 def tcei(payload: TceiInput): return calculate_tcei(payload)

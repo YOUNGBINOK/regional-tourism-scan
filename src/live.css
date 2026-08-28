@@ -2,3 +2,25 @@
 .analysis-state article a{display:inline-block;margin-top:5px;color:#173b2b;font:700 11px 'Noto Sans KR';text-decoration:underline}.readiness{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;max-width:540px;margin-top:24px}.readiness span{display:flex;justify-content:space-between;padding:9px 10px;border:1px solid #466357;color:#b7c9bd;font:10px 'Noto Sans KR'}.readiness b{font-weight:700;color:#c7f6ae}.budget>p em{font-style:normal;color:#bde9a7}.impact>p span{color:#477845}@media(max-width:850px){.readiness{grid-template-columns:1fr}}
 .tier{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:9px;font:9px 'Noto Sans KR';font-style:normal;letter-spacing:0;vertical-align:1px}.tier-measured{background:#e4f0ff;color:#2a5ca8}.tier-derived{background:#eef2ea;color:#5d7a55}.tier-modeled{background:#fdf0e0;color:#a86a2a}.tier-pending{background:#f1f1ee;color:#8a8f87}.peer-note{font:11px 'Noto Sans KR';color:#68756e;margin:0 0 16px}.insight.low-priority{border-top:none;margin-top:14px;color:#8a8f87}
 #peer .sbar,#priority .sbar{grid-template-columns:1fr 75px 60px}#peer .sbar em,#priority .sbar em{white-space:nowrap;text-align:right}
+.priority-chart{background:#fffefa;border:1px solid #d7ddd4;padding:18px 20px 8px;margin-bottom:16px}.priority-chart>small{font:10px 'DM Mono';letter-spacing:.08em;color:#78877f;display:block;margin-bottom:6px}
+#priority .cards>article{min-height:0}
+
+/* Responsive: nav stays reachable instead of disappearing, and layout keeps working down to small phones. */
+@media(max-width:850px){
+  header{flex-wrap:wrap;height:auto;padding:14px 20px;row-gap:10px}
+  nav{display:flex;order:3;width:100%;margin-left:0;gap:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+  nav a{white-space:nowrap;flex:none}
+  header>button{display:none}
+}
+@media(max-width:520px){
+  .hero{padding:44px 18px}
+  .hero h1,.heading h2{font-size:clamp(28px,8vw,40px)}
+  .hero aside strong{font-size:38px}
+  .summary>strong{font-size:40px}
+  .live-controls{flex-wrap:wrap}
+  .live-controls input{width:100%}
+  .allocation{grid-template-columns:1fr;row-gap:6px}
+  .allocation>b{text-align:left}
+  .did{grid-template-columns:1fr}
+  .stat b{font-size:20px}
+}

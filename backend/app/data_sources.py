@@ -147,6 +147,110 @@ def normalize_kto_xml(payload: object) -> object:
             "page_no": value(".//body/pageNo"), "num_of_rows": value(".//body/numOfRows"),
             "total_count": value(".//body/totalCount"), "items": items}
 
+def _json_envelope_items(payload: object) -> list[dict]:
+    """Public Data Portal JSON envelopes keep the nested response.body.items.item
+    shape (unlike XML, which normalize_kto_xml already flattens). Extract a flat
+    list either way so callers don't need to know which transport was used."""
+    if isinstance(payload, dict) and isinstance(payload.get("items"), list):
+        return payload["items"]
+    if not isinstance(payload, dict): return []
+    body = payload.get("response", {}).get("body", {}) if isinstance(payload.get("response"), dict) else {}
+    items = body.get("items") if isinstance(body, dict) else None
+    item = items.get("item") if isinstance(items, dict) else None
+    if isinstance(item, list): return item
+    if isinstance(item, dict): return [item]
+    return []
+
+async def fetch_attraction_concentration(area_cd: str) -> object | None:
+    """30-day-ahead per-attraction concentration forecast (TatsCnctrRateService).
+
+    Returns None instead of raising when the operation name isn't configured
+    for this deployment yet, so callers can degrade to "pending" gracefully.
+    """
+    if not get_settings().kto_attraction_concentration_endpoint:
+        return None
+    raw = await fetch_kto_configured_service("attraction_concentration", {
+        "areaCd": area_cd[:2], "signguCd": area_cd, "numOfRows": "1000", "pageNo": "1", "_type": "json",
+    })
+    return normalize_kto_xml(raw)
+
+def compute_spatial_dispersion(data: object) -> dict[str, object] | None:
+    """Turn per-attraction concentration forecasts into a region-level dispersion index.
+
+    For each forecast date, treat each attraction's cnctrRate as a share of that
+    day's total and compute the Herfindahl index (sum of squared shares): higher
+    means visits cluster on fewer attractions (single-point concentration),
+    lower means visits spread across many. dispersion_index = 100 - avg HHI*100,
+    so a higher value means more even spatial spread, matching the "higher is
+    better" convention used by the other observed indices.
+    """
+    items = _json_envelope_items(data)
+    if not items: return None
+    by_date: dict[str, list[float]] = {}
+    for item in items:
+        ymd = item.get("baseYmd")
+        try: rate = float(item.get("cnctrRate") or 0)
+        except (TypeError, ValueError): continue
+        if ymd: by_date.setdefault(ymd, []).append(rate)
+    hhis = []
+    for rates in by_date.values():
+        total = sum(rates)
+        if total <= 0 or len(rates) < 2: continue
+        hhis.append(sum((rate / total) ** 2 for rate in rates))
+    if not hhis: return None
+    concentration_index = round(100 * sum(hhis) / len(hhis), 1)
+    return {
+        "attractions_tracked": len({item.get("tAtsNm") for item in items if item.get("tAtsNm")}),
+        "days_observed": len(by_date),
+        "concentration_index": concentration_index,
+        "dispersion_index": round(100 - concentration_index, 1),
+    }
+
+async def fetch_visitor_window(start_ymd: str, end_ymd: str) -> list[dict]:
+    """Fetch every daily local-visitor record in [start_ymd, end_ymd], paginating as needed."""
+    page_no, num_rows, items = 1, 1000, []
+    while True:
+        raw = await fetch_kto_regional_visitors("local", start_ymd, end_ymd, page_no, num_rows)
+        data = normalize_kto_xml(raw)
+        if not isinstance(data, dict) or data.get("result_code") != "0000":
+            raise ValueError("KTO visitor window response could not be normalized")
+        page_items = data.get("items", [])
+        items.extend(page_items)
+        total = int(data.get("total_count") or 0)
+        if not page_items or page_no * num_rows >= total: break
+        page_no += 1
+    return items
+
+def compute_visitor_stability(items: list[dict], area_cds: list[str]) -> dict[str, dict[str, object]]:
+    """Day-to-day outside-visitor volatility within the fetched window, per area.
+
+    This is a real, data-derived proxy for §4.1's "계절/시간 안정성" axis, scoped
+    to the fetched day window (not a full annual seasonal cycle — that needs a
+    12-month pipeline that isn't wired up yet). stability_index = 100*(1-CV),
+    clamped to 0..100, so higher means steadier day-to-day demand.
+    """
+    by_area_day: dict[str, dict[str, float]] = {code: {} for code in area_cds}
+    for item in items:
+        code = item.get("signguCode")
+        if code not in by_area_day: continue
+        if not str(item.get("touDivNm", "")).startswith("외지인"): continue
+        ymd = item.get("baseYmd")
+        try: value = float(str(item.get("touNum", "0")).replace(",", ""))
+        except ValueError: continue
+        if ymd: by_area_day[code][ymd] = by_area_day[code].get(ymd, 0.0) + value
+    result: dict[str, dict[str, object]] = {}
+    for code, daily in by_area_day.items():
+        values = list(daily.values())
+        if len(values) < 3:
+            result[code] = {"days_observed": len(values), "stability_index": None}
+            continue
+        mean = sum(values) / len(values)
+        variance = sum((value - mean) ** 2 for value in values) / len(values)
+        cv = (variance ** 0.5) / mean if mean else None
+        stability_index = round(max(0.0, min(100.0, 100 * (1 - cv))), 1) if cv is not None else None
+        result[code] = {"days_observed": len(values), "stability_index": stability_index}
+    return result
+
 def build_live_visitor_snapshot(payload: object, area_cd: str, base_ymd: str) -> dict[str, object]:
     """Turn the KTO GW response into a traceable, non-modelled live snapshot.
 
