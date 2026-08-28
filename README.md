@@ -5,7 +5,7 @@ AGENTS.md의 명세를 기준으로 구성한 공모전 제출용 풀스택 프�
 | Layer | Implementation |
 |---|---|
 | Frontend | React + TypeScript + Vite, React-Leaflet, Recharts |
-| Backend | FastAPI (TCEI / R-GAP / 예산 포트폴리오 API) |
+| Backend | FastAPI (KTO 수집·정규화 / 지표 진단 / 예산 시나리오 API) |
 | Database | PostgreSQL 16 + PostGIS 3.4 |
 | Analysis | 동월·유사 관광구조 표준화, 소비 잔차, 75분위 프론티어를 위한 데이터 모델 |
 
@@ -58,7 +58,7 @@ POST /v1/data-sources/kto/tourism-diversity/international
 {"area_cd":"47130","base_ym":"202607","start_ymd":"20260701","end_ymd":"20260731"}
 ```
 
-이 요청은 지역별 방문자수, 체류·소비 강도, 관광 다양성 3개 서비스의 6개 지표를 병렬 조회합니다. 응답은 적재 전 정규화 JSON이며, 이후 TCEI·R-GAP 계산 파이프라인의 입력값으로 사용할 수 있습니다.
+이 요청은 지역별 방문자수, 체류·소비 강도, 관광 다양성 지표를 병렬 조회합니다. 응답은 적재 전 정규화 JSON이며, 이후 완전한 TCEI·R-GAP 계산 파이프라인의 입력값으로 사용할 수 있습니다.
 
 `TatsCnctrRateService`(관광지 집중률)와 `AreaTarResDemService`(관광 자원 수요)는 활용신청 승인 후에도 상세기능 화면에 표시되는 **오퍼레이션명**이 필요합니다. 키는 기존 `KTO_TOURISM_DATALAB_API_KEY`를 그대로 쓰며, 해당 이름만 `.env`의 `KTO_ATTRACTION_CONCENTRATION_ENDPOINT`, `KTO_TOURISM_RESOURCE_DEMAND_ENDPOINT`에 넣으면 `POST /v1/data-sources/kto/configured/{dataset}`으로 호출할 수 있습니다. 전체 URL이나 키를 프론트엔드에 넣지 마세요.
 
@@ -68,7 +68,7 @@ POST /v1/data-sources/kto/tourism-diversity/international
 
 ## 정책 브리프 PDF
 
-대시보드 오른쪽 위의 **정책 브리프** 버튼을 누르면 선택한 지자체, R-GAP 진단, 전환력 비교, 누수 기반 예산 포트폴리오를 A4 보고서 형식으로 구성한 인쇄 화면이 열립니다. 브라우저 인쇄 창에서 **PDF로 저장**을 선택하면 됩니다. 보고서에는 현재 화면의 시연용 데이터 여부와 데이터 해석 유의사항을 함께 표기합니다.
+대시보드 오른쪽 위의 **정책 브리프** 버튼을 누르면 선택한 지자체, 표본 비교 진단, 지표별 취약도, 예산 초기 시나리오를 A4 보고서 형식으로 구성한 인쇄 화면이 열립니다. 브라우저 인쇄 창에서 **PDF로 저장**을 선택하면 됩니다. 보고서에는 원천자료·파생지표·규칙기반 진단의 구분과 데이터 해석 유의사항을 함께 표기합니다.
 
 ## Production deployment
 
@@ -79,11 +79,11 @@ POST /v1/data-sources/kto/tourism-diversity/international
 
 ## Included specification coverage
 
-- Leaflet 기반 전국 R-GAP 지도와 지자체 선택, 유형 배지
-- Recharts 기반 TCEI 프론티어 레이더·누수 기여도 파이 차트
+- Leaflet 기반 지자체 선택 지도와 표본 비교 진단 유형 배지
+- Recharts 기반 표본 중앙값 대비 표준화 취약도 차트
 - 숙박 공급 비교 패널과 예산 자동 배분 및 실무자 조정 슬라이더
 - T-Shift 정책 실험의 DiD 사후검증 데이터 모델
 - PostGIS 지자체 경계, 월별 관광지표, R-GAP 결과, 정책실험 스키마
 - 원시 방문객당 소비액을 쓰지 않는 소비 잔차 필드 및 데이터 해석 경고 UI
 
-프론트의 현재 값은 시연용 시드입니다. 한국관광 데이터랩·지방재정365 적재 파이프라인이 연결되면 FastAPI가 TCEI/R-GAP을 재산출하고 `rgap_results`에 적재하도록 확장합니다.
+현재 화면은 한국관광공사 API에서 조회한 이동통신 기반 방문자 추정치와 체류·숙박·소비·다양성·관광지 혼잡 예측 지수를 사용합니다. 선택한 4개 도시 중 나머지 3개 도시의 중앙값을 비교 기준으로 사용하며, 이는 전국 대표값이나 구조적으로 유사한 지역 군집을 뜻하지 않습니다. 관광지 혼잡 예측은 관광지별 최혼잡 시점을 100으로 둔 값이라 공간분산 지수로 대체하지 않습니다. 7일 방문자 변동성 역시 연간 계절성의 대체값이 아닙니다. 관광지별 실제 방문 점유율, 12개월 계절성, 소비 잔차의 동월·유사구조 표준화, 75분위 프론티어가 갖춰질 때만 AGENTS.md 규격의 TCEI와 R-GAP을 산출합니다.

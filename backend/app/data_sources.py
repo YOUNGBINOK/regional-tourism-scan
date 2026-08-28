@@ -174,36 +174,30 @@ async def fetch_attraction_concentration(area_cd: str) -> object | None:
     })
     return normalize_kto_xml(raw)
 
-def compute_spatial_dispersion(data: object) -> dict[str, object] | None:
-    """Turn per-attraction concentration forecasts into a region-level dispersion index.
+def summarize_attraction_concentration(data: object) -> dict[str, object] | None:
+    """Summarize KTO's per-attraction 30-day crowding forecasts.
 
-    For each forecast date, treat each attraction's cnctrRate as a share of that
-    day's total and compute the Herfindahl index (sum of squared shares): higher
-    means visits cluster on fewer attractions (single-point concentration),
-    lower means visits spread across many. dispersion_index = 100 - avg HHI*100,
-    so a higher value means more even spatial spread, matching the "higher is
-    better" convention used by the other observed indices.
+    ``cnctrRate`` is normalized within each attraction (its busiest time=100),
+    not a visit share across attractions. It therefore cannot support a spatial
+    HHI or a regional dispersion score. We expose only the mean forecast level
+    and coverage metadata, keeping the spatial-dispersion axis pending.
     """
     items = _json_envelope_items(data)
     if not items: return None
-    by_date: dict[str, list[float]] = {}
+    rates: list[float] = []
+    dates: set[str] = set()
     for item in items:
         ymd = item.get("baseYmd")
         try: rate = float(item.get("cnctrRate") or 0)
         except (TypeError, ValueError): continue
-        if ymd: by_date.setdefault(ymd, []).append(rate)
-    hhis = []
-    for rates in by_date.values():
-        total = sum(rates)
-        if total <= 0 or len(rates) < 2: continue
-        hhis.append(sum((rate / total) ** 2 for rate in rates))
-    if not hhis: return None
-    concentration_index = round(100 * sum(hhis) / len(hhis), 1)
+        rates.append(rate)
+        if ymd: dates.add(ymd)
+    if not rates: return None
     return {
         "attractions_tracked": len({item.get("tAtsNm") for item in items if item.get("tAtsNm")}),
-        "days_observed": len(by_date),
-        "concentration_index": concentration_index,
-        "dispersion_index": round(100 - concentration_index, 1),
+        "forecast_days": len(dates),
+        "mean_crowding_rate": round(sum(rates) / len(rates), 1),
+        "interpretation": "관광지별 자체 최혼잡 시점=100인 향후 30일 상대 혼잡도 평균",
     }
 
 async def fetch_visitor_window(start_ymd: str, end_ymd: str) -> list[dict]:
@@ -224,8 +218,8 @@ async def fetch_visitor_window(start_ymd: str, end_ymd: str) -> list[dict]:
 def compute_visitor_stability(items: list[dict], area_cds: list[str]) -> dict[str, dict[str, object]]:
     """Day-to-day outside-visitor volatility within the fetched window, per area.
 
-    This is a real, data-derived proxy for §4.1's "계절/시간 안정성" axis, scoped
-    to the fetched day window (not a full annual seasonal cycle — that needs a
+    This is a short-window demand-stability proxy, scoped to the fetched day
+    window (not §4.1's full annual seasonal cycle — that needs a
     12-month pipeline that isn't wired up yet). stability_index = 100*(1-CV),
     clamped to 0..100, so higher means steadier day-to-day demand.
     """
@@ -302,7 +296,7 @@ def build_live_visitor_snapshot(payload: object, area_cd: str, base_ymd: str) ->
         "analysis": {
             "tcei": None, "r_gap": None,
             "status": "partial",
-            "message": "실시간 방문자 지표는 반영됐습니다. 체류·소비·공간·시간 지표가 적재되면 TCEI와 R-GAP을 산출합니다.",
+            "message": "선택일 방문자 추정치는 반영됐습니다. 체류·소비·공간분산·연간 계절성 지표가 적재되면 TCEI와 R-GAP을 산출합니다.",
             "missing_inputs": ["체류·숙박", "관광소비", "공간분산", "월별 계절성"],
         },
     }

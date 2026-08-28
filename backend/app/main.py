@@ -7,7 +7,7 @@ from .models import TceiInput, BudgetRequest, calculate_tcei, calculate_r_gap, a
 from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_regional_visitors,
                            fetch_kto_catalog_service, fetch_kto_configured_service,
                            normalize_kto_xml, kto_catalog_with_readiness, build_live_visitor_snapshot,
-                           fetch_attraction_concentration, compute_spatial_dispersion,
+                           fetch_attraction_concentration, summarize_attraction_concentration,
                            fetch_visitor_window, compute_visitor_stability)
 from .settings import cors_origin_list
 
@@ -191,7 +191,7 @@ async def live_visitor_analysis(payload: LiveVisitorRequest):
             _safe_attraction_concentration(payload.area_cd),
         )
         snapshot = build_live_visitor_snapshot(raw, payload.area_cd, payload.base_ymd)
-        dispersion = compute_spatial_dispersion(concentration_raw)
+        concentration = summarize_attraction_concentration(concentration_raw)
 
         def first_metric(response: object, value_key: str) -> float | None:
             if not isinstance(response, dict): return None
@@ -219,18 +219,17 @@ async def live_visitor_analysis(payload: LiveVisitorRequest):
             "visitor_diversity": first_metric(visitor_diversity, "touDivIxVal"),
             "spend_diversity": first_metric(spend_diversity, "expDivIxVal"),
             "international_diversity": first_metric(international_diversity, "intlDivIxVal"),
-            "spatial_dispersion": dispersion["dispersion_index"] if dispersion else None,
-            "spatial_dispersion_detail": dispersion,
+            "attraction_crowding_forecast": concentration["mean_crowding_rate"] if concentration else None,
+            "spatial_dispersion": None,
+            "spatial_dispersion_detail": None,
         }
         available = sum(1 for key, value in snapshot["observed_indices"].items()
                         if key not in {"base_ym", "aggregation", "spatial_dispersion_detail"} and value is not None)
-        missing_inputs = ["숙박시설 공급량·객실수 (별도 데이터 필요)", "월별 계절성(연 단위)", "75분위 프론티어"]
-        if dispersion is None:
-            missing_inputs.insert(0, "관광지 집중도")
+        missing_inputs = ["관광지별 방문 점유율(공간분산)", "숙박시설 공급량·객실수", "월별 계절성(연 단위)", "75분위 프론티어"]
         snapshot["analysis"] = {
             **snapshot["analysis"],
             "status": "partial" if available else "visitor_only",
-            "message": f"방문자·체류·숙박·소비·다양성·공간확산 지표 {available}종을 최신 데이터로 반영했습니다. 계절성(연 단위)·숙박시설 공급·프론티어 모형이 갖춰지면 TCEI와 R-GAP을 산출합니다.",
+            "message": f"방문자·체류·숙박·소비·다양성·관광지 혼잡예측 지표 {available}종을 반영했습니다. 공간분산·연간 계절성·숙박시설 공급·프론티어 모형이 갖춰지면 TCEI와 R-GAP을 산출합니다.",
             "missing_inputs": missing_inputs,
         }
         return snapshot
@@ -244,7 +243,8 @@ async def visitor_stability(payload: VisitorStabilityRequest):
     """Day-to-day outside-visitor volatility across a shared window, for every requested area at once.
 
     One shared fetch covers all areas because the local-visitor feed isn't
-    filterable by municipality server-side (§4.1 계절/시간 안정성 axis).
+    filterable by municipality server-side. This is a short-term stability
+    proxy, not the annual seasonality axis required by AGENTS.md §4.1.
     """
     try:
         base = date(int(payload.base_ymd[:4]), int(payload.base_ymd[4:6]), int(payload.base_ymd[6:8]))

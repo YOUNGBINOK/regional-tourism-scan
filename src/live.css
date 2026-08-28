@@ -4,6 +4,7 @@
 #peer .sbar,#priority .sbar{grid-template-columns:1fr 75px 60px}#peer .sbar em,#priority .sbar em{white-space:nowrap;text-align:right}
 .priority-chart{background:#fffefa;border:1px solid #d7ddd4;padding:18px 20px 8px;margin-bottom:16px}.priority-chart>small{font:10px 'DM Mono';letter-spacing:.08em;color:#78877f;display:block;margin-bottom:6px}
 #priority .cards>article{min-height:0}
+.term-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.term-grid article{background:#fffefa;border:1px solid #d7ddd4;padding:20px}.term-grid h3{font:800 15px 'Noto Sans KR';letter-spacing:-.04em;margin:0 0 9px}.term-grid p{font:11px/1.75 'Noto Sans KR';color:#68756e;margin:0}@media(max-width:850px){.term-grid{grid-template-columns:1fr}}
 
 /* Responsive: nav stays reachable instead of disappearing, and layout keeps working down to small phones. */
 @media(max-width:850px){
