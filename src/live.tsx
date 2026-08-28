@@ -13,7 +13,7 @@ type LiveSnapshot = {
   area: { area_cd: string; area_name: string; resident_visitors: number; outside_visitors: number; foreign_visitors: number };
   national_comparison: { municipality_count: number; outside_visitor_percentile: number };
   visitor_mix: { outside_share: number; foreign_share: number };
-  observed_indices: { base_ym: string; stay_intensity: number | null; spend_intensity: number | null; visitor_diversity: number | null; spend_diversity: number | null; international_diversity: number | null };
+  observed_indices: { base_ym: string; aggregation: string; stay_intensity: number | null; spend_intensity: number | null; visitor_diversity: number | null; spend_diversity: number | null; international_diversity: number | null };
   analysis: { status: 'partial'; message: string; missing_inputs: string[] };
 };
 
@@ -60,8 +60,8 @@ function App() {
   const select = (next: string) => { setRegionId(next); };
   const stats = snapshot ? [
     ['외지인 방문자', formatNumber.format(snapshot.area.outside_visitors), 'KTO 통신 기반 일별 집계'],
-    ['관광 체류 강도', snapshot.observed_indices.stay_intensity?.toFixed(2) || '--', `${snapshot.observed_indices.base_ym} KTO 관광수요지수`],
-    ['관광 소비 강도', snapshot.observed_indices.spend_intensity?.toFixed(2) || '--', `${snapshot.observed_indices.base_ym} KTO 관광수요지수`],
+    ['관광 체류 강도', snapshot.observed_indices.stay_intensity?.toFixed(2) || '--', `${snapshot.observed_indices.base_ym} · ${snapshot.observed_indices.aggregation}`],
+    ['관광 소비 강도', snapshot.observed_indices.spend_intensity?.toFixed(2) || '--', `${snapshot.observed_indices.base_ym} · ${snapshot.observed_indices.aggregation}`],
     ['관광객 다양성', snapshot.observed_indices.visitor_diversity?.toFixed(2) || '--', '연령별 방문객 구성 지표'],
     ['관광소비 다양성', snapshot.observed_indices.spend_diversity?.toFixed(2) || '--', '연령별 관광소비 구성 지표'],
     ['국제적 다양성', snapshot.observed_indices.international_diversity?.toFixed(2) || '--', '외국인 소비·국적 다양성 지표'],

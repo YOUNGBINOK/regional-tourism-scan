@@ -87,11 +87,17 @@ async def area_metric(dataset: str, metric: str, payload: KtoAreaMetricRequest):
         ("tourism_diversity", "spend"): {"expDivIxCd": "32"},
         ("tourism_diversity", "international"): {"intlDivIxCd": "33"},
     }
+    region_params = {"areaCd": payload.area_cd[:2], "baseYm": payload.base_ym}
+    # The visitor feed exposes Jeonju as 52110, while the analytical feeds
+    # expose its two districts (52111/52113). Fetch the province slice so the
+    # live analysis can aggregate only those two district records.
+    if payload.area_cd != "52110":
+        region_params["signguCd"] = payload.area_cd
     raw = await fetch_kto_catalog_service(dataset, metric, {
         # KTO requires the 2-digit province code and 5-digit municipality
         # code in separate fields. Passing the municipality as areaCd returns
         # a successful but empty response.
-        "areaCd": payload.area_cd[:2], "signguCd": payload.area_cd, "baseYm": payload.base_ym,
+        **region_params,
         "pageNo": str(payload.page_no), "numOfRows": str(payload.num_rows), "_type": "json",
         **index_filters.get((dataset, metric), {}),
     })
@@ -171,13 +177,18 @@ async def live_visitor_analysis(payload: LiveVisitorRequest):
             body = response.get("response", {}).get("body", {})
             items = body.get("items") if isinstance(body, dict) else None
             item = items.get("item") if isinstance(items, dict) else None
-            if isinstance(item, list): item = item[0] if item else None
-            if not isinstance(item, dict) or item.get(value_key) is None: return None
-            try: return float(item[value_key])
-            except (TypeError, ValueError): return None
+            records = item if isinstance(item, list) else ([item] if isinstance(item, dict) else [])
+            target_codes = {"52111", "52113"} if payload.area_cd == "52110" else {payload.area_cd}
+            values = []
+            for record in records:
+                if record.get("signguCd") not in target_codes or record.get(value_key) is None: continue
+                try: values.append(float(record[value_key]))
+                except (TypeError, ValueError): continue
+            return round(sum(values) / len(values), 2) if values else None
 
         snapshot["observed_indices"] = {
             "base_ym": payload.base_ymd[:6],
+            "aggregation": "전주시 2개 구 단순평균" if payload.area_cd == "52110" else "해당 시군구",
             "stay_intensity": first_metric(stay, "tarSjrnDsIxVal"),
             "spend_intensity": first_metric(spend, "tarExpDsIxVal"),
             "visitor_diversity": first_metric(visitor_diversity, "touDivIxVal"),
