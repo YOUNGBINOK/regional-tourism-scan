@@ -27,6 +27,15 @@ type LiveSnapshot = {
   analysis: { status: 'partial'; message: string; missing_inputs: string[] };
 };
 type StabilitySnapshot = { window_days: number; areas: Record<string, { days_observed: number; stability_index: number | null }> };
+type MoisBusinessSnapshot = {
+  source: string;
+  raw_record_count: number;
+  operating_business_count: number;
+  operating_tourism_accommodation_business_count: number;
+  metric_type: string;
+  not_a_room_count: boolean;
+  items: Array<Record<string, string | null>>;
+};
 
 // 4단계 데이터 신뢰도 라벨 (AGENTS.md §3.3)
 type DataTier = 'measured' | 'derived' | 'modeled' | 'pending';
@@ -70,6 +79,12 @@ function App() {
   const [stability, setStability] = useState<StabilitySnapshot | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [businessOperation, setBusinessOperation] = useState<'info' | 'history'>('info');
+  const [businessAuthorityCode, setBusinessAuthorityCode] = useState('');
+  const [businessBaseDate, setBusinessBaseDate] = useState(date.replace(/-/g, ''));
+  const [businessData, setBusinessData] = useState<MoisBusinessSnapshot | null>(null);
+  const [businessLoading, setBusinessLoading] = useState(false);
+  const [businessError, setBusinessError] = useState('');
   const region = useMemo(() => regions.find((item) => item.id === regionId)!, [regionId]);
 
   const loadAll = async () => {
@@ -106,6 +121,26 @@ function App() {
   useEffect(() => { void loadAll(); }, [date]);
   const select = (next: string) => { setRegionId(next); };
   const snapshot = snapshots[regionId] || null;
+
+  const loadBusinessData = async () => {
+    if (!businessAuthorityCode.trim()) {
+      setBusinessError('개방자치단체코드(OPN_ATMY_GRP_CD)를 입력하세요. KTO 시군구 코드와는 별도 코드입니다.');
+      return;
+    }
+    setBusinessLoading(true);
+    setBusinessError('');
+    setBusinessData(null);
+    try {
+      const params = new URLSearchParams({ open_authority_code: businessAuthorityCode.trim(), page_no: '1', num_rows: '100' });
+      if (businessOperation === 'history') params.set('base_date', businessBaseDate.replace(/-/g, ''));
+      const response = await fetch(`${apiBase}/v1/data-sources/mois/tourism-business/${businessOperation}?${params}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || '관광사업자 자료 요청에 실패했습니다.');
+      setBusinessData(data as MoisBusinessSnapshot);
+    } catch (cause) {
+      setBusinessError(cause instanceof Error ? cause.message : '관광사업자 자료 요청에 실패했습니다.');
+    } finally { setBusinessLoading(false); }
+  };
 
   // 현재는 표본 4개 관광거점 비교다. 이상치 영향을 줄이기 위해 평균 대신 중앙값을 쓴다.
   // 전국 단위 유사 관광구조 군집은 §4.1(AGENTS.md) 고도화 단계에서 확장한다.
@@ -204,7 +239,7 @@ function App() {
   ];
 
   return <>
-    <header><div className="logo"><b>R</b>Regional Tourism Scan<i /></div><nav><a href="#map">전국 관광수요</a><a href="#diagnosis">관광현황 진단</a><a href="#peer">지역 비교</a><a href="#priority">정책 우선순위</a><a href="#methodology">용어·알고리즘</a></nav><button type="button">정책 브리프 PDF ↗</button></header>
+    <header><div className="logo"><b>R</b>Regional Tourism Scan<i /></div><nav><a href="#map">전국 관광수요</a><a href="#diagnosis">관광현황 진단</a><a href="#business-data">관광사업자 원자료</a><a href="#peer">지역 비교</a><a href="#priority">정책 우선순위</a><a href="#methodology">용어·알고리즘</a></nav><button type="button">정책 브리프 PDF ↗</button></header>
     <main data-live-analysis="true">
       <section className="hero live-hero"><small>● DATA LAB CONNECTION · KTO TOURISM DATA LAB</small><div><article><h1>지금은 <em>Data Lab API 자료</em>로<br />확인합니다.</h1><p>선택한 기준일과 지자체의 한국관광공사 통신 기반 방문자 추정치와 관광지수를 서버에서 조회합니다. 표본 비교를 통해 &ldquo;무엇이 상대적으로 부족한가&rdquo;를 진단합니다.</p><a href="#map">기준일 데이터 보기 ↓</a></article><aside><span>DATA STATUS <b>{loading ? 'LOADING' : snapshot ? 'CONNECTED' : 'CONNECTION REQUIRED'}</b></span><strong>{snapshot ? 'OK' : '--'}</strong><div className="bars">{[28, 42, 36, 58, 49, 68, 57, 79].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}</div><p><b>{snapshot ? snapshot.source : 'KTO API 연결 확인 필요'}</b><span>{snapshot?.base_ymd || date.replace(/-/g, '.')}</span></p></aside></div></section>
       <section id="map" className="section"><div className="heading"><div><small>01 / REGION SELECT</small><h2>지역을 선택하면,<br /><em>진단이 시작됩니다</em></h2></div><div className="live-controls"><label>기준일<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><button type="button" onClick={() => void loadAll()} disabled={loading}>{loading ? '조회 중' : '기준일 데이터 조회'}</button></div></div>
@@ -214,7 +249,12 @@ function App() {
       <section id="diagnosis" className="section live-section"><div className="heading"><div><small>02 / OBSERVED METRICS</small><h2>{region.name}의<br /><em>관측자료 기반 진단</em></h2></div><label>진단 대상<select value={regionId} onChange={(event) => select(event.target.value)}>{regions.map((item) => <option key={item.id} value={item.id}>{item.province} {item.name}</option>)}</select></label></div>
         <div className="live-stats">{stats.map(([label, value, caption, tier]) => <article key={label as string}><small>{label} <Tier tier={tier as DataTier} /></small><strong>{value}</strong><p>{caption}</p></article>)}</div>
       </section>
-      <section id="peer" className="section live-section"><div className="heading"><div><small>03 / SAMPLE BENCHMARK</small><h2>현재는 전국 모형 전,<br /><em>표본 중앙값과 비교합니다</em></h2></div></div>
+      <section id="business-data" className="section live-section business-data"><div className="heading"><div><small>03 / BUSINESS REGISTER SOURCE</small><h2>관광사업자 원자료로<br /><em>숙박 공급을 확인합니다</em></h2></div><p>행정안전부 문화·관광사업자 조회서비스 원자료입니다. 업소 수와 객실 수는 서로 다른 값입니다.</p></div>
+        <div className="business-query"><div className="business-fields"><label>조회 기준<select value={businessOperation} onChange={(event) => setBusinessOperation(event.target.value as 'info' | 'history')}><option value="info">현재 정보 (/info)</option><option value="history">기준일 이력 (/history)</option></select></label><label>개방자치단체코드<input value={businessAuthorityCode} onChange={(event) => setBusinessAuthorityCode(event.target.value)} placeholder="OPN_ATMY_GRP_CD" inputMode="numeric" /></label>{businessOperation === 'history' && <label>기준일<input type="date" value={businessBaseDate.slice(0, 4) + '-' + businessBaseDate.slice(4, 6) + '-' + businessBaseDate.slice(6, 8)} onChange={(event) => setBusinessBaseDate(event.target.value.replace(/-/g, ''))} /></label>}<button type="button" onClick={() => void loadBusinessData()} disabled={businessLoading}>{businessLoading ? '조회 중' : '원자료 조회'}</button></div><p><b>필수 코드 안내</b> 제공기관의 `OPN_ATMY_GRP_CD`를 입력해야 합니다. KTO의 시군구 코드(예: 47130)와 자동 호환되지 않으므로, 코드표가 확보되기 전에는 임의로 대체하지 않습니다.</p></div>
+        {businessError && <p className="business-error">{businessError}</p>}
+        {businessData && <div className="business-results"><div className="business-summary"><article><small>원본 레코드 <Tier tier="measured" /></small><strong>{formatNumber.format(businessData.raw_record_count)}</strong><p>최대 100건 1페이지 조회 결과</p></article><article><small>영업 중 사업체 <Tier tier="derived" /></small><strong>{formatNumber.format(businessData.operating_business_count)}</strong><p>`SALS_STTS_NM` 텍스트 기준</p></article><article><small>영업 중 관광숙박업소 <Tier tier="derived" /></small><strong>{formatNumber.format(businessData.operating_tourism_accommodation_business_count)}</strong><p>{businessData.metric_type}</p></article></div><p className="business-caution">※ 이것은 <b>관광숙박업소 수</b>이며 객실 수가 아닙니다. 전국 비교에는 모든 페이지 적재와 개방자치단체코드-시군구 매핑 검증이 선행되어야 합니다.</p><div className="business-table-wrap"><table><thead><tr><th>사업장명</th><th>관광사업 업종</th><th>영업상태</th><th>주소</th><th>개방자치단체코드</th><th>갱신시점</th></tr></thead><tbody>{businessData.items.map((item, index) => <tr key={`${item.MNG_NO || 'row'}-${index}`}><td>{item.BPLC_NM || '-'}</td><td>{item.CULTR_SPTS_TPBIZ_NM || '-'}</td><td>{item.SALS_STTS_NM || '-'}</td><td>{item.ROAD_NM_ADDR || item.LOTNO_ADDR || '-'}</td><td>{item.OPN_ATMY_GRP_CD || '-'}</td><td>{item.DAT_UPDT_PNT || item.LAST_MDFCN_PNT || '-'}</td></tr>)}</tbody></table></div></div>}
+      </section>
+      <section id="peer" className="section live-section"><div className="heading"><div><small>04 / SAMPLE BENCHMARK</small><h2>현재는 전국 모형 전,<br /><em>표본 중앙값과 비교합니다</em></h2></div></div>
         <p className="peer-note">비교지역: {regions.filter((item) => item.id !== regionId).map((item) => item.name).join(' · ')} · 선택지역을 제외한 3개 표본 중앙값 기준</p>
         <div className="cards"><article>{axes.map((axis) => <div className="sbar" key={axis.key}><span>{axis.label} <Tier tier={axis.tier} /></span><i><b style={{ width: axis.diff == null ? '0%' : `${Math.min(100, 20 * Math.abs(axis.diff) / axis.threshold)}%`, background: axis.diff == null ? '#d7ddd4' : axis.diff < 0 ? '#d45f43' : '#8fbc7e' }} /></i><em>{axis.diff == null ? '데이터 없음' : formatSigned(axis.diff, axis.unit)}</em></div>)}<p className="insight">{diagnosisText}</p></article></div>
       </section>
