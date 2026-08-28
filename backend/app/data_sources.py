@@ -50,7 +50,7 @@ def provider_statuses() -> list[ProviderStatus]:
         ProviderStatus("public_data_portal", bool(s.public_data_portal_api_key or s.kto_tourism_datalab_api_key), bool(s.public_data_portal_base_url)),
         ProviderStatus("local_finance365", bool(s.local_finance365_api_key), bool(s.local_finance365_base_url)),
         ProviderStatus("kosis", bool(s.kosis_api_key), bool(s.kosis_base_url)),
-        ProviderStatus("mois_tourism_business", bool(s.kto_tourism_datalab_api_key), bool(s.mois_tourism_business_base_url)),
+        ProviderStatus("mois_tourism_business", bool(s.public_data_portal_api_key or s.kto_tourism_datalab_api_key), bool(s.mois_tourism_business_base_url)),
     ]
 
 def provider_headers(provider: str) -> dict[str, str]:
@@ -119,25 +119,76 @@ async def fetch_kosis_statistics(query: str) -> object:
             raise RuntimeError(f"KOSIS returned HTTP {response.status_code}")
         return response.json()
 
-async def fetch_mois_tourism_business() -> object:
-    """Fetch approved MOIS tourism-business records once its detail URL is configured."""
+def _mois_business_url(operation: str) -> str:
+    """Build one of the two documented MOIS tourism-business operation URLs."""
     s = get_settings()
-    if not s.kto_tourism_datalab_api_key:
-        raise ValueError("Data.go.kr API key is not configured")
+    if operation not in {"info", "history"}:
+        raise ValueError("MOIS tourism-business operation must be info or history")
     if not s.mois_tourism_business_base_url:
-        raise ValueError("MOIS tourism-business endpoint is not configured")
-    url = urlsplit(s.mois_tourism_business_base_url)
-    base_url = f"{url.scheme}://{url.netloc}{url.path}"
-    params = dict(parse_qsl(url.query, keep_blank_values=True))
-    params.update(_configured_query(s.mois_tourism_business_query, "serviceKey", s.kto_tourism_datalab_api_key))
-    params.setdefault("serviceKey", unquote(s.kto_tourism_datalab_api_key))
+        raise ValueError("MOIS tourism-business API base URL is not configured")
+    parsed = urlsplit(s.mois_tourism_business_base_url)
+    if parsed.scheme != "https" or not parsed.netloc:
+        raise ValueError("MOIS tourism-business base URL must be an HTTPS URL")
+    return f"{parsed.scheme}://{parsed.netloc}{parsed.path.rstrip('/')}/{operation}"
+
+
+async def fetch_mois_tourism_business(operation: str, open_authority_code: str,
+                                      base_date: str | None = None,
+                                      page_no: int = 1, num_rows: int = 100) -> object:
+    """Fetch approved 문화·관광사업자 records using its documented operations.
+
+    ``/info`` returns the provider's current (two-days-lagged) status;
+    ``/history`` requires an eight-digit BASE_DATE and returns a historic
+    snapshot. ``OPN_ATMY_GRP_CD`` is a provider opening-authority code, not a
+    KTO municipality code, so callers must pass the documented code explicitly.
+    """
+    s = get_settings()
+    api_key = s.public_data_portal_api_key or s.kto_tourism_datalab_api_key
+    if not api_key:
+        raise ValueError("Data.go.kr API key is not configured")
+    if not open_authority_code.strip():
+        raise ValueError("MOIS open_authority_code (OPN_ATMY_GRP_CD) is required")
+    if operation == "history" and (not base_date or not base_date.isdigit() or len(base_date) != 8):
+        raise ValueError("MOIS history requires base_date in YYYYMMDD format")
+    params = _configured_query(s.mois_tourism_business_query, "serviceKey", api_key)
+    params.update({
+        "serviceKey": unquote(api_key), "pageNo": str(page_no),
+        "numOfRows": str(num_rows), "returnType": "JSON",
+        "cond[OPN_ATMY_GRP_CD::EQ]": open_authority_code.strip(),
+    })
+    if operation == "history":
+        params["cond[BASE_DATE::EQ]"] = base_date
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.get(base_url, params=params, headers={"Accept": "application/json"})
+        response = await client.get(_mois_business_url(operation), params=params, headers={"Accept": "application/json"})
         if response.is_error:
             raise RuntimeError(f"MOIS tourism-business service returned HTTP {response.status_code}")
         if "json" in response.headers.get("content-type", "").lower():
             return response.json()
         return {"format": "xml", "data": response.text}
+
+
+def summarize_mois_tourism_business(payload: object) -> dict[str, object]:
+    """Preserve raw MOIS records while making the lodging-supply proxy explicit.
+
+    The service is a business-register source, not a room inventory. We count
+    only rows explicitly labelled as operating and tourism-accommodation; no
+    unknown status code is silently treated as open.
+    """
+    items = _json_envelope_items(normalize_kto_xml(payload))
+    inactive_markers = ("폐업", "휴업", "정지", "취소")
+    active_rows = [item for item in items if "영업" in str(item.get("SALS_STTS_NM", ""))
+                   and not any(marker in str(item.get("SALS_STTS_NM", ""))
+                               for marker in inactive_markers)]
+    lodging_rows = [item for item in active_rows if "관광숙박" in str(item.get("CULTR_SPTS_TPBIZ_NM", ""))]
+    return {
+        "source": "행정안전부_문화_관광사업자 조회서비스",
+        "raw_record_count": len(items),
+        "operating_business_count": len(active_rows),
+        "operating_tourism_accommodation_business_count": len(lodging_rows),
+        "metric_type": "원자료 집계: 영업 중 관광숙박업소 수",
+        "not_a_room_count": True,
+        "items": items,
+    }
 
 async def fetch_kto_regional_visitors(scope: str, start_ymd: str, end_ymd: str,
                                       page_no: int = 1, num_rows: int = 1000) -> object:

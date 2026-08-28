@@ -27,10 +27,11 @@ class Settings(BaseSettings):
     # Generated KOSIS query strings exclude apiKey; the backend injects it.
     kosis_population_query: str = Field(default="")
     kosis_area_query: str = Field(default="")
-    # The approved MOIS service publishes its concrete endpoint in the
-    # application detail page. Keep it configurable and server-only.
+    # MOIS 문화·관광사업자 조회서비스 has two documented operations: /info
+    # (current records) and /history (a fixed base-date snapshot). The Swagger
+    # host is supplied separately because approval pages show only the paths.
     mois_tourism_business_base_url: str = Field(default="")
-    mois_tourism_business_query: str = Field(default="")
+    mois_tourism_business_query: str = Field(default="")  # optional shared filters, no serviceKey
 
 @lru_cache
 def get_settings() -> Settings: return Settings()
