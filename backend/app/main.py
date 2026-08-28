@@ -195,7 +195,8 @@ async def live_visitor_analysis(payload: LiveVisitorRequest):
             "spend_diversity": first_metric(spend_diversity, "expDivIxVal"),
             "international_diversity": first_metric(international_diversity, "intlDivIxVal"),
         }
-        available = sum(value is not None for key, value in snapshot["observed_indices"].items() if key != "base_ym")
+        available = sum(value is not None for key, value in snapshot["observed_indices"].items()
+                        if key not in {"base_ym", "aggregation"})
         snapshot["analysis"] = {
             **snapshot["analysis"],
             "status": "partial" if available else "visitor_only",
