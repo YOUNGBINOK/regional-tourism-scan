@@ -92,7 +92,11 @@ function App() {
     setLoading(true);
     setError('');
     try {
-      const entries = await Promise.all(regions.map(async (item) => {
+      // 지역마다 KTO 하위 지표를 6~7건씩 동시 호출하므로, 4개 지역을 완전히 동시에
+      // 쏘면 순간 요청 수가 데이터랩 초당 호출 한도(HTTP 429)를 넘기기 쉽다.
+      // 시작 시점을 살짝 벌려 순간 부하를 낮춘다(백엔드에도 429 재시도가 있다).
+      const entries = await Promise.all(regions.map(async (item, index) => {
+        if (index > 0) await new Promise((resolve) => setTimeout(resolve, index * 250));
         const response = await fetch(`${apiBase}/v1/analysis/live-visitor`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ area_cd: item.id, base_ymd: date.replace(/-/g, '') }),
@@ -255,7 +259,7 @@ function App() {
         <p className="peer-note">비교지역: {regions.filter((item) => item.id !== regionId).map((item) => item.name).join(' · ')} · 선택지역을 제외한 3개 표본 중앙값 기준</p>
         <div className="cards"><article>{axes.map((axis) => <div className="sbar" key={axis.key}><span>{axis.label} <Tier tier={axis.tier} /></span><i><b style={{ width: axis.diff == null ? '0%' : `${Math.min(100, 20 * Math.abs(axis.diff) / axis.threshold)}%`, background: axis.diff == null ? '#d7ddd4' : axis.diff < 0 ? '#d45f43' : '#8fbc7e' }} /></i><em>{axis.diff == null ? '데이터 없음' : formatSigned(axis.diff, axis.unit)}</em></div>)}<p className="insight">{diagnosisText}</p></article></div>
       </section>
-      <section id="priority" className="section live-section"><div className="heading"><div><small>04 / WEAKNESS → ROOT CAUSE → PRIORITY</small><h2>{region.name} 정책 우선순위<br /><em>TOP 3</em></h2></div><span className="badges"><span>{regionType} <Tier tier="modeled" /></span></span></div>
+      <section id="priority" className="section live-section"><div className="heading"><div><small>05 / WEAKNESS → ROOT CAUSE → PRIORITY</small><h2>{region.name} 정책 우선순위<br /><em>TOP 3</em></h2></div><span className="badges"><span>{regionType} <Tier tier="modeled" /></span></span></div>
         <p className="peer-note">{diagnosisText}</p>
         {chartData.length > 0 && <div className="priority-chart">
           <small>축별 표준화 편차 · −1은 축별 취약 임계값</small>
@@ -272,7 +276,7 @@ function App() {
         <div className="cards">{priorities.map((axis, index) => <article key={axis.key}><small>{index + 1}순위 · {axis.label} <Tier tier={axis.tier} /></small><strong>{axis.diff == null ? '데이터 연동 후 진단' : `${axis.label} 강화 필요`}</strong><p>근거: {axis.diff == null ? axis.note : `표본 중앙값 대비 ${formatSigned(axis.diff, axis.unit)} · 취약도 ${severity(axis).toFixed(2)}`}</p></article>)}</div>
         {promotionLowPriority && <p className="insight low-priority">[우선순위 낮음] 추가 관광홍보 — 방문수요가 표본 중앙값 수준이므로, 홍보 확대보다 위 우선순위 항목을 먼저 검토합니다.</p>}
       </section>
-      <section id="methodology" className="section live-section methodology"><div className="heading"><div><small>05 / TERMS &amp; ALGORITHM</small><h2>용어와 계산법을<br /><em>투명하게 공개합니다</em></h2></div><p>현재 제공값과 향후 R-GAP 산출을 구분합니다.\n각 값의 단위·비교범위·한계를 함께 확인하세요.</p></div><div className="term-grid">{methodologyTerms.map(([term, description]) => <article key={term}><h3>{term}</h3><p>{description}</p></article>)}</div></section>
+      <section id="methodology" className="section live-section methodology"><div className="heading"><div><small>06 / TERMS &amp; ALGORITHM</small><h2>용어와 계산법을<br /><em>투명하게 공개합니다</em></h2></div><p>현재 제공값과 향후 R-GAP 산출을 구분합니다. 각 값의 단위·비교범위·한계를 함께 확인하세요.</p></div><div className="term-grid">{methodologyTerms.map(([term, description]) => <article key={term}><h3>{term}</h3><p>{description}</p></article>)}</div></section>
       <section id="tshift" className="section"><div className="heading"><div><small>07 / 정책 시행 후 효과검증 프레임</small><h2>정책은 실험하고,<br /><em>효과는 증명합니다.</em></h2></div><p>현재 정책 성과가 아닌, 야간·계절 누수 정책의 사전 등록과 DiD 사후검증을 위한 실행 템플릿입니다.</p></div><div className="did">{[['01', '정책 패키지 설계', '체류 동선·야간 콘텐츠·지역 상권을 하나의 전환 여정으로 설계합니다.'], ['02', '비교지역 선정 · 변화 가설 등록', '성과지표, 대상·비교지역, 관찰기간을 사업 시작 전 고정합니다.'], ['03', '사전/사후 데이터 수집 · DiD 효과 리포트', '정책 전후 변화와 비교군 차이를 비교해 순효과를 검증합니다.']].map(([step, title, description]) => <article key={step}><small>{step}</small><h3>{title}</h3><p>{description}</p></article>)}</div></section>
       <section className="meta"><small>DATA INTERPRETATION / REQUIRED META INFO</small><div><b>원천자료·파생지표·규칙기반 진단을 구분합니다.</b><p>방문자수는 이동통신 자료 기반의 KTO 추정치이며 관광객 실인원과 동일하지 않습니다. 체류·소비·숙박 지수는 비율이나 인원수가 아닌 KTO 지수점수입니다. 관광지 혼잡도는 KTO 예측값이며, 중심지 공간확산은 내비게이션 중심 관광지 좌표로 계산한 거리 기반 보조지표입니다. 표본 비교 유형·우선순위는 규칙기반 진단입니다. 실제 관광지별 방문점유율, 전국 유사구조 군집, 연간 계절성, 소비 잔차와 75분위 프론티어가 완성되기 전에는 TCEI·R-GAP으로 표시하지 않습니다.</p></div></section>
     </main><footer><div className="logo"><b>R</b>Regional Tourism Scan</div><small>Regional Tourism Scan · Regional Recoverable Tourism Value Gap Engine · KTO Tourism Data Challenge</small></footer>

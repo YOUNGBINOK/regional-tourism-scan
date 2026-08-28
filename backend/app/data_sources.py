@@ -89,6 +89,42 @@ def _provider_config(provider: str) -> tuple[str, str, str]:
     if not base_url or not api_key: raise ValueError(f"{provider} base URL or API key is not configured")
     return base_url.rstrip("/") + "/", api_key, api_key_param
 
+def _kto_error_message(response: httpx.Response) -> str | None:
+    """Data.go.kr puts the real reason in cmmMsgHeader even on a 4xx/JSON body
+    (e.g. LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR / 일일 서비스 요청제한
+    횟수 초과). Surface that instead of a bare status code where possible."""
+    try:
+        body = response.json()
+    except ValueError:
+        return None
+    header = body.get("OpenAPI_ServiceResponse", {}).get("cmmMsgHeader") if isinstance(body, dict) else None
+    if not isinstance(header, dict): return None
+    return header.get("returnAuthMsg") or header.get("errMsg")
+
+async def _get_with_retry(client: httpx.AsyncClient, url: str, params: dict[str, str],
+                          headers: dict[str, str], retries: int = 3) -> httpx.Response:
+    """Data.go.kr throttles bursts of concurrent requests with HTTP 429. Most
+    of the time that's transient per-second throttling from fanning out
+    several KTO calls per region at once, so retry with backoff. But a daily
+    quota error (LIMITED_NUMBER_OF_SERVICE_REQUESTS_EXCEEDS_ERROR with a
+    '일일' reason) won't recover within this request — stop immediately
+    instead of wasting the caller's time on retries that can't help."""
+    delay = 0.4
+    for attempt in range(retries + 1):
+        response = await client.get(url, params=params, headers=headers)
+        if response.status_code != 429: return response
+        message = _kto_error_message(response)
+        if attempt == retries or (message and "일일" in message): return response
+        await asyncio.sleep(delay)
+        delay *= 2
+    return response
+
+def _raise_for_status(response: httpx.Response, label: str) -> None:
+    if not response.is_error: return
+    message = _kto_error_message(response)
+    detail = f"{label} returned HTTP {response.status_code}" + (f" ({message})" if message else "")
+    raise RuntimeError(detail)
+
 async def fetch_provider_json(provider: str, endpoint: str, params: dict[str, str]) -> object:
     """Fetch only paths relative to the approved provider base URL; keys stay server-side."""
     if endpoint.startswith(("http://", "https://")) or ".." in endpoint:
@@ -98,9 +134,8 @@ async def fetch_provider_json(provider: str, endpoint: str, params: dict[str, st
     # before httpx creates the query string, preventing % from becoming %25.
     query = {**params, api_key_param: unquote(api_key)}
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.get(urljoin(base_url, endpoint.lstrip("/")), params=query, headers={"Accept": "application/json"})
-        if response.is_error:
-            raise RuntimeError(f"{provider} returned HTTP {response.status_code}")
+        response = await _get_with_retry(client, urljoin(base_url, endpoint.lstrip("/")), query, {"Accept": "application/json"})
+        _raise_for_status(response, provider)
         content_type = response.headers.get("content-type", "").lower()
         if "json" in content_type:
             return response.json()
@@ -129,10 +164,9 @@ async def fetch_kosis_statistics(query: str) -> object:
     if endpoint.startswith(("http:", "https:", "..")):
         raise ValueError("KOSIS statistics endpoint must be a relative official path")
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.get(f"{s.kosis_base_url.rstrip('/')}/{endpoint}", params=params,
-                                    headers={"Accept": "application/json"})
-        if response.is_error:
-            raise RuntimeError(f"KOSIS returned HTTP {response.status_code}")
+        response = await _get_with_retry(client, f"{s.kosis_base_url.rstrip('/')}/{endpoint}", params,
+                                         {"Accept": "application/json"})
+        _raise_for_status(response, "KOSIS")
         return response.json()
 
 def _mois_business_url(operation: str) -> str:
@@ -175,9 +209,8 @@ async def fetch_mois_tourism_business(operation: str, open_authority_code: str,
     if operation == "history":
         params["cond[BASE_DATE::EQ]"] = base_date
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.get(_mois_business_url(operation), params=params, headers={"Accept": "application/json"})
-        if response.is_error:
-            raise RuntimeError(f"MOIS tourism-business service returned HTTP {response.status_code}")
+        response = await _get_with_retry(client, _mois_business_url(operation), params, {"Accept": "application/json"})
+        _raise_for_status(response, "MOIS tourism-business service")
         if "json" in response.headers.get("content-type", "").lower():
             return response.json()
         return {"format": "xml", "data": response.text}
@@ -256,9 +289,8 @@ async def fetch_kto_catalog_service_by_path(service: str, endpoint: str, params:
              "serviceKey": unquote(s.kto_tourism_datalab_api_key)}
     url = f"https://apis.data.go.kr/B551011/{service}/{endpoint}"
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.get(url, params=query, headers={"Accept": "application/json"})
-        if response.is_error:
-            raise RuntimeError(f"KTO {service}/{endpoint} returned HTTP {response.status_code}")
+        response = await _get_with_retry(client, url, query, {"Accept": "application/json"})
+        _raise_for_status(response, f"KTO {service}/{endpoint}")
         if "json" in response.headers.get("content-type", "").lower():
             return response.json()
         return {"format": "xml", "data": response.text}
