@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .models import TceiInput, BudgetRequest, calculate_tcei, calculate_r_gap, allocate_budget
 from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_regional_visitors,
                            fetch_kto_catalog_service, fetch_kto_configured_service,
-                           normalize_kto_xml, kto_catalog_with_readiness)
+                           normalize_kto_xml, kto_catalog_with_readiness, build_live_visitor_snapshot)
 from .settings import cors_origin_list
 
 app = FastAPI(title="R-GAP API", version="0.1.0")
@@ -40,6 +40,10 @@ class KtoRegionSnapshotRequest(KtoAreaMetricRequest):
 
 class KtoConfiguredDatasetRequest(BaseModel):
     params: dict[str, str] = {}
+
+class LiveVisitorRequest(BaseModel):
+    area_cd: str = Field(pattern=r"^\d{5}$", examples=["47130"])
+    base_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260701"])
 
 @app.get("/health")
 def health(): return {"status": "ok", "service": "R-GAP API"}
@@ -133,6 +137,17 @@ async def kto_region_snapshot(payload: KtoRegionSnapshotRequest):
         }
     except Exception as error:
         raise HTTPException(status_code=502, detail=f"KTO region-snapshot request failed: {error}")
+
+@app.post("/v1/analysis/live-visitor")
+async def live_visitor_analysis(payload: LiveVisitorRequest):
+    """Live KTO visitor analysis, explicitly separated from incomplete R-GAP inputs."""
+    try:
+        raw = await fetch_kto_regional_visitors("local", payload.base_ymd, payload.base_ymd, 1, 1000)
+        return build_live_visitor_snapshot(raw, payload.area_cd, payload.base_ymd)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+    except Exception as error:
+        raise HTTPException(status_code=502, detail=f"KTO live visitor analysis failed: {error}")
 
 @app.post("/v1/metrics/tcei")
 def tcei(payload: TceiInput): return calculate_tcei(payload)

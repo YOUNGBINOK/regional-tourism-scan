@@ -73,8 +73,9 @@ POST /v1/data-sources/kto/tourism-diversity/international
 ## Production deployment
 
 - Frontend: https://regional-tourism-scan.vercel.app/
-- Backend: Render에서 이 저장소를 **Blueprint**로 연결하고 `render.yaml`을 선택합니다.
-- Render 환경변수 `CORS_ORIGINS`에는 프론트 주소를, Vercel의 `VITE_API_BASE_URL`에는 Render API 주소를 입력합니다.
+- API: Vercel의 `/api` Python Function으로 함께 배포됩니다. `api/index.py`가 FastAPI를 `/api` 접두사로 마운트하므로 프론트엔드는 별도 공개 백엔드 URL 없이 `/api/v1/...`을 호출합니다.
+- Vercel Project Settings → Environment Variables에 `KTO_TOURISM_DATALAB_API_KEY`를 Production과 Preview에 등록합니다. KTO 키는 브라우저로 전달되지 않습니다.
+- 별도 Render 배포가 필요할 경우에는 기존 `render.yaml`을 사용할 수 있으며, 그때만 Vercel의 `VITE_API_BASE_URL`에 Render API 주소를 입력합니다.
 
 ## Included specification coverage
 

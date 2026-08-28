@@ -84,20 +84,26 @@
             name: item.querySelector('span')?.textContent?.trim() || '--',
             amount: item.querySelector(':scope > b')?.textContent?.trim() || '--',
           }));
+          const liveMode = Boolean(document.querySelector('[data-live-analysis]'));
+          const liveMetrics = Array.from(document.querySelectorAll('.live-stats article')).map((item) => ({
+            label: item.querySelector('small')?.textContent?.trim() || '--',
+            value: item.querySelector('strong')?.textContent?.trim() || '--',
+            caption: item.querySelector('p')?.textContent?.trim() || '',
+          }));
           document.querySelector('#report-issued-at').textContent = `출력일 ${new Date().toLocaleDateString('ko-KR')}`;
-          document.querySelector('#report-region').textContent = `${selectedName} 관광가치 회수 진단 보고서`;
-          document.querySelector('#report-gap').textContent = `R-GAP ${score}`;
-          document.querySelector('#report-tcei').textContent = tcei;
-          document.querySelector('#report-frontier').textContent = frontier;
-          document.querySelector('#report-room').textContent = room;
+          document.querySelector('#report-region').textContent = liveMode ? `${selectedName} 관광 방문자 실측 보고서` : `${selectedName} 관광가치 회수 진단 보고서`;
+          document.querySelector('#report-gap').textContent = liveMode ? `외지인 방문 ${score}` : `R-GAP ${score}`;
+          document.querySelector('#report-tcei').textContent = liveMode ? text('.summary > p b') : tcei;
+          document.querySelector('#report-frontier').textContent = liveMode ? '전국 지자체 비교' : frontier;
+          document.querySelector('#report-room').textContent = liveMode ? '숙박·소비 지표 적재 대기' : room;
           document.querySelector('#report-tags').textContent = tags.join(' · ') || '--';
-          document.querySelector('#report-priority').textContent = leaks.length ? `${leaks[0].name} (${leaks[0].value})` : '--';
-          document.querySelector('#report-budget').textContent = text('.budget > label > b');
-          document.querySelector('#report-profile').innerHTML = profile.map((label, index) => {
+          document.querySelector('#report-priority').textContent = liveMode ? '필수 4대 지표 적재 후 R-GAP 산출' : (leaks.length ? `${leaks[0].name} (${leaks[0].value})` : '--');
+          document.querySelector('#report-budget').textContent = liveMode ? 'R-GAP 산출 보류' : text('.budget > label > b');
+          document.querySelector('#report-profile').innerHTML = liveMode ? liveMetrics.map((item) => row([item.label, item.value, item.caption, '실측'])).join('') : profile.map((label, index) => {
             const values = profiles[selectedName]?.[index];
             return row(values ? [label, values[0], values[1], `${values[1] - values[0]}p`] : [label, '--', '--', '--']);
           }).join('');
-          document.querySelector('#report-allocation').innerHTML = allocations.length
+          document.querySelector('#report-allocation').innerHTML = liveMode ? row(['TCEI / R-GAP', '필수 지표 적재 대기', '산출 보류']) : allocations.length
             ? allocations.map((item, index) => row([item.name, leaks[index]?.value || '--', item.amount])).join('')
             : row(['--', '--', '--']);
         };
@@ -110,6 +116,6 @@
         window.addEventListener('beforeprint', refreshReport);
       })();
     </script>
-    <script type="module" src="/src/main.tsx"></script>
+    <script type="module" src="/src/live.tsx"></script>
   </body>
 </html>

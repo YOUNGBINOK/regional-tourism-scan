@@ -146,3 +146,58 @@ def normalize_kto_xml(payload: object) -> object:
     return {"result_code": value(".//header/resultCode"), "result_message": value(".//header/resultMsg"),
             "page_no": value(".//body/pageNo"), "num_of_rows": value(".//body/numOfRows"),
             "total_count": value(".//body/totalCount"), "items": items}
+
+def build_live_visitor_snapshot(payload: object, area_cd: str, base_ymd: str) -> dict[str, object]:
+    """Turn the KTO GW response into a traceable, non-modelled live snapshot.
+
+    TCEI and R-GAP are intentionally not inferred here: those measures need
+    stay, spend, dispersion and seasonal inputs. Returning null prevents a
+    visitor-only feed from being presented as a completed R-GAP diagnosis.
+    """
+    data = normalize_kto_xml(payload)
+    if not isinstance(data, dict) or data.get("result_code") != "0000":
+        raise ValueError("KTO visitor response could not be normalized")
+    by_area: dict[str, dict[str, object]] = {}
+    for item in data.get("items", []):
+        code = item.get("signguCode")
+        if not code:
+            continue
+        try:
+            value = float(str(item.get("touNum", "0")).replace(",", ""))
+        except ValueError:
+            value = 0.0
+        entry = by_area.setdefault(code, {
+            "area_cd": code, "area_name": item.get("signguNm", code),
+            "resident_visitors": 0.0, "outside_visitors": 0.0, "foreign_visitors": 0.0,
+        })
+        category = item.get("touDivNm", "")
+        if category == "외지인":
+            entry["outside_visitors"] = float(entry["outside_visitors"]) + value
+        elif category == "외국인":
+            entry["foreign_visitors"] = float(entry["foreign_visitors"]) + value
+        elif category == "현지인":
+            entry["resident_visitors"] = float(entry["resident_visitors"]) + value
+    target = by_area.get(area_cd)
+    if not target:
+        raise ValueError("Selected municipality is not present in this KTO daily response")
+    external_values = sorted(float(entry["outside_visitors"]) for entry in by_area.values())
+    current = float(target["outside_visitors"])
+    percentile = round(100 * sum(value <= current for value in external_values) / len(external_values), 1) if external_values else 0.0
+    total = sum(float(target[key]) for key in ("resident_visitors", "outside_visitors", "foreign_visitors"))
+    return {
+        "source": "한국관광공사 빅데이터 지역별 방문자수_GW",
+        "source_status": "live",
+        "base_ymd": base_ymd,
+        "area": target,
+        "national_comparison": {"municipality_count": len(by_area), "outside_visitor_percentile": percentile},
+        "visitor_mix": {
+            "outside_share": round(100 * current / total, 1) if total else 0.0,
+            "foreign_share": round(100 * float(target["foreign_visitors"]) / total, 1) if total else 0.0,
+        },
+        "analysis": {
+            "tcei": None, "r_gap": None,
+            "status": "partial",
+            "message": "실시간 방문자 지표는 반영됐습니다. 체류·소비·공간·시간 지표가 적재되면 TCEI와 R-GAP을 산출합니다.",
+            "missing_inputs": ["체류·숙박", "관광소비", "공간분산", "월별 계절성"],
+        },
+    }
