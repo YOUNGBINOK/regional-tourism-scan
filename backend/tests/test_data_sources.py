@@ -2,7 +2,7 @@ import asyncio
 
 from app.data_sources import (compute_hub_spatial_spread, compute_visitor_stability,
                               summarize_attraction_concentration,
-                              summarize_mois_tourism_business,
+                              summarize_mois_tourism_business, fetch_mois_city_business_summary,
                               mois_tourism_business_regions,
                               _aggregate_national_visitors, _percentile_rank, _quantile,
                               classify_admin_type, is_independent_municipality,
@@ -200,3 +200,22 @@ def test_mois_region_choices_do_not_expose_provider_authority_code():
     options = mois_tourism_business_regions()
     assert {option["name"] for option in options} >= {"경주시", "강릉시", "제주시", "전주시"}
     assert all("open_authority_code" not in option for option in options)
+
+
+def test_mois_city_summary_filters_out_other_cities_in_the_same_province(monkeypatch):
+    # OPN_ATMY_GRP_CD only resolves to a province-level group (verified from
+    # the live feed — see MOIS_TOURISM_BUSINESS_REGIONS), so a single page for
+    # 경주시's code also contains businesses from other 경상북도 cities. The
+    # summary must only count rows whose address is actually in 경주시.
+    async def fake_fetch(operation, open_authority_code, base_date, page_no, num_rows):
+        return {"response": {"body": {"totalCount": 2, "items": {"item": [
+            {"ROAD_NM_ADDR": "경상북도 경주시 태종로685번길 6", "SALS_STTS_NM": "영업/정상", "CULTR_SPTS_TPBIZ_NM": "관광숙박업"},
+            {"ROAD_NM_ADDR": "경상북도 포항시 중앙로 1", "SALS_STTS_NM": "영업/정상", "CULTR_SPTS_TPBIZ_NM": "관광숙박업"},
+        ]}}}}
+
+    monkeypatch.setattr("app.data_sources.fetch_mois_tourism_business", fake_fetch)
+    result = asyncio.run(fetch_mois_city_business_summary("47130", "info"))
+    assert result["province_group_record_count"] == 2
+    assert result["raw_record_count"] == 1  # only the 경주시 row
+    assert result["operating_tourism_accommodation_business_count"] == 1
+    assert result["low_sample"] is True  # province group has well under 20 records

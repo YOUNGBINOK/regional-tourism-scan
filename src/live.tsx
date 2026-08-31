@@ -59,6 +59,8 @@ type MoisBusinessSnapshot = {
   operating_tourism_accommodation_business_count: number;
   metric_type: string;
   not_a_room_count: boolean;
+  province_group_record_count: number;
+  low_sample: boolean;
   region?: { id: string; name: string; province: string } | null;
   items: Array<Record<string, string | null>>;
 };
@@ -138,6 +140,7 @@ function App() {
   const [businessData, setBusinessData] = useState<MoisBusinessSnapshot | null>(null);
   const [businessLoading, setBusinessLoading] = useState(false);
   const [businessError, setBusinessError] = useState('');
+  const [lodgingEvidence, setLodgingEvidence] = useState<MoisBusinessSnapshot | { available: false } | null>(null);
 
   // 진단 대상 확장: 전국 스캔이 뜨면 그 목록에서, 아직이면 기존 4개 관광거점에서 이름을 찾는다.
   const rankingRegions = nationalRanking?.available ? nationalRanking.regions : [];
@@ -258,9 +261,9 @@ function App() {
     setBusinessError('');
     setBusinessData(null);
     try {
-      const params = new URLSearchParams({ page_no: '1', num_rows: '100' });
+      const params = new URLSearchParams();
       if (businessOperation === 'history') params.set('base_date', businessBaseDate.replace(/-/g, ''));
-      const response = await fetch(`${apiBase}/v1/data-sources/mois/tourism-business/region/${businessRegionId}/${businessOperation}?${params}`);
+      const response = await fetch(`${apiBase}/v1/data-sources/mois/tourism-business/region/${businessRegionId}/${businessOperation}${params.toString() ? `?${params}` : ''}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail || '관광사업자 자료 요청에 실패했습니다.');
       setBusinessData(data as MoisBusinessSnapshot);
@@ -354,6 +357,26 @@ function App() {
     }
   }
 
+  // 원인분해 자동 연결: 숙박비중이 취약하면 관광사업자 원자료를 자동으로 불러와
+  // 근거로 삼는다. OPN_ATMY_GRP_CD가 시군구가 아니라 도 단위로만 걸러지는 걸
+  // 확인했기 때문에(백엔드가 도 전체를 받아 주소로 재필터링), 지금은 검증된
+  // 4개 지역(경주·강릉·제주·전주)에서만 자동 연결한다.
+  const lodgingIsWeak = isWeak(lodgingDiff, axes[2].threshold);
+  useEffect(() => {
+    if (!lodgingIsWeak || !regions.some((item) => item.id === regionId)) { setLodgingEvidence(null); return; }
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(`${apiBase}/v1/data-sources/mois/tourism-business/region/${regionId}/info`);
+        const data = await response.json();
+        if (cancelled) return;
+        setLodgingEvidence(response.ok ? (data as MoisBusinessSnapshot) : { available: false });
+      } catch { if (!cancelled) setLodgingEvidence({ available: false }); }
+    })();
+    return () => { cancelled = true; };
+  }, [lodgingIsWeak, regionId]);
+  const lodgingEvidenceData = lodgingEvidence && !('available' in lodgingEvidence) ? lodgingEvidence : null;
+
   // 정책 우선순위 TOP 3: 계산 가능한 축의 취약 정도로 순위를 매기고, 데이터가 없는 축은 "향후 분석" 항목으로 채운다.
   const rankedWeak = axes.filter((axis) => severity(axis) > 0).sort((a, b) => severity(b) - severity(a));
   const pendingAxes = axes.filter((axis) => axis.diff == null);
@@ -409,7 +432,7 @@ function App() {
       <section id="business-data" className="section live-section business-data"><div className="heading"><div><small>03 / BUSINESS REGISTER SOURCE</small><h2>관광사업자 원자료로<br /><em>숙박 공급을 확인합니다</em></h2></div><p>행정안전부 문화·관광사업자 조회서비스 원자료입니다. 업소 수와 객실 수는 서로 다른 값입니다.</p></div>
         <div className="business-query"><div className="business-fields"><label>지역 선택<select value={businessRegionId} onChange={(event) => setBusinessRegionId(event.target.value)}>{regions.map((item) => <option key={item.id} value={item.id}>{item.province} {item.name}</option>)}</select></label><label>조회 기준<select value={businessOperation} onChange={(event) => setBusinessOperation(event.target.value as 'info' | 'history')}><option value="info">현재 정보</option><option value="history">기준일 이력</option></select></label>{businessOperation === 'history' && <label>기준일<input type="date" value={businessBaseDate.slice(0, 4) + '-' + businessBaseDate.slice(4, 6) + '-' + businessBaseDate.slice(6, 8)} onChange={(event) => setBusinessBaseDate(event.target.value.replace(/-/g, ''))} /></label>}<button type="button" onClick={() => void loadBusinessData()} disabled={businessLoading}>{businessLoading ? '조회 중' : '원자료 조회'}</button></div><p><b>지역만 선택하세요.</b> 제공기관의 개방자치단체코드는 서버에서 안전하게 변환합니다. 현재 진단 화면에서 제공하는 경주·강릉·제주·전주를 우선 지원하며 전국 코드표 적재 후 목록을 확장합니다.</p></div>
         {businessError && <p className="business-error">{businessError}</p>}
-        {businessData && <div className="business-results"><div className="business-summary"><article><small>원본 레코드 <Tier tier="measured" /></small><strong>{formatNumber.format(businessData.raw_record_count)}</strong><p>최대 100건 1페이지 조회 결과</p></article><article><small>영업 중 사업체 <Tier tier="derived" /></small><strong>{formatNumber.format(businessData.operating_business_count)}</strong><p>`SALS_STTS_NM` 텍스트 기준</p></article><article><small>영업 중 관광숙박업소 <Tier tier="derived" /></small><strong>{formatNumber.format(businessData.operating_tourism_accommodation_business_count)}</strong><p>{businessData.metric_type}</p></article></div><p className="business-caution">※ 이것은 <b>관광숙박업소 수</b>이며 객실 수가 아닙니다. 전국 비교에는 모든 페이지 적재와 지역 매핑 검증이 선행되어야 합니다.</p><div className="business-table-wrap"><table><thead><tr><th>사업장명</th><th>관광사업 업종</th><th>영업상태</th><th>주소</th><th>갱신시점</th></tr></thead><tbody>{businessData.items.map((item, index) => <tr key={`${item.MNG_NO || 'row'}-${index}`}><td>{item.BPLC_NM || '-'}</td><td>{item.CULTR_SPTS_TPBIZ_NM || '-'}</td><td>{item.SALS_STTS_NM || '-'}</td><td>{item.ROAD_NM_ADDR || item.LOTNO_ADDR || '-'}</td><td>{item.DAT_UPDT_PNT || item.LAST_MDFCN_PNT || '-'}</td></tr>)}</tbody></table></div></div>}
+        {businessData && <div className="business-results"><div className="business-summary"><article><small>{region.name} 소재 레코드 <Tier tier="measured" /></small><strong>{formatNumber.format(businessData.raw_record_count)}</strong><p>제공기관 그룹코드 전체 {formatNumber.format(businessData.province_group_record_count)}건 중 주소로 재필터링</p></article><article><small>영업 중 사업체 <Tier tier="derived" /></small><strong>{formatNumber.format(businessData.operating_business_count)}</strong><p>`SALS_STTS_NM` 텍스트 기준</p></article><article><small>영업 중 관광숙박업소 <Tier tier="derived" /></small><strong>{formatNumber.format(businessData.operating_tourism_accommodation_business_count)}</strong><p>{businessData.metric_type}</p></article></div><p className="business-caution">※ 이것은 <b>관광숙박업소 수</b>이며 객실 수가 아닙니다.{businessData.low_sample ? ` 제공기관 원자료 자체가 작아(그룹 전체 ${businessData.province_group_record_count}건) 이 지역 통계는 참고용입니다.` : ''}</p><div className="business-table-wrap"><table><thead><tr><th>사업장명</th><th>관광사업 업종</th><th>영업상태</th><th>주소</th><th>갱신시점</th></tr></thead><tbody>{businessData.items.map((item, index) => <tr key={`${item.MNG_NO || 'row'}-${index}`}><td>{item.BPLC_NM || '-'}</td><td>{item.CULTR_SPTS_TPBIZ_NM || '-'}</td><td>{item.SALS_STTS_NM || '-'}</td><td>{item.ROAD_NM_ADDR || item.LOTNO_ADDR || '-'}</td><td>{item.DAT_UPDT_PNT || item.LAST_MDFCN_PNT || '-'}</td></tr>)}</tbody></table></div></div>}
       </section>
       <section id="peer" className="section live-section"><div className="heading"><div><small>04 / NATIONAL POSITION + PEER GROUP</small><h2>비슷한 조건의 지역과 비교해,<br /><em>숨은 취약점을 찾습니다</em></h2></div></div>
         <div className="cards"><article className="national-position"><small>① 전국 비교 — 내 위치 확인</small>
@@ -448,7 +471,17 @@ function App() {
             </BarChart>
           </ResponsiveContainer>
         </div>}
-        <div className="cards">{priorities.map((axis, index) => <article key={axis.key}><small>{index + 1}순위 · {axis.label} <Tier tier={axis.tier} /></small><strong>{axis.diff == null ? '데이터 연동 후 진단' : `${axis.label} 강화 필요`}</strong><p>근거: {axis.diff == null ? axis.note : `Peer Group 중앙값 대비 ${formatSigned(axis.diff, axis.unit)} · 취약도 ${severity(axis).toFixed(2)}`}</p>{axis.key === 'stayShare' && axis.diff != null && axis.diff <= -5 && <p className="root-cause-link">→ 원인 확인: <a href="#business-data">관광사업자 원자료에서 숙박 공급 여건 보기</a></p>}</article>)}</div>
+        <div className="cards">{priorities.map((axis, index) => <article key={axis.key}><small>{index + 1}순위 · {axis.label} <Tier tier={axis.tier} /></small><strong>{axis.diff == null ? '데이터 연동 후 진단' : `${axis.label} 강화 필요`}</strong><p>근거: {axis.diff == null ? axis.note : `Peer Group 중앙값 대비 ${formatSigned(axis.diff, axis.unit)} · 취약도 ${severity(axis).toFixed(2)}`}</p>
+          {axis.key === 'stayShare' && lodgingIsWeak && (
+            lodgingEvidenceData ? <div className="root-cause-evidence">
+              <p className="root-cause-link">→ 원인 확인 (자동 연결): 관광사업자 원자료 기준 {region.name} 소재 영업 중 관광숙박업소 <b>{formatNumber.format(lodgingEvidenceData.operating_tourism_accommodation_business_count)}건</b> ({lodgingEvidenceData.province_group_record_count}건 중 {region.name} 주소로 필터링)</p>
+              {lodgingEvidenceData.low_sample && <p className="root-cause-caveat">※ 원자료 표본이 작아({lodgingEvidenceData.province_group_record_count}건) 공급 제약형/수요연결부족형을 단정하기보다 참고 근거로만 활용하세요. <a href="#business-data">상세 목록 보기</a></p>}
+            </div>
+            : regions.some((item) => item.id === regionId)
+              ? <p className="root-cause-link">→ 원인 확인: 관광사업자 원자료를 불러오는 중입니다…</p>
+              : <p className="root-cause-link">→ 원인 확인: 관광사업자 원자료 자동 연결은 현재 경주·강릉·제주·전주만 지원합니다. <a href="#business-data">다른 지역은 원자료 화면에서 직접 확인하세요.</a></p>
+          )}
+        </article>)}</div>
         {promotionLowPriority && <p className="insight low-priority">[우선순위 낮음] 추가 관광홍보 — 관광수요 자체는 이미 전국 기준으로 충분하므로, 홍보 확대보다 위 우선순위 항목을 먼저 검토합니다.</p>}
       </section>
       <section id="methodology" className="section live-section methodology"><div className="heading"><div><small>06 / TERMS &amp; ALGORITHM</small><h2>용어와 계산법을<br /><em>투명하게 공개합니다</em></h2></div><p>현재 제공값과 향후 R-GAP 산출을 구분합니다. 각 값의 단위·비교범위·한계를 함께 확인하세요.</p></div><div className="term-grid">{methodologyTerms.map(([term, description]) => <article key={term}><h3>{term}</h3><p>{description}</p></article>)}</div></section>

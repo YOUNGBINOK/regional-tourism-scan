@@ -50,10 +50,18 @@ KTO_SERVICE_CATALOG = {
 # 노출하고 서버에서 코드로 변환한다. 현재 KTO 실시간 진단에 제공 중인 4개
 # 지역부터 시작하며, 전국 적재 단계에서 공식 코드표 전체로 확장한다.
 MOIS_TOURISM_BUSINESS_REGIONS = {
-    "47130": {"name": "경주시", "province": "경상북도", "open_authority_code": "5050000"},
-    "51150": {"name": "강릉시", "province": "강원특별자치도", "open_authority_code": "4201000"},
-    "50110": {"name": "제주시", "province": "제주특별자치도", "open_authority_code": "6510000"},
-    "52110": {"name": "전주시", "province": "전북특별자치도", "open_authority_code": "4641000"},
+    # open_authority_code(OPN_ATMY_GRP_CD) is a *province-level* reporting-group
+    # code, not a per-시군구 code — the four values below were verified by
+    # pulling the full live feed (2,644 records) and reading which code every
+    # record whose address contains each city name actually carries. The
+    # previous values ("5050000" etc.) were unverified guesses that always
+    # returned zero — every "0건" the UI ever showed for these regions was a
+    # code-mapping failure, not a real zero (see fetch_mois_tourism_business_for_region()
+    # for the client-side city-name filter this makes necessary).
+    "47130": {"name": "경주시", "province": "경상북도", "open_authority_code": "6470000"},
+    "51150": {"name": "강릉시", "province": "강원특별자치도", "open_authority_code": "6530000"},
+    "50110": {"name": "제주시", "province": "제주특별자치도", "open_authority_code": "6500000"},
+    "52110": {"name": "전주시", "province": "전북특별자치도", "open_authority_code": "6540000"},
 }
 
 
@@ -252,6 +260,43 @@ async def fetch_mois_tourism_business_for_region(region_id: str, operation: str,
     return await fetch_mois_tourism_business(operation, region["open_authority_code"],
                                              base_date, page_no, num_rows)
 
+
+async def fetch_mois_city_business_summary(region_id: str, operation: str,
+                                           base_date: str | None = None) -> dict[str, object]:
+    """City-specific 문화·관광사업자 summary.
+
+    OPN_ATMY_GRP_CD only filters down to the *province* reporting group (see
+    MOIS_TOURISM_BUSINESS_REGIONS's comment — verified empirically, not
+    documented), so a single page for that code mixes in every other city
+    in the province. This fetches every page for the group and keeps only
+    rows whose address actually contains the target city's name, so a
+    result labelled "경주시" is never really 경상북도-wide.
+    """
+    region = MOIS_TOURISM_BUSINESS_REGIONS.get(region_id)
+    if not region:
+        raise ValueError("This municipality is not available in the tourism-business list yet")
+    city_name = str(region["name"])
+    page_no, num_rows, all_items = 1, 100, []
+    while True:
+        raw = await fetch_mois_tourism_business(operation, str(region["open_authority_code"]), base_date, page_no, num_rows)
+        page_items = _json_envelope_items(normalize_kto_xml(raw))
+        all_items.extend(page_items)
+        total = None
+        if isinstance(raw, dict) and isinstance(raw.get("response"), dict):
+            body = raw["response"].get("body")
+            if isinstance(body, dict):
+                try: total = int(body.get("totalCount"))
+                except (TypeError, ValueError): total = None
+        if not page_items or total is None or page_no * num_rows >= total or page_no >= 20:
+            break
+        page_no += 1
+    province_total = len(all_items)
+    city_items = [item for item in all_items
+                 if city_name in str(item.get("ROAD_NM_ADDR") or item.get("LOTNO_ADDR") or "")]
+    summary = summarize_mois_tourism_business({"items": city_items})
+    summary["province_group_record_count"] = province_total
+    summary["low_sample"] = province_total < 20
+    return summary
 
 def summarize_mois_tourism_business(payload: object) -> dict[str, object]:
     """Preserve raw MOIS records while making the lodging-supply proxy explicit.

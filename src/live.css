@@ -15,8 +15,11 @@
 .peer-value-table p{display:flex;flex-wrap:wrap;gap:10px;margin:0;font:11px 'Noto Sans KR';color:#68756e;align-items:center}
 .peer-value-table p>span{min-width:90px;font-weight:700;color:#3d4a41}
 .peer-value-table b{font:10px 'DM Mono';font-weight:600;background:#f1f1ee;padding:3px 7px;border-radius:3px}
+.root-cause-evidence{margin-top:8px;padding-top:8px;border-top:1px dashed #d7ddd4}
 .root-cause-link{margin:6px 0 0;font:11px 'Noto Sans KR'}
 .root-cause-link a{color:#173b2b;font-weight:700}
+.root-cause-caveat{margin:6px 0 0;font:10px/1.6 'Noto Sans KR';color:#a86a2a}
+.root-cause-caveat a{color:#173b2b;font-weight:700}
 @media(max-width:520px){
   .peer-list{grid-template-columns:1fr}
 }

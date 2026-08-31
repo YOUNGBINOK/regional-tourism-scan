@@ -14,7 +14,7 @@ from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_reg
                            build_peer_group, _percentile_rank, _quantile,
                            fetch_kosis_statistics, fetch_mois_tourism_business,
                            summarize_mois_tourism_business, mois_tourism_business_regions,
-                           fetch_mois_tourism_business_for_region, _cached)
+                           fetch_mois_city_business_summary, _cached)
 from .settings import cors_origin_list
 
 app = FastAPI(title="R-GAP API", version="0.1.0")
@@ -113,16 +113,19 @@ def mois_tourism_business_region_list():
 
 
 @app.get("/v1/data-sources/mois/tourism-business/region/{region_id}/{operation}")
-async def mois_tourism_business_for_region(region_id: str, operation: str,
-                                           base_date: str | None = None,
-                                           page_no: int = 1, num_rows: int = 100):
-    """User-facing lookup by municipality rather than OPN_ATMY_GRP_CD."""
+async def mois_tourism_business_for_region(region_id: str, operation: str, base_date: str | None = None):
+    """User-facing lookup by municipality rather than OPN_ATMY_GRP_CD.
+
+    OPN_ATMY_GRP_CD only resolves to a *province*-level reporting group (see
+    MOIS_TOURISM_BUSINESS_REGIONS), so fetch_mois_city_business_summary pages
+    through the whole group and filters to the target city's own address —
+    otherwise this would silently show a neighboring city's businesses under
+    the selected city's label. No page_no/num_rows here anymore: the city
+    filter has to run over every page of the group, so partial paging from
+    the caller wouldn't produce a meaningful count.
+    """
     try:
-        if page_no < 1 or not 1 <= num_rows <= 100:
-            raise ValueError("page_no must be >= 1 and num_rows must be 1..100")
-        data = await fetch_mois_tourism_business_for_region(
-            region_id, operation, base_date, page_no, num_rows)
-        result = summarize_mois_tourism_business(data)
+        result = await fetch_mois_city_business_summary(region_id, operation, base_date)
         result["region"] = next((region for region in mois_tourism_business_regions()
                                  if region["id"] == region_id), None)
         return result
