@@ -6,7 +6,9 @@ differ by Data Lab account and competition scope.
 from dataclasses import dataclass
 from copy import deepcopy
 import asyncio
+import json
 import time
+from pathlib import Path
 from urllib.parse import parse_qsl, urljoin, unquote, urlsplit
 from xml.etree import ElementTree
 from math import asin, cos, radians, sin, sqrt
@@ -546,25 +548,108 @@ async def fetch_national_visitor_ranking(base_ymd: str) -> list[dict[str, object
         return ranking
     return await _cached(f"ranking:{base_ymd}", _fetch)
 
-def is_city_level(area_name: str) -> bool:
-    """True for a 시/군 aggregate (경주시, 완주군, 세종특별자치시, ...), false for
-    any 구 — both a sub-city district ("수원시 팔달구", which KTO's area_name
-    always carries as "OO시 XX구" with a space) and a standalone metro-city
-    district (강남구, 해운대구). Diagnosis targets and their peer comparison
-    group are both restricted to this granularity so a 시 is never benchmarked
-    against a 구, which isn't the same kind of administrative unit."""
-    return area_name.endswith("시") or area_name.endswith("군")
+def classify_admin_type(area_name: str) -> str:
+    """"시" / "군" / "자치구" / "일반구" / "기타".
 
-def select_national_peers(ranking: list[dict[str, object]], exclude_area_cd: str, count: int) -> list[dict[str, object]]:
-    """Top-N other city/county-level municipalities by national demand —
-    "이미 잘 오는 지역들". ``ranking`` is already sorted descending by demand,
-    so this is simply the highest-demand 시/군 other than the one being
-    diagnosed: the peer group used to reveal a hidden weakness within an
-    already-successful cohort, not an arbitrary or hardcoded sample. 구-level
-    entries are excluded so a 시 is only ever compared against other 시/군.
+    KTO's area_name encodes the distinction we need without any extra
+    lookup: a sub-city 일반구 (수원시 팔달구, 청주시 상당구— not a 기초지자체
+    in its own right, just an internal division of its parent 시) always
+    carries a space, while a 자치구 (강남구, 해운대구 — itself a 기초지자체
+    directly under a 특별시/광역시) never does. 시/군 need no such split.
     """
-    return [entry for entry in ranking
-            if entry["area_cd"] != exclude_area_cd and is_city_level(str(entry["area_name"]))][:count]
+    if area_name.endswith("시"): return "시"
+    if area_name.endswith("군"): return "군"
+    if area_name.endswith("구"): return "일반구" if " " in area_name else "자치구"
+    return "기타"
+
+def is_independent_municipality(area_name: str) -> bool:
+    """기초지자체 여부 — 일반구(및 그 밖의 비정형 코드)는 독립된 정책분석 단위가
+    아니므로 진단 대상·전국 위치·Peer Group 어디에도 포함하지 않는다."""
+    return classify_admin_type(area_name) not in ("일반구", "기타")
+
+_CAPITAL_REGION_PROVINCES = {"서울특별시", "인천광역시", "경기도"}
+
+def _load_region_centroids() -> dict[str, dict[str, object]]:
+    path = Path(__file__).resolve().parent / "kr_sigungu_centroids.json"
+    with path.open(encoding="utf-8") as file:
+        return json.load(file)
+
+_REGION_CENTROIDS = _load_region_centroids()
+
+def resolve_region_province(area_cd: str, area_name: str) -> str | None:
+    """지역의 소속 시·도를 확인한다. 직접 코드가 있으면 그대로, 없으면(예:
+    구가 있는 시의 방문자 원천 집계 코드) 이름이 그 시로 시작하는 구들의
+    소속 시·도를 사용한다 — 프론트엔드 resolveCentroid()와 동일한 규칙."""
+    direct = _REGION_CENTROIDS.get(area_cd)
+    if direct: return str(direct["province"])
+    for entry in _REGION_CENTROIDS.values():
+        if str(entry["name"]).startswith(area_name):
+            return str(entry["province"])
+    return None
+
+def is_capital_region(province: str | None) -> bool:
+    return province in _CAPITAL_REGION_PROVINCES
+
+def _quantile(values: list[float], q: float) -> float | None:
+    """Linear-interpolation quantile (q in [0,1]); None for an empty sample."""
+    if not values: return None
+    ordered = sorted(values)
+    position = q * (len(ordered) - 1)
+    lower, upper = int(position), min(int(position) + 1, len(ordered) - 1)
+    fraction = position - lower
+    return ordered[lower] + (ordered[upper] - ordered[lower]) * fraction
+
+def build_peer_group(ranking: list[dict[str, object]], target_area_cd: str, target_area_name: str,
+                     count: int) -> dict[str, object]:
+    """Structural-condition peer group, NOT a "top-N by national demand" list.
+
+    Peers must share the target's 행정유형(시/군/자치구) — a 시 is never
+    benchmarked against a 자치구, since city-center districts (dense
+    transit/lodging/business-tourism demand) and provincial cities aren't
+    the same kind of place. For 시/군, peers are additionally restricted to
+    the same 수도권 여부, since a capital-region 시 and a non-capital
+    provincial 시 have structurally different demand bases. Within that
+    pool, peers are the closest matches by national demand *scale*
+    (percentile proximity) — not simply the highest-demand regions
+    nationally, which would make the "peer benchmark" just be Gangnam-gu
+    and Seocho-gu for almost every target regardless of its own condition.
+
+    Deliberately does not use any performance/outcome variable (stay,
+    spend, lodging, ...) to form the group — only administrative type,
+    capital-region status, and demand scale, so the peer group is the
+    target's *condition*, not a self-referential slice of the very
+    outcomes being diagnosed.
+    """
+    admin_type = classify_admin_type(target_area_name)
+    target_province = resolve_region_province(target_area_cd, target_area_name)
+    target_capital = is_capital_region(target_province)
+    target_entry = next((entry for entry in ranking if entry["area_cd"] == target_area_cd), None)
+    target_percentile = float(target_entry["percentile"]) if target_entry else None
+
+    pool = [entry for entry in ranking
+            if entry["area_cd"] != target_area_cd and classify_admin_type(str(entry["area_name"])) == admin_type]
+
+    relaxed = False
+    if admin_type in ("시", "군"):
+        capital_matched = [entry for entry in pool
+                           if is_capital_region(resolve_region_province(str(entry["area_cd"]), str(entry["area_name"]))) == target_capital]
+        if len(capital_matched) >= min(count, 3):
+            pool = capital_matched
+        else:
+            relaxed = True  # too few same-수도권-status candidates; fall back to admin-type only
+
+    if target_percentile is not None:
+        pool = sorted(pool, key=lambda entry: abs(float(entry["percentile"]) - target_percentile))
+    peers = pool[:count]
+
+    if admin_type in ("시", "군"):
+        region_note = f"{'수도권' if target_capital else '비수도권'} {admin_type} · 관광수요 규모가 유사한 지역"
+    else:
+        region_note = f"{admin_type} · 관광수요 규모가 유사한 지역"
+    return {
+        "admin_type": admin_type, "capital_region": target_capital, "relaxed": relaxed,
+        "criteria_note": region_note, "peers": peers,
+    }
 
 def build_live_visitor_snapshot(payload: object, area_cd: str, base_ymd: str) -> dict[str, object]:
     """Turn the KTO GW response into a traceable, non-modelled live snapshot.

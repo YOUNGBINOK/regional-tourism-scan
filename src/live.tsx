@@ -37,14 +37,17 @@ type NationalPeer = {
   axes: { stay_intensity: number | null; spend_intensity: number | null; lodging_share_index: number | null } | null;
   fetch_ok: boolean;
 };
+type PeerAxisStats = { stay_intensity: number | null; spend_intensity: number | null; lodging_share_index: number | null };
+type PeerGroup = {
+  admin_type: string; capital_region: boolean; relaxed: boolean; criteria_note: string;
+  count: number; peers: NationalPeer[]; medians: PeerAxisStats; top_quartile: PeerAxisStats;
+};
 type NationalPeersSnapshot = {
   available: true;
   base_ymd: string;
-  municipality_count: number;
+  national: { municipality_count: number; target_percentile: number; demand_level: '충분' | '부족' };
   target: { area_cd: string; area_name: string; rank: number; outside_visitors: number; percentile: number } | null;
-  national_median_outside_visitors: number | null;
-  peers: NationalPeer[];
-  peer_medians: { outside_visitors: number | null; stay_intensity: number | null; spend_intensity: number | null; lodging_share_index: number | null };
+  peer_group: PeerGroup;
   peers_failed: number;
 } | { available: false; reason: string; base_ymd: string };
 type MoisBusinessSnapshot = {
@@ -111,7 +114,10 @@ const topicParticle = (name: string) => {
   return `${name}${hasBatchim ? '은' : '는'}`;
 };
 
-type Axis = { key: string; label: string; diff: number | null; unit: '%' | 'p'; threshold: number; tier: DataTier; note: string };
+type Axis = {
+  key: string; label: string; diff: number | null; unit: '%' | 'p'; threshold: number; tier: DataTier; note: string;
+  value: number | null; peerMedian: number | null; peerTop25: number | null;
+};
 
 function App() {
   const [regionId, setRegionId] = useState('47130');
@@ -141,14 +147,15 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regionId, nationalRanking, snapshot]);
 
-  // 전국에서 좌표를 확인할 수 있는 시/군 단위 지역만 지도 핀·선택지로 확장한다. 스캔 전에는
-  // 기존 4개 관광거점만 보여준다. "구"로 끝나는 항목은 모두 제외한다 — 구가 있는 시의
-  // 구("수원시 팔달구")뿐 아니라 특별시·광역시 자체의 구(강남구·해운대구 등)도 포함해서다.
-  const isCityLevel = (name: string) => name.endsWith('시') || name.endsWith('군');
+  // 전국에서 좌표를 확인할 수 있는 기초지자체(시/군/자치구)만 지도 핀·선택지로 확장한다.
+  // 스캔 전에는 기존 4개 관광거점만 보여준다. 일반구("수원시 팔달구"처럼 상위 시 이름이
+  // 붙어 공백이 생기는 항목)만 제외한다 — 자치구(강남구·해운대구)는 기초지자체이므로 유지하되,
+  // Peer Group을 만들 때는 백엔드가 시/군/자치구를 서로 다른 풀로 분리해 비교한다.
+  const isIndependentMunicipality = (name: string) => !name.includes(' ');
   const mapRegions = useMemo(() => {
     if (!rankingRegions.length) return regions;
     const resolved = rankingRegions
-      .filter((item) => isCityLevel(item.area_name))
+      .filter((item) => isIndependentMunicipality(item.area_name))
       .map((item) => {
         const coord = resolveCentroid(item.area_cd, item.area_name);
         return coord ? { id: item.area_cd, name: item.area_name, province: coord.province, lat: coord.lat, lng: coord.lng } : null;
@@ -211,12 +218,12 @@ function App() {
     try {
       const response = await fetch(`${apiBase}/v1/analysis/national-peers`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ area_cd: targetRegionId, base_ymd: targetDate, peer_count: 4 }),
+        body: JSON.stringify({ area_cd: targetRegionId, base_ymd: targetDate, peer_count: 8 }),
       });
       const data = (await response.json()) as NationalPeersSnapshot;
       if (isCancelled()) return;
       setNationalPeers(response.ok ? data : { available: false, reason: (data as { reason?: string }).reason || '전국 스캔 요청에 실패했습니다.', base_ymd: targetDate });
-      if (response.ok && data.available) peerIds = data.peers.map((peer) => peer.area_cd);
+      if (response.ok && data.available) peerIds = data.peer_group.peers.map((peer) => peer.area_cd);
     } catch (cause) {
       if (isCancelled()) return;
       setNationalPeers({ available: false, reason: cause instanceof Error ? cause.message : '전국 스캔 요청에 실패했습니다.', base_ymd: targetDate });
@@ -259,61 +266,88 @@ function App() {
     } finally { setBusinessLoading(false); }
   };
 
-  // ① 전국 관광수요 스캔 → ② 잘 되는 곳들 중 취약점 탐지: 비교 기준을 표본
-  // 4개 지역의 중앙값이 아니라, 같은 기준일 전국 순위에서 동적으로 뽑은
-  // 상위 수요 지역(national-peers)의 중앙값으로 삼는다.
+  // 전국 비교(내 위치 확인)와 Peer Group 비교(내 문제 찾기)를 분리한다.
+  // 전국은 관광수요의 절대적 위치 판단에만 쓰고, 체류·숙박·소비 등 취약성 판단은
+  // 반드시 행정유형·수도권 여부가 같고 관광수요 규모가 유사한 Peer Group 안에서만 한다.
   const peersAvailable = nationalPeers?.available === true;
-  const ratioDiff = (value: number | null, reference: number | null) => value == null || reference == null || reference === 0 ? null : ((value - reference) / reference) * 100;
+  const peerGroup = peersAvailable ? nationalPeers.peer_group : null;
   const pointDiff = (value: number | null, reference: number | null) => value == null || reference == null ? null : value - reference;
 
-  const demandDiff = snapshot && peersAvailable ? ratioDiff(snapshot.area.outside_visitors, nationalPeers.national_median_outside_visitors) : null;
-  const stayDiff = snapshot && peersAvailable ? pointDiff(snapshot.observed_indices.stay_intensity, nationalPeers.peer_medians.stay_intensity) : null;
-  const lodgingDiff = snapshot && peersAvailable ? pointDiff(snapshot.observed_indices.lodging_share_index, nationalPeers.peer_medians.lodging_share_index) : null;
-  const spendDiff = snapshot && peersAvailable ? pointDiff(snapshot.observed_indices.spend_intensity, nationalPeers.peer_medians.spend_intensity) : null;
-  // 공간확산은 지역마다 별도 API 호출이 필요해 전국 비교군 전체에는 아직 적용하지 않는다.
-  // 표본 지역 median으로 대체하지 않고, 정직하게 "전국 비교 준비 중"으로 표시한다.
+  const nationalPercentile = peersAvailable ? nationalPeers.national.target_percentile : null;
+  const demandLevel = peersAvailable ? nationalPeers.national.demand_level : null;
+
+  const stayDiff = snapshot && peerGroup ? pointDiff(snapshot.observed_indices.stay_intensity, peerGroup.medians.stay_intensity) : null;
+  const lodgingDiff = snapshot && peerGroup ? pointDiff(snapshot.observed_indices.lodging_share_index, peerGroup.medians.lodging_share_index) : null;
+  const spendDiff = snapshot && peerGroup ? pointDiff(snapshot.observed_indices.spend_intensity, peerGroup.medians.spend_intensity) : null;
+  // 공간확산은 지역마다 별도 API 호출이 필요해 Peer Group 전체에는 아직 적용하지 않는다.
+  // 전국 중앙값 등으로 대체하지 않고, 정직하게 "Peer 비교 준비 중"으로 표시한다.
   const dispersionDiff: number | null = null;
 
-  // 단기 수요 안정성: 최근 7일 변동성에서 진단 대상과 전국 동적 비교군의 값을 뽑아 중앙값과 비교한다.
+  // 단기 수요 안정성: 최근 7일 변동성에서 진단 대상과 Peer Group의 값을 뽑아 중앙값과 비교한다.
   const stabilityValue = (id: string) => stability?.areas[id]?.stability_index ?? null;
-  const stabilityPeerIds = peersAvailable ? nationalPeers.peers.map((peer) => peer.area_cd) : regions.filter((item) => item.id !== regionId).map((item) => item.id);
-  const peerStabilityMedian = () => median(stabilityPeerIds.map(stabilityValue).filter((value): value is number => value != null));
-  const stabilityDiff = stability ? pointDiff(stabilityValue(regionId), peerStabilityMedian()) : null;
+  const stabilityPeerIds = peerGroup ? peerGroup.peers.map((peer) => peer.area_cd) : regions.filter((item) => item.id !== regionId).map((item) => item.id);
+  const peerStabilityValues = stabilityPeerIds.map(stabilityValue).filter((value): value is number => value != null);
+  const peerStabilityMedian = median(peerStabilityValues);
+  const stabilityDiff = stability ? pointDiff(stabilityValue(regionId), peerStabilityMedian) : null;
 
-  const peerBasisNote = peersAvailable
-    ? `전국 ${nationalPeers.municipality_count}개 시군구 중 관광수요 상위 ${nationalPeers.peers.length}곳(선택지역 제외) 중앙값 대비`
-    : '전국 비교군 조회 대기';
+  const peerBasisNote = peerGroup
+    ? `${peerGroup.criteria_note} ${peerGroup.count}곳 중앙값 대비${peerGroup.relaxed ? ' (수도권 조건 완화)' : ''}`
+    : 'Peer Group 조회 대기';
   const axes: Axis[] = [
-    { key: 'demand', label: '관광수요', diff: demandDiff, unit: '%', threshold: 10, tier: 'derived', note: `외지인 방문자수 · 전국 중앙값 대비 증감률` },
-    { key: 'stay', label: '체류강도', diff: stayDiff, unit: 'p', threshold: 5, tier: 'derived', note: `KTO 체류강도 지수 · ${peerBasisNote}` },
-    { key: 'spend', label: '소비강도', diff: spendDiff, unit: 'p', threshold: 5, tier: 'derived', note: `KTO 소비강도 지수 · ${peerBasisNote}` },
-    { key: 'stayShare', label: '숙박비중', diff: lodgingDiff, unit: 'p', threshold: 5, tier: 'derived', note: `KTO 숙박 비중 지수(2102) · ${peerBasisNote}` },
-    { key: 'dispersion', label: '중심지 공간확산', diff: dispersionDiff, unit: '%', threshold: 10, tier: 'pending', note: '내비게이션 중심 관광지 좌표의 RMS 확산거리 · 전국 비교군 확장 예정(현재는 진단 대상 값만 제공)' },
-    { key: 'stability', label: '단기 수요 안정성', diff: stabilityDiff, unit: 'p', threshold: 5, tier: 'derived', note: `최근 7일 외지인 방문자 변동계수 역산값 · ${peerBasisNote} · 연간 계절성 지표가 아님` },
+    { key: 'stay', label: '체류강도', diff: stayDiff, unit: 'p', threshold: 5, tier: 'derived', note: `KTO 체류강도 지수 · ${peerBasisNote}`,
+      value: snapshot?.observed_indices.stay_intensity ?? null, peerMedian: peerGroup?.medians.stay_intensity ?? null, peerTop25: peerGroup?.top_quartile.stay_intensity ?? null },
+    { key: 'spend', label: '소비강도', diff: spendDiff, unit: 'p', threshold: 5, tier: 'derived', note: `KTO 소비강도 지수 · ${peerBasisNote}`,
+      value: snapshot?.observed_indices.spend_intensity ?? null, peerMedian: peerGroup?.medians.spend_intensity ?? null, peerTop25: peerGroup?.top_quartile.spend_intensity ?? null },
+    { key: 'stayShare', label: '숙박비중', diff: lodgingDiff, unit: 'p', threshold: 5, tier: 'derived', note: `KTO 숙박 비중 지수(2102) · ${peerBasisNote}`,
+      value: snapshot?.observed_indices.lodging_share_index ?? null, peerMedian: peerGroup?.medians.lodging_share_index ?? null, peerTop25: peerGroup?.top_quartile.lodging_share_index ?? null },
+    { key: 'dispersion', label: '중심지 공간확산', diff: dispersionDiff, unit: '%', threshold: 10, tier: 'pending', note: '내비게이션 중심 관광지 좌표의 RMS 확산거리 · Peer Group 확장 예정(현재는 진단 대상 값만 제공)',
+      value: snapshot?.observed_indices.spatial_dispersion ?? null, peerMedian: null, peerTop25: null },
+    { key: 'stability', label: '단기 수요 안정성', diff: stabilityDiff, unit: 'p', threshold: 5, tier: 'derived', note: `최근 7일 외지인 방문자 변동계수 역산값 · ${peerBasisNote} · 연간 계절성 지표가 아님`,
+      value: stabilityValue(regionId), peerMedian: peerStabilityMedian, peerTop25: null },
   ];
   const severity = (axis: Axis) => axis.diff == null ? 0 : Math.max(0, -axis.diff / axis.threshold);
   const isWeak = (diff: number | null, threshold: number) => diff != null && diff <= -threshold;
 
-  // 원인분해: 현재 원천·파생지표로 판별 가능한 관계(수요→체류→소비 전환)만 규칙 기반으로 판단한다.
-  // 숙박공급/야간콘텐츠 등 2차 구조지표가 연동되기 전까지는 CASE A/B 세부 유형 대신 상위 유형만 제시한다.
+  // ①전국 위치 → ②수요 충분 여부 → ③Peer 성과비교 → ④유형판정 → ⑤원인분해.
+  // "관광수요가 이미 확보된 지역의 숨은 취약점을 찾는다"는 문제의식을 지키기 위해,
+  // 수요부족형/잠재력형은 심층 체류·숙박 원인분해 대신 1차 판정만 제공한다.
+  const coreAxes = [
+    { axis: axes[0], key: 'stay' as const }, { axis: axes[1], key: 'spend' as const }, { axis: axes[2], key: 'stayShare' as const },
+  ];
+  const weakCoreAxes = coreAxes.filter(({ axis }) => isWeak(axis.diff, axis.threshold));
+  const hasCoreData = stayDiff != null && spendDiff != null && lodgingDiff != null;
+  const hasWeakPerformance = weakCoreAxes.length > 0;
+
+  let macroType: '수요부족형' | '잠재력형' | '성과우수형' | '숨은취약형' | null = null;
   let regionType = '진단 데이터 수집 중';
-  let diagnosisText = peersAvailable ? '전국 비교군 데이터가 모두 모이면 진단을 표시합니다.' : '전국 관광수요 스캔 결과를 기다리는 중입니다.';
-  if (demandDiff != null && stayDiff != null && spendDiff != null) {
-    if (!isWeak(demandDiff, 10) && (isWeak(stayDiff, 5) || isWeak(lodgingDiff, 5))) {
-      regionType = '체류전환 부족형';
-      diagnosisText = `${topicParticle(region.name)} 관광수요는 전국 상위 수요지역 중앙값 수준 이상이지만, 확보된 방문이 체류·숙박으로 충분히 이어지지 않고 있습니다. 숙박·체류 콘텐츠 강화가 우선 과제입니다.`;
-    } else if (!isWeak(stayDiff, 5) && isWeak(spendDiff, 5)) {
-      regionType = '소비연결 부족형';
-      diagnosisText = `${topicParticle(region.name)} 관광객 유입과 체류에는 문제가 없지만, 확보된 관광수요가 소비로 충분히 연결되지 않고 있습니다. 상권 연계·소비 유도 정책이 우선 과제입니다.`;
-    } else if (isWeak(demandDiff, 10) && isWeak(stayDiff, 5) && isWeak(spendDiff, 5)) {
-      regionType = '복합취약형';
-      diagnosisText = `${topicParticle(region.name)} 수요·체류·소비 전 구간이 전국 상위 수요지역 중앙값을 밑돌고 있어 개별 정책보다 구조적 진단이 우선 필요합니다.`;
-    } else if (isWeak(demandDiff, 10)) {
-      regionType = '수요부족형';
-      diagnosisText = `${topicParticle(region.name)} 체류·소비 전환 자체는 양호하지만, 유입되는 관광수요 자체가 전국 중앙값보다 적습니다.`;
+  let diagnosisText = peersAvailable ? 'Peer Group 데이터가 모두 모이면 진단을 표시합니다.' : '전국 관광수요 스캔 결과를 기다리는 중입니다.';
+
+  if (demandLevel != null && hasCoreData) {
+    if (demandLevel === '부족') {
+      macroType = hasWeakPerformance ? '수요부족형' : '잠재력형';
+      regionType = macroType;
+      diagnosisText = macroType === '수요부족형'
+        ? `${topicParticle(region.name)} 관광수요 자체가 전국 상위 ${(100 - (nationalPercentile ?? 0)).toFixed(0)}%대로 아직 충분하지 않습니다. 체류·숙박 전환보다 관광수요 확보가 우선 과제입니다.`
+        : `${topicParticle(region.name)} 관광수요는 전국 기준으로 아직 낮지만, Peer Group(${peerGroup?.criteria_note})과 비교했을 때 체류·숙박·소비 성과는 상대적으로 양호합니다. 유입 확대 정책을 우선 검토할 수 있는 잠재력형입니다.`;
     } else {
-      regionType = '안정형';
-      diagnosisText = `${topicParticle(region.name)} 수요·체류·소비 축 모두 전국 상위 수요지역 중앙값과 비슷하거나 앞서 있습니다. 숙박공급·야간콘텐츠 등 2차 구조지표가 연동되면 원인을 더 세분화합니다.`;
+      macroType = hasWeakPerformance ? '숨은취약형' : '성과우수형';
+      regionType = macroType;
+      if (macroType === '성과우수형') {
+        diagnosisText = `${topicParticle(region.name)} 관광수요는 전국 상위 ${(100 - (nationalPercentile ?? 0)).toFixed(0)}%대로 충분하고, Peer Group 대비 체류·숙박·소비 성과도 양호합니다. 신규 정책보다 현재 수준의 유지·고도화가 적절합니다.`;
+      } else {
+        // 숨은취약형: 가장 취약한 축을 원인분해해 세부 유형을 붙인다.
+        const weakest = [...weakCoreAxes].sort((a, b) => severity(a.axis) - severity(b.axis)).reverse()[0];
+        if (weakest.key === 'stay' || weakest.key === 'stayShare') {
+          regionType = '숨은취약형 · 체류전환 부족';
+          diagnosisText = `${topicParticle(region.name)} 관광수요는 이미 충분(전국 상위 ${(100 - (nationalPercentile ?? 0)).toFixed(0)}%)하지만, 같은 조건의 Peer Group(${peerGroup?.criteria_note})과 비교하면 체류·숙박 전환이 상대적으로 낮습니다. 관광사업자 원자료로 숙박 공급 여건을 확인해 원인을 좁혀야 합니다.`;
+        } else if (weakest.key === 'spend') {
+          regionType = '숨은취약형 · 소비연결 부족';
+          diagnosisText = `${topicParticle(region.name)} 관광수요와 체류는 Peer Group 수준이지만, 확보된 방문이 소비로 충분히 연결되지 않고 있습니다. 상권 연계·소비 유도 정책이 우선 과제입니다.`;
+        } else {
+          regionType = '숨은취약형';
+          diagnosisText = `${topicParticle(region.name)} 관광수요는 이미 충분하지만 Peer Group 대비 일부 지표가 취약합니다. 아래 우선순위에서 구체적인 취약축을 확인하세요.`;
+        }
+      }
     }
   }
 
@@ -321,7 +355,8 @@ function App() {
   const rankedWeak = axes.filter((axis) => severity(axis) > 0).sort((a, b) => severity(b) - severity(a));
   const pendingAxes = axes.filter((axis) => axis.diff == null);
   const priorities = [...rankedWeak, ...pendingAxes].slice(0, 3);
-  const promotionLowPriority = demandDiff != null && demandDiff >= -5;
+  // 관광수요 자체는 이미 충분(전국 상위 절반)하므로, 홍보 확대보다 Peer 대비 취약축이 우선이다.
+  const promotionLowPriority = demandLevel === '충분';
   const chartData = axes.filter((axis) => axis.diff != null).map((axis) => ({ name: axis.label, diff: (axis.diff as number) / axis.threshold }));
 
   const stats = snapshot ? [
@@ -346,7 +381,10 @@ function App() {
     ['관광지 혼잡 예측', '각 관광지의 가장 붐비는 시기를 100으로 둔 향후 30일 상대 혼잡도입니다. 관광지 간 방문 점유율이 아니므로 공간분산 지수로 사용하지 않습니다.'],
     ['중심지 공간확산', '내비게이션 연계 중심 관광지 좌표가 지리적 중심에서 얼마나 넓게 퍼져 있는지를 RMS 거리(km)로 계산합니다. 실제 방문자 점유율의 균등도를 뜻하는 정식 공간분산 D와는 구분합니다.'],
     ['단기 수요 안정성', '최근 7일 외지인 방문자의 변동계수(CV)를 100×(1−CV)로 역산한 파생지표입니다. 연간 계절성을 대신하지 않습니다.'],
-    ['전국 동적 비교군', '같은 기준일 전국 시군구 방문자 순위에서 선택지역을 제외한 관광수요 상위 지역을 매번 다시 골라 비교군으로 삼습니다. 아직 유사 관광구조 군집이나 75분위 프론티어 비교는 아닙니다.'],
+    ['전국 위치 vs Peer Group', '전국 위치(①)는 기초지자체 전체 중 관광수요 백분위로 수요 수준만 판정합니다. Peer Group(②)은 체류·숙박·소비 취약성을 진단할 때만 쓰며, 같은 행정유형(시/군/자치구)·수도권 여부·관광수요 규모가 비슷한 지역으로 구성합니다. 전국 상위지역 중앙값을 그대로 비교기준으로 쓰지 않습니다.'],
+    ['행정유형 분리', '자치구(강남구·해운대구)는 기초지자체이지만 일반구(수원시 팔달구처럼 상위 시 이름이 붙는 구)는 기초지자체가 아니므로 진단 대상·Peer Group 어디에도 포함하지 않습니다. 시는 시·군끼리만, 자치구는 자치구끼리만 비교합니다.'],
+    ['관광수요 판정 기준', '전국 기초지자체 백분위 50% 이상이면 “충분”, 미만이면 “부족”으로 1차 판정합니다. 부족 판정 지역은 체류·숙박 원인분해보다 관광수요 확보를 우선 과제로 제시합니다.'],
+    ['Peer Group 상위 25%', 'Peer Group 중앙값과 함께, 그 안에서 실제로 잘하는 지역의 수준(상위 25% 지점)을 같이 보여줍니다. 중앙값보다 낮더라도 상위 25%와의 격차를 통해 개선 여지를 가늠할 수 있습니다.'],
     ['지도 좌표', '전국 시군구 중심좌표는 통계청 SGIS 행정동 경계(공공누리 제1유형)를 admdongkor 저장소(CC BY 4.0)가 가공한 2024년 자료를 시군구 단위로 평균해 만들었습니다. 구가 있는 시는 구 좌표 평균으로 근사합니다.'],
     ['취약도', '축별 음의 편차를 임계값으로 나눈 표준화 결손도입니다. 체류·숙박, 소비, 공간, 단기 안정성의 취약 정도를 비교해 정책 개입 순서를 정합니다. 예산 배분 비율이나 효과 예측이 아닙니다.'],
     ['TCEI', '체류(S)·소비(C)·공간분산(D)·계절안정성(B)의 백분위 기하평균입니다. 현재는 연간 계절성과 소비 잔차가 완성되지 않아 산출하지 않습니다.'],
@@ -356,10 +394,10 @@ function App() {
   return <>
     <header><div className="logo"><b>R</b>Regional Tourism Scan<i /></div><nav><a href="#map">전국 관광수요</a><a href="#diagnosis">관광현황 진단</a><a href="#business-data">관광사업자 원자료</a><a href="#peer">지역 비교</a><a href="#priority">정책 우선순위</a><a href="#methodology">용어·알고리즘</a></nav><button type="button">정책 브리프 PDF ↗</button></header>
     <main data-live-analysis="true">
-      <section className="hero live-hero"><small>● DATA LAB CONNECTION · KTO TOURISM DATA LAB</small><div><article><h1>지금은 <em>Data Lab API 자료</em>로<br />확인합니다.</h1><p>선택한 기준일과 지자체의 한국관광공사 통신 기반 방문자 추정치와 관광지수를 서버에서 조회합니다. 전국에서 관광수요가 이미 충분한 지역들과 비교해 &ldquo;무엇이 상대적으로 부족한가&rdquo;를 진단합니다.</p><a href="#map">기준일 데이터 보기 ↓</a></article><aside><span>DATA STATUS <b>{loading ? 'LOADING' : snapshot ? 'CONNECTED' : 'CONNECTION REQUIRED'}</b></span><strong>{snapshot ? 'OK' : '--'}</strong><div className="bars">{[28, 42, 36, 58, 49, 68, 57, 79].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}</div><p><b>{snapshot ? snapshot.source : 'KTO API 연결 확인 필요'}</b><span>{snapshot?.base_ymd || date.replace(/-/g, '.')}</span></p></aside></div></section>
+      <section className="hero live-hero"><small>● DATA LAB CONNECTION · KTO TOURISM DATA LAB</small><div><article><h1>지금은 <em>Data Lab API 자료</em>로<br />확인합니다.</h1><p>선택한 기준일과 지자체의 한국관광공사 통신 기반 방문자 추정치와 관광지수를 서버에서 조회합니다. 전국 위치로 관광수요 수준을 먼저 판단한 뒤, 행정유형·수도권 여부·관광수요 규모가 비슷한 Peer Group과 비교해 &ldquo;무엇이 상대적으로 부족한가&rdquo;를 진단합니다.</p><a href="#map">기준일 데이터 보기 ↓</a></article><aside><span>DATA STATUS <b>{loading ? 'LOADING' : snapshot ? 'CONNECTED' : 'CONNECTION REQUIRED'}</b></span><strong>{snapshot ? 'OK' : '--'}</strong><div className="bars">{[28, 42, 36, 58, 49, 68, 57, 79].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}</div><p><b>{snapshot ? snapshot.source : 'KTO API 연결 확인 필요'}</b><span>{snapshot?.base_ymd || date.replace(/-/g, '.')}</span></p></aside></div></section>
       <section id="map" className="section"><div className="heading"><div><small>01 / REGION SELECT</small><h2>지역을 선택하면,<br /><em>진단이 시작됩니다</em></h2></div><div className="live-controls"><div className="region-search"><label>지역 검색<input type="text" value={regionQuery} placeholder="예: 강남구, 경상북도" onChange={(event) => setRegionQuery(event.target.value)} /></label>{regionMatches.length > 0 && <ul className="region-search-results">{regionMatches.map((item) => <li key={item.id}><button type="button" onClick={() => { select(item.id); setRegionQuery(''); }}>{regionLabel(item)}</button></li>)}</ul>}</div><label>기준일<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><button type="button" onClick={() => void loadDiagnosis(regionId, date.replace(/-/g, ''), () => false)} disabled={loading}>{loading ? '조회 중' : '기준일 데이터 조회'}</button></div></div>
-        <div className="maplayout"><article className="map"><div>외지인 방문자 · KTO 일별 집계 <span>{mapRegions.length > regions.length ? `전국 ${mapRegions.length}개 시군구 중 클릭하세요` : '선택 지역을 클릭하세요'}</span></div><MapContainer center={[36.25, 127.8]} zoom={6.3} scrollWheelZoom={false}><TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />{mapRegions.map((item) => <CircleMarker key={item.id} center={[item.lat, item.lng]} radius={item.id === regionId ? 16 : 6} pathOptions={{ color: item.id === regionId ? '#173b2b' : '#7a1f0f', weight: item.id === regionId ? 4 : 1.5, fillColor: item.id === regionId ? '#4f8249' : '#e8622f', fillOpacity: item.id === regionId ? .95 : .9 }} eventHandlers={{ click: () => select(item.id) }}><Tooltip>{regionLabel(item)}</Tooltip></CircleMarker>)}</MapContainer><small>※ {mapRegions.length > regions.length ? `전국 시군구 방문자 순위(같은 기준일)에서 좌표를 확인할 수 있는 시 단위 ${mapRegions.length}곳을 진단 대상으로 선택할 수 있습니다.` : '전국 스캔 결과를 불러오는 중입니다. 우선 4개 관광거점 중에서 선택하세요.'} 아래 비교군은 선택 지역과 무관하게 전국 시군구 방문자 순위에서 매번 동적으로 뽑습니다.</small></article>
-          <aside className="summary"><small>SELECTED MUNICIPALITY</small><h3>{regionLabel(region)}</h3><label>기준일 외지인 방문자</label><strong>{snapshot ? formatNumber.format(snapshot.area.outside_visitors) : '--'}</strong><i><b style={{ width: `${snapshot?.national_comparison.outside_visitor_percentile || 0}%` }} /></i><p>전국 270개 코드 내 백분위 <b>{snapshot ? `${snapshot.national_comparison.outside_visitor_percentile}%` : '--'}</b></p><label>데이터 상태</label><div className="badges"><span>{snapshot ? 'KTO 통신기반 추정치' : '조회 대기'}</span><span>{snapshot ? snapshot.base_ymd : date.replace(/-/g, '')}</span></div><p className="desc">{error || (snapshot ? '선택 기준일의 외지인 방문자 추정치입니다. 아래 비교진단은 전국 시군구 중 관광수요 상위 지역의 중앙값을 기준으로 합니다.' : '조회 버튼을 눌러 KTO 방문자 데이터를 불러오세요.')}</p></aside></div>
+        <div className="maplayout"><article className="map"><div>외지인 방문자 · KTO 일별 집계 <span>{mapRegions.length > regions.length ? `전국 ${mapRegions.length}개 시군구 중 클릭하세요` : '선택 지역을 클릭하세요'}</span></div><MapContainer center={[36.25, 127.8]} zoom={6.3} scrollWheelZoom={false}><TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />{mapRegions.map((item) => <CircleMarker key={item.id} center={[item.lat, item.lng]} radius={item.id === regionId ? 16 : 6} pathOptions={{ color: item.id === regionId ? '#173b2b' : '#7a1f0f', weight: item.id === regionId ? 4 : 1.5, fillColor: item.id === regionId ? '#4f8249' : '#e8622f', fillOpacity: item.id === regionId ? .95 : .9 }} eventHandlers={{ click: () => select(item.id) }}><Tooltip>{regionLabel(item)}</Tooltip></CircleMarker>)}</MapContainer><small>※ {mapRegions.length > regions.length ? `전국 기초지자체(시/군/자치구) 중 좌표를 확인할 수 있는 ${mapRegions.length}곳을 진단 대상으로 선택할 수 있습니다.` : '전국 스캔 결과를 불러오는 중입니다. 우선 4개 관광거점 중에서 선택하세요.'} Peer Group은 선택 지역과 같은 행정유형·수도권 여부·관광수요 규모의 지역으로 매번 다시 구성합니다.</small></article>
+          <aside className="summary"><small>SELECTED MUNICIPALITY</small><h3>{regionLabel(region)}</h3><label>기준일 외지인 방문자</label><strong>{snapshot ? formatNumber.format(snapshot.area.outside_visitors) : '--'}</strong><i><b style={{ width: `${snapshot?.national_comparison.outside_visitor_percentile || 0}%` }} /></i><p>전국 270개 코드 내 백분위 <b>{snapshot ? `${snapshot.national_comparison.outside_visitor_percentile}%` : '--'}</b></p><label>데이터 상태</label><div className="badges"><span>{snapshot ? 'KTO 통신기반 추정치' : '조회 대기'}</span><span>{snapshot ? snapshot.base_ymd : date.replace(/-/g, '')}</span></div><p className="desc">{error || (snapshot ? '선택 기준일의 외지인 방문자 추정치입니다. 아래 진단은 전국 위치(내 위치 확인)와 Peer Group 비교(내 문제 찾기)로 나눠 보여드립니다.' : '조회 버튼을 눌러 KTO 방문자 데이터를 불러오세요.')}</p></aside></div>
       </section>
       <section id="diagnosis" className="section live-section"><div className="heading"><div><small>02 / OBSERVED METRICS</small><h2>{region.name}의<br /><em>관측자료 기반 진단</em></h2></div><label>진단 대상{mapRegions.length > regions.length && <em className="tier tier-derived">전국 {mapRegions.length}곳</em>}<select value={regionId} onChange={(event) => select(event.target.value)}>{mapRegions.map((item) => <option key={item.id} value={item.id}>{regionLabel(item)}</option>)}</select></label></div>
         <div className="live-stats">{stats.map(([label, value, caption, tier]) => <article key={label as string}><small>{label} <Tier tier={tier as DataTier} /></small><strong>{value}</strong><p>{caption}</p></article>)}</div>
@@ -369,13 +407,28 @@ function App() {
         {businessError && <p className="business-error">{businessError}</p>}
         {businessData && <div className="business-results"><div className="business-summary"><article><small>원본 레코드 <Tier tier="measured" /></small><strong>{formatNumber.format(businessData.raw_record_count)}</strong><p>최대 100건 1페이지 조회 결과</p></article><article><small>영업 중 사업체 <Tier tier="derived" /></small><strong>{formatNumber.format(businessData.operating_business_count)}</strong><p>`SALS_STTS_NM` 텍스트 기준</p></article><article><small>영업 중 관광숙박업소 <Tier tier="derived" /></small><strong>{formatNumber.format(businessData.operating_tourism_accommodation_business_count)}</strong><p>{businessData.metric_type}</p></article></div><p className="business-caution">※ 이것은 <b>관광숙박업소 수</b>이며 객실 수가 아닙니다. 전국 비교에는 모든 페이지 적재와 지역 매핑 검증이 선행되어야 합니다.</p><div className="business-table-wrap"><table><thead><tr><th>사업장명</th><th>관광사업 업종</th><th>영업상태</th><th>주소</th><th>갱신시점</th></tr></thead><tbody>{businessData.items.map((item, index) => <tr key={`${item.MNG_NO || 'row'}-${index}`}><td>{item.BPLC_NM || '-'}</td><td>{item.CULTR_SPTS_TPBIZ_NM || '-'}</td><td>{item.SALS_STTS_NM || '-'}</td><td>{item.ROAD_NM_ADDR || item.LOTNO_ADDR || '-'}</td><td>{item.DAT_UPDT_PNT || item.LAST_MDFCN_PNT || '-'}</td></tr>)}</tbody></table></div></div>}
       </section>
-      <section id="peer" className="section live-section"><div className="heading"><div><small>04 / NATIONWIDE PEER SCAN</small><h2>전국에서 잘 되는 지역과,<br /><em>동적으로 비교합니다</em></h2></div></div>
-        <p className="peer-note">{peersAvailable
-          ? `비교군: 전국 ${nationalPeers.municipality_count}개 시군구 중 관광수요 ${nationalPeers.peers.map((peer) => `${peer.area_name}(${peer.rank}위)`).join(' · ')} — 선택지역(${nationalPeers.target ? `${nationalPeers.target.rank}위` : '순위 미확인'}) 제외 상위 ${nationalPeers.peers.length}곳 중앙값 기준`
-          : nationalPeers && !nationalPeers.available
-            ? `전국 비교군 조회에 실패했습니다: ${nationalPeers.reason}`
-            : '전국 관광수요 스캔 결과를 불러오는 중입니다…'}</p>
-        <div className="cards"><article>{axes.map((axis) => <div className="sbar" key={axis.key}><span>{axis.label} <Tier tier={axis.tier} /></span><i><b style={{ width: axis.diff == null ? '0%' : `${Math.min(100, 20 * Math.abs(axis.diff) / axis.threshold)}%`, background: axis.diff == null ? '#d7ddd4' : axis.diff < 0 ? '#d45f43' : '#8fbc7e' }} /></i><em>{axis.diff == null ? '데이터 없음' : formatSigned(axis.diff, axis.unit)}</em></div>)}<p className="insight">{diagnosisText}</p></article></div>
+      <section id="peer" className="section live-section"><div className="heading"><div><small>04 / NATIONAL POSITION + PEER GROUP</small><h2>비슷한 조건의 지역과 비교해,<br /><em>숨은 취약점을 찾습니다</em></h2></div></div>
+        <div className="cards"><article className="national-position"><small>① 전국 비교 — 내 위치 확인</small>
+          {peersAvailable ? <>
+            <p className="insight">{topicParticle(region.name)} 관광수요가 전국 기초지자체(시/군/자치구) {nationalPeers.national.municipality_count}곳 중 상위 {(100 - nationalPeers.national.target_percentile).toFixed(0)}%(백분위 {nationalPeers.national.target_percentile}%)로, &ldquo;{nationalPeers.national.demand_level}&rdquo;한 지역으로 판정됩니다.</p>
+            <div className="badges"><span>{region.name}: 전국 상위 {(100 - nationalPeers.national.target_percentile).toFixed(0)}%</span><span>수요 판정: {nationalPeers.national.demand_level}</span></div>
+          </> : <p className="insight">{nationalPeers && !nationalPeers.available ? `전국 비교 조회에 실패했습니다: ${nationalPeers.reason}` : '전국 관광수요 스캔 결과를 불러오는 중입니다…'}</p>}
+        </article></div>
+        <div className="cards"><article className="peer-diagnosis"><small>② Peer Group 비교 — 내 문제 찾기</small>
+          <p className="peer-note">{peerGroup
+            ? `비교군: ${peerGroup.criteria_note} · ${peerGroup.count}곳${peerGroup.relaxed ? ' (수도권 조건을 완화해 표본을 채웠습니다)' : ''}`
+            : nationalPeers && !nationalPeers.available ? `Peer Group 조회에 실패했습니다: ${nationalPeers.reason}` : 'Peer Group을 구성하는 중입니다…'}</p>
+          {peerGroup && <details className="peer-list-disclosure"><summary>비교군 지역 목록 펼쳐보기 ({peerGroup.peers.length}곳)</summary>
+            <ul className="peer-list">{peerGroup.peers.map((peer) => <li key={peer.area_cd}>{peer.area_name} <span>전국 {peer.rank}위 · 상위 {(100 - peer.percentile).toFixed(0)}%</span></li>)}</ul>
+          </details>}
+          {axes.map((axis) => <div className="sbar" key={axis.key}>
+            <span>{axis.label} <Tier tier={axis.tier} /></span>
+            <i><b style={{ width: axis.diff == null ? '0%' : `${Math.min(100, 20 * Math.abs(axis.diff) / axis.threshold)}%`, background: axis.diff == null ? '#d7ddd4' : axis.diff < 0 ? '#d45f43' : '#8fbc7e' }} /></i>
+            <em>{axis.diff == null ? '데이터 없음' : formatSigned(axis.diff, axis.unit)}</em>
+          </div>)}
+          <div className="peer-value-table">{axes.filter((axis) => axis.value != null || axis.peerMedian != null).map((axis) => <p key={axis.key}><span>{axis.label}</span><b>{region.name} {axis.value != null ? axis.value.toFixed(1) : '--'}</b><b>Peer 중앙값 {axis.peerMedian != null ? axis.peerMedian.toFixed(1) : '--'}</b><b>Peer 상위25% {axis.peerTop25 != null ? axis.peerTop25.toFixed(1) : '--'}</b></p>)}</div>
+          <p className="insight">{diagnosisText}</p>
+        </article></div>
       </section>
       <section id="priority" className="section live-section"><div className="heading"><div><small>05 / WEAKNESS → ROOT CAUSE → PRIORITY</small><h2>{region.name} 정책 우선순위<br /><em>TOP 3</em></h2></div><span className="badges"><span>{regionType} <Tier tier="modeled" /></span></span></div>
         <p className="peer-note">{diagnosisText}</p>
@@ -391,12 +444,12 @@ function App() {
             </BarChart>
           </ResponsiveContainer>
         </div>}
-        <div className="cards">{priorities.map((axis, index) => <article key={axis.key}><small>{index + 1}순위 · {axis.label} <Tier tier={axis.tier} /></small><strong>{axis.diff == null ? '데이터 연동 후 진단' : `${axis.label} 강화 필요`}</strong><p>근거: {axis.diff == null ? axis.note : `전국 상위 수요지역 중앙값 대비 ${formatSigned(axis.diff, axis.unit)} · 취약도 ${severity(axis).toFixed(2)}`}</p></article>)}</div>
-        {promotionLowPriority && <p className="insight low-priority">[우선순위 낮음] 추가 관광홍보 — 방문수요가 전국 상위 수요지역 중앙값 수준이므로, 홍보 확대보다 위 우선순위 항목을 먼저 검토합니다.</p>}
+        <div className="cards">{priorities.map((axis, index) => <article key={axis.key}><small>{index + 1}순위 · {axis.label} <Tier tier={axis.tier} /></small><strong>{axis.diff == null ? '데이터 연동 후 진단' : `${axis.label} 강화 필요`}</strong><p>근거: {axis.diff == null ? axis.note : `Peer Group 중앙값 대비 ${formatSigned(axis.diff, axis.unit)} · 취약도 ${severity(axis).toFixed(2)}`}</p>{axis.key === 'stayShare' && axis.diff != null && axis.diff <= -5 && <p className="root-cause-link">→ 원인 확인: <a href="#business-data">관광사업자 원자료에서 숙박 공급 여건 보기</a></p>}</article>)}</div>
+        {promotionLowPriority && <p className="insight low-priority">[우선순위 낮음] 추가 관광홍보 — 관광수요 자체는 이미 전국 기준으로 충분하므로, 홍보 확대보다 위 우선순위 항목을 먼저 검토합니다.</p>}
       </section>
       <section id="methodology" className="section live-section methodology"><div className="heading"><div><small>06 / TERMS &amp; ALGORITHM</small><h2>용어와 계산법을<br /><em>투명하게 공개합니다</em></h2></div><p>현재 제공값과 향후 R-GAP 산출을 구분합니다. 각 값의 단위·비교범위·한계를 함께 확인하세요.</p></div><div className="term-grid">{methodologyTerms.map(([term, description]) => <article key={term}><h3>{term}</h3><p>{description}</p></article>)}</div></section>
       <section id="tshift" className="section"><div className="heading"><div><small>07 / 정책 시행 후 효과검증 프레임</small><h2>정책은 실험하고,<br /><em>효과는 증명합니다.</em></h2></div><p>현재 정책 성과가 아닌, 야간·계절 누수 정책의 사전 등록과 DiD 사후검증을 위한 실행 템플릿입니다.</p></div><div className="did">{[['01', '정책 패키지 설계', '체류 동선·야간 콘텐츠·지역 상권을 하나의 전환 여정으로 설계합니다.'], ['02', '비교지역 선정 · 변화 가설 등록', '성과지표, 대상·비교지역, 관찰기간을 사업 시작 전 고정합니다.'], ['03', '사전/사후 데이터 수집 · DiD 효과 리포트', '정책 전후 변화와 비교군 차이를 비교해 순효과를 검증합니다.']].map(([step, title, description]) => <article key={step}><small>{step}</small><h3>{title}</h3><p>{description}</p></article>)}</div></section>
-      <section className="meta"><small>DATA INTERPRETATION / REQUIRED META INFO</small><div><b>원천자료·파생지표·규칙기반 진단을 구분합니다.</b><p>방문자수는 이동통신 자료 기반의 KTO 추정치이며 관광객 실인원과 동일하지 않습니다. 체류·소비·숙박 지수는 비율이나 인원수가 아닌 KTO 지수점수입니다. 관광지 혼잡도는 KTO 예측값이며, 중심지 공간확산은 내비게이션 중심 관광지 좌표로 계산한 거리 기반 보조지표입니다. 전국 동적 비교군 기반 유형·우선순위는 규칙기반 진단입니다. 실제 관광지별 방문점유율, 전국 유사구조 군집, 연간 계절성, 소비 잔차와 75분위 프론티어가 완성되기 전에는 TCEI·R-GAP으로 표시하지 않습니다.</p></div></section>
+      <section className="meta"><small>DATA INTERPRETATION / REQUIRED META INFO</small><div><b>원천자료·파생지표·규칙기반 진단을 구분합니다.</b><p>방문자수는 이동통신 자료 기반의 KTO 추정치이며 관광객 실인원과 동일하지 않습니다. 체류·소비·숙박 지수는 비율이나 인원수가 아닌 KTO 지수점수입니다. 관광지 혼잡도는 KTO 예측값이며, 중심지 공간확산은 내비게이션 중심 관광지 좌표로 계산한 거리 기반 보조지표입니다. 전국 위치는 관광수요 수준만 판단하며, 체류·숙박·소비 취약성은 행정유형·수도권 여부·관광수요 규모가 같은 Peer Group 안에서만 판단합니다(전국 상위지역 중앙값을 그대로 쓰지 않습니다). Peer Group 기반 유형·우선순위는 규칙기반 진단입니다. 실제 관광지별 방문점유율, 인구·밀도 등 추가 구조변수 기반 유사도, 연간 계절성, 소비 잔차와 75분위 프론티어가 완성되기 전에는 TCEI·R-GAP으로 표시하지 않습니다.</p></div></section>
     </main><footer><div className="logo"><b>R</b>Regional Tourism Scan</div><small>Regional Tourism Scan · Regional Recoverable Tourism Value Gap Engine · KTO Tourism Data Challenge</small></footer>
   </>;
 }

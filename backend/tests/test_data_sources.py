@@ -2,7 +2,9 @@ from app.data_sources import (compute_hub_spatial_spread, compute_visitor_stabil
                               summarize_attraction_concentration,
                               summarize_mois_tourism_business,
                               mois_tourism_business_regions,
-                              _aggregate_national_visitors, select_national_peers, is_city_level,
+                              _aggregate_national_visitors, _percentile_rank, _quantile,
+                              classify_admin_type, is_independent_municipality,
+                              is_capital_region, resolve_region_province, build_peer_group,
                               build_live_visitor_snapshot)
 
 
@@ -11,49 +13,72 @@ def _visitor_item(code: str, name: str, category: str, count: str) -> dict:
             "baseYmd": "20260701", "daywkDivCd": "4", "daywkDivNm": "목요일"}
 
 
-def test_national_ranking_selects_top_demand_peers_excluding_target():
-    # 5 municipalities with distinct outside-visitor counts; the target (C)
-    # sits in the middle, so its national peers should be the two regions
-    # ranked above it by demand, not simply "the other 4 cities".
-    items = [
-        _visitor_item("A", "가군", "외지인(b)", "500"),
-        _visitor_item("B", "나군", "외지인(b)", "400"),
-        _visitor_item("C", "다군", "외지인(b)", "300"),
-        _visitor_item("D", "라군", "외지인(b)", "200"),
-        _visitor_item("E", "마군", "외지인(b)", "100"),
-    ]
+def _ranking(items: list[dict]) -> list[dict]:
     by_area = _aggregate_national_visitors(items)
-    assert len(by_area) == 5
-    ranking = sorted(by_area.values(), key=lambda entry: -entry["outside_visitors"])
-    peers = select_national_peers(ranking, exclude_area_cd="C", count=2)
-    assert [peer["area_cd"] for peer in peers] == ["A", "B"]
-    # The excluded target itself must never appear among its own peers.
-    assert all(peer["area_cd"] != "C" for peer in peers)
+    values = [float(entry["outside_visitors"]) for entry in by_area.values()]
+    ranking = sorted(by_area.values(), key=lambda entry: -float(entry["outside_visitors"]))
+    for entry in ranking:
+        entry["percentile"] = _percentile_rank(float(entry["outside_visitors"]), values)
+    return ranking
 
 
-def test_is_city_level_excludes_both_kinds_of_gu():
-    assert is_city_level("경주시") is True
-    assert is_city_level("완주군") is True
-    assert is_city_level("세종특별자치시") is True
-    assert is_city_level("강남구") is False  # standalone metro-city district
-    assert is_city_level("수원시 팔달구") is False  # sub-city district of a 시
+def test_classify_admin_type_distinguishes_gu_from_si_gun():
+    assert classify_admin_type("경주시") == "시"
+    assert classify_admin_type("완주군") == "군"
+    assert classify_admin_type("세종특별자치시") == "시"
+    assert classify_admin_type("강남구") == "자치구"  # 기초지자체
+    assert classify_admin_type("수원시 팔달구") == "일반구"  # 기초지자체 아님
 
 
-def test_national_peers_never_include_a_gu_even_if_it_outranks_every_si():
-    # A 구 (강남구) has far higher demand than any 시/군 here, but a 시 target
-    # should only ever be benchmarked against other 시/군 — comparing a city
-    # to a district isn't the same administrative unit.
+def test_is_independent_municipality_excludes_only_ilban_gu():
+    assert is_independent_municipality("경주시") is True
+    assert is_independent_municipality("강남구") is True
+    assert is_independent_municipality("수원시 팔달구") is False
+
+
+def test_build_peer_group_never_mixes_admin_types():
+    # 강남구(자치구) has far higher demand than every 시/군 here, but a 시
+    # target must only ever be benchmarked against other 시/군 — 구 is a
+    # different kind of administrative unit, not simply a smaller peer.
     items = [
         _visitor_item("11680", "강남구", "외지인(b)", "900"),
-        _visitor_item("41110", "수원시", "외지인(b)", "500"),
         _visitor_item("47130", "경주시", "외지인(b)", "300"),
         _visitor_item("51150", "강릉시", "외지인(b)", "200"),
+        _visitor_item("52130", "군산시", "외지인(b)", "150"),
     ]
-    by_area = _aggregate_national_visitors(items)
-    ranking = sorted(by_area.values(), key=lambda entry: -entry["outside_visitors"])
-    peers = select_national_peers(ranking, exclude_area_cd="47130", count=3)
-    assert [peer["area_cd"] for peer in peers] == ["41110", "51150"]
-    assert all(is_city_level(str(peer["area_name"])) for peer in peers)
+    ranking = _ranking(items)
+    group = build_peer_group(ranking, "47130", "경주시", count=3)
+    assert group["admin_type"] == "시"
+    peer_cds = [peer["area_cd"] for peer in group["peers"]]
+    assert "11680" not in peer_cds  # the 자치구 must never appear as a 시's peer
+    assert set(peer_cds) == {"51150", "52130"}
+
+
+def test_build_peer_group_picks_closest_demand_scale_not_simply_the_top():
+    # Five 시 with descending demand; the target (C, rank 3) should be
+    # benchmarked against the two *closest* in demand scale (B and D), not
+    # simply "the other top performers nationally" (A and B).
+    items = [
+        _visitor_item("10", "가시", "외지인(b)", "500"),
+        _visitor_item("20", "나시", "외지인(b)", "400"),
+        _visitor_item("30", "다시", "외지인(b)", "300"),
+        _visitor_item("40", "라시", "외지인(b)", "200"),
+        _visitor_item("50", "마시", "외지인(b)", "100"),
+    ]
+    ranking = _ranking(items)
+    group = build_peer_group(ranking, "30", "다시", count=2)
+    assert [peer["area_cd"] for peer in group["peers"]] == ["20", "40"]
+
+
+def test_capital_region_lookup_for_a_known_gyeonggi_and_non_capital_city():
+    assert is_capital_region(resolve_region_province("41110", "수원시")) is True
+    assert is_capital_region(resolve_region_province("47130", "경주시")) is False
+
+
+def test_quantile_top_quarter_is_at_least_the_median():
+    values = [10.0, 20.0, 30.0, 40.0]
+    assert _quantile(values, 0.75) >= _quantile(values, 0.5)
+    assert _quantile([], 0.75) is None
 
 
 def test_national_visitor_percentile_covers_every_municipality_in_the_feed():

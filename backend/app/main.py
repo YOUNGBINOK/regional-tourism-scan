@@ -10,7 +10,8 @@ from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_reg
                            fetch_attraction_concentration, summarize_attraction_concentration,
                            fetch_municipal_hub_attractions, compute_hub_spatial_spread,
                            fetch_visitor_window, compute_visitor_stability,
-                           fetch_national_visitor_ranking, select_national_peers, is_city_level,
+                           fetch_national_visitor_ranking, is_independent_municipality,
+                           build_peer_group, _percentile_rank, _quantile,
                            fetch_kosis_statistics, fetch_mois_tourism_business,
                            summarize_mois_tourism_business, mois_tourism_business_regions,
                            fetch_mois_tourism_business_for_region, _cached)
@@ -378,14 +379,19 @@ async def _fetch_peer_axis_snapshot(area_cd: str, base_ym: str) -> dict[str, flo
 
 @app.post("/v1/analysis/national-peers")
 async def national_peers(payload: NationalPeersRequest):
-    """Nationwide demand scan + dynamically selected high-demand peers.
+    """Two separate comparisons, not one blended list (AGENTS.md 원칙 1-5):
 
-    Replaces a fixed sample shortlist: peers are the top N *other*
-    municipalities by same-day national demand (Step① 전국 관광수요 스캔 in
-    AGENTS.md), so "이미 잘 오는 지역들 중 어디가 취약한가" is drawn from real
-    national data rather than a hardcoded 3-4 city list. Never raises for a
-    scan or peer-fetch failure — it degrades to available:false so the UI
-    never has to render a bare error for this section.
+    ① 전국 위치 — the target's demand percentile among every 기초지자체
+       (시/군/자치구; 일반구 excluded, it isn't an independent municipality).
+       Used only to judge whether demand itself is already sufficient.
+    ② Peer Group — a *structural-condition* comparison group for diagnosing
+       stay/spend/lodging weakness: same 행정유형(시/군/자치구), same
+       수도권 여부 for 시/군, then the closest matches by demand *scale*
+       (percentile proximity) within that pool. This is deliberately not
+       "top-N by national demand" — see build_peer_group()'s docstring.
+
+    Never raises for a scan or peer-fetch failure — degrades to
+    available:false so the UI never has to render a bare error here.
     """
     try:
         ranking = await fetch_national_visitor_ranking(payload.base_ymd)
@@ -393,10 +399,18 @@ async def national_peers(payload: NationalPeersRequest):
         return {"available": False, "reason": str(error), "base_ymd": payload.base_ymd}
 
     target = next((entry for entry in ranking if entry["area_cd"] == payload.area_cd), None)
-    # 비교군은 시/군 단위로만 구성한다 — 구는 시와 같은 행정 단위가 아니므로 대상이
-    # 시/군인 이상 비교군도 시/군만으로 뽑는다(강남구·해운대구 같은 구는 제외).
-    city_level_ranking = [entry for entry in ranking if is_city_level(str(entry["area_name"]))]
-    peers = select_national_peers(city_level_ranking, payload.area_cd, payload.peer_count)
+    if target is None:
+        return {"available": False, "reason": "선택 지역이 오늘 방문자 원천에 없습니다.", "base_ymd": payload.base_ymd}
+
+    # ① 전국 위치: 기초지자체(일반구 제외) 전체를 모집단으로 재계산한다.
+    independent_ranking = [entry for entry in ranking if is_independent_municipality(str(entry["area_name"]))]
+    independent_values = [float(entry["outside_visitors"]) for entry in independent_ranking]
+    national_percentile = _percentile_rank(float(target["outside_visitors"]), independent_values)
+    demand_level = "충분" if national_percentile >= 50 else "부족"
+
+    # ② Peer Group: 행정유형 + 수도권 여부 + 관광수요 규모 유사도로 구성한다.
+    group = build_peer_group(independent_ranking, payload.area_cd, str(target["area_name"]), payload.peer_count)
+    peers = group["peers"]
     base_ym = payload.base_ymd[:6]
     peer_axes = await asyncio.gather(*[_fetch_peer_axis_snapshot(peer["area_cd"], base_ym) for peer in peers])
     peer_rows = [{
@@ -405,18 +419,28 @@ async def national_peers(payload: NationalPeersRequest):
         "axes": axes, "fetch_ok": axes is not None,
     } for peer, axes in zip(peers, peer_axes)]
 
+    def _peer_values(key: str) -> list[float]:
+        return [row["axes"][key] for row in peer_rows if row["axes"] and row["axes"][key] is not None]
+
+    axis_keys = ["stay_intensity", "spend_intensity", "lodging_share_index"]
     return {
         "available": True,
         "base_ymd": payload.base_ymd,
-        "municipality_count": len(city_level_ranking),
+        "national": {
+            "municipality_count": len(independent_ranking),
+            "target_percentile": national_percentile,
+            "demand_level": demand_level,
+        },
         "target": target,
-        "national_median_outside_visitors": _median([entry["outside_visitors"] for entry in city_level_ranking]),
-        "peers": peer_rows,
-        "peer_medians": {
-            "outside_visitors": _median([row["outside_visitors"] for row in peer_rows]),
-            "stay_intensity": _median([row["axes"]["stay_intensity"] for row in peer_rows if row["axes"]]),
-            "spend_intensity": _median([row["axes"]["spend_intensity"] for row in peer_rows if row["axes"]]),
-            "lodging_share_index": _median([row["axes"]["lodging_share_index"] for row in peer_rows if row["axes"]]),
+        "peer_group": {
+            "admin_type": group["admin_type"],
+            "capital_region": group["capital_region"],
+            "relaxed": group["relaxed"],
+            "criteria_note": group["criteria_note"],
+            "count": len(peer_rows),
+            "peers": peer_rows,
+            "medians": {key: _median(_peer_values(key)) for key in axis_keys},
+            "top_quartile": {key: _quantile(_peer_values(key), 0.75) for key in axis_keys},
         },
         "peers_failed": sum(1 for row in peer_rows if not row["fetch_ok"]),
     }
