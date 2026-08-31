@@ -5,6 +5,11 @@ import { Bar, BarChart, Cell, ResponsiveContainer, XAxis, YAxis } from 'recharts
 import 'leaflet/dist/leaflet.css';
 import './styles.css';
 import './live.css';
+// 전국 시군구 중심좌표(252개, 2024-12-31 기준). 통계청 SGIS 행정동 경계(KOGL 제1유형,
+// vuski/admdongkor 저장소 CC BY 4.0 가공)를 시군구 단위로 평균해 산출했다. 구가 있는
+// 시(수원·전주 등)는 구 단위로만 존재해, KTO 방문자 원천의 시 단위 집계 코드와는
+// resolveCentroid()의 이름 접두 매칭으로 연결한다.
+import sigunguCentroids from './kr_sigungu_centroids.json';
 
 type Region = { id: string; name: string; province: string; lat: number; lng: number };
 type LiveSnapshot = {
@@ -52,6 +57,24 @@ type MoisBusinessSnapshot = {
   region?: { id: string; name: string; province: string } | null;
   items: Array<Record<string, string | null>>;
 };
+type RankedRegion = { area_cd: string; area_name: string; resident_visitors: number; outside_visitors: number; foreign_visitors: number; rank: number; percentile: number };
+type NationalRankingSnapshot = { available: true; base_ymd: string; regions: RankedRegion[] } | { available: false; reason: string; base_ymd: string };
+
+const centroids = sigunguCentroids as Record<string, { name: string; province: string; lat: number; lng: number }>;
+// KTO 방문자 원천은 구가 있는 시(수원·전주 등)를 시 단위로 집계해 별도 코드를 쓰지만,
+// 중심좌표 표는 구 단위로만 존재한다. 코드가 표에 없으면 이름이 그 시로 시작하는
+// 구들의 좌표를 평균해 근사 좌표를 만든다(예: "수원시" → 수원시장안구 등 4개 구 평균).
+const resolveCentroid = (areaCd: string, areaName: string): { lat: number; lng: number; province: string } | null => {
+  const direct = centroids[areaCd];
+  if (direct) return direct;
+  const districts = Object.values(centroids).filter((entry) => entry.name.startsWith(areaName));
+  if (!districts.length) return null;
+  return {
+    lat: districts.reduce((sum, entry) => sum + entry.lat, 0) / districts.length,
+    lng: districts.reduce((sum, entry) => sum + entry.lng, 0) / districts.length,
+    province: districts[0].province,
+  };
+};
 
 // 4단계 데이터 신뢰도 라벨 (AGENTS.md §3.3)
 type DataTier = 'measured' | 'derived' | 'modeled' | 'pending';
@@ -91,9 +114,10 @@ function App() {
   const [regionId, setRegionId] = useState('47130');
   // KTO GW는 제공 완료된 기준일만 조회할 수 있다. 검증된 최근 기준일을 초기값으로 둔다.
   const [date, setDate] = useState('2025-08-25');
-  const [snapshots, setSnapshots] = useState<Record<string, LiveSnapshot | null>>({});
+  const [snapshot, setSnapshot] = useState<LiveSnapshot | null>(null);
   const [stability, setStability] = useState<StabilitySnapshot | null>(null);
   const [nationalPeers, setNationalPeers] = useState<NationalPeersSnapshot | null>(null);
+  const [nationalRanking, setNationalRanking] = useState<NationalRankingSnapshot | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [businessOperation, setBusinessOperation] = useState<'info' | 'history'>('info');
@@ -102,71 +126,107 @@ function App() {
   const [businessData, setBusinessData] = useState<MoisBusinessSnapshot | null>(null);
   const [businessLoading, setBusinessLoading] = useState(false);
   const [businessError, setBusinessError] = useState('');
-  const region = useMemo(() => regions.find((item) => item.id === regionId)!, [regionId]);
 
-  const loadAll = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      // 지역마다 KTO 하위 지표를 6~7건씩 동시 호출하므로, 4개 지역을 완전히 동시에
-      // 쏘면 순간 요청 수가 데이터랩 초당 호출 한도(HTTP 429)를 넘기기 쉽다.
-      // 시작 시점을 살짝 벌려 순간 부하를 낮춘다(백엔드에도 429 재시도가 있다).
-      const entries = await Promise.all(regions.map(async (item, index) => {
-        if (index > 0) await new Promise((resolve) => setTimeout(resolve, index * 250));
-        const response = await fetch(`${apiBase}/v1/analysis/live-visitor`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ area_cd: item.id, base_ymd: date.replace(/-/g, '') }),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.detail || `${item.name} 실데이터 요청에 실패했습니다.`);
-        return [item.id, data as LiveSnapshot] as const;
-      }));
-      setSnapshots(Object.fromEntries(entries));
-    } catch (cause) {
-      setSnapshots({});
-      setError(cause instanceof Error ? cause.message : '실데이터 요청에 실패했습니다.');
-    } finally { setLoading(false); }
-  };
+  // 진단 대상 확장: 전국 스캔이 뜨면 그 목록에서, 아직이면 기존 4개 관광거점에서 이름을 찾는다.
+  const rankingRegions = nationalRanking?.available ? nationalRanking.regions : [];
+  const region = useMemo(() => {
+    const ranked = rankingRegions.find((item) => item.area_cd === regionId);
+    if (ranked) return { id: ranked.area_cd, name: ranked.area_name, province: resolveCentroid(ranked.area_cd, ranked.area_name)?.province || '' };
+    const fixed = regions.find((item) => item.id === regionId);
+    if (fixed) return fixed;
+    return { id: regionId, name: snapshot?.area.area_name || regionId, province: '' };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [regionId, nationalRanking, snapshot]);
 
-  useEffect(() => { void loadAll(); }, [date]);
+  // 전국에서 좌표를 확인할 수 있는 모든 시군구를 지도 핀으로 확장한다. 스캔 전에는
+  // 기존 4개 관광거점만 보여준다. 구가 있는 시는 resolveCentroid()가 구 좌표 평균으로 근사한다.
+  const mapRegions = useMemo(() => {
+    if (!rankingRegions.length) return regions;
+    const resolved = rankingRegions
+      .map((item) => {
+        const coord = resolveCentroid(item.area_cd, item.area_name);
+        return coord ? { id: item.area_cd, name: item.area_name, province: coord.province, lat: coord.lat, lng: coord.lng } : null;
+      })
+      .filter((item): item is Region => item !== null);
+    return resolved.length ? resolved : regions;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nationalRanking]);
+
   const select = (next: string) => { setRegionId(next); };
-  const snapshot = snapshots[regionId] || null;
 
-  // ① 전국 관광수요 스캔 → ② 잘 되는 곳들 중 취약점 탐지: 진단 대상의 비교군을
-  // 표본 4개 지역이 아니라, 같은 기준일 전국 방문자 순위에서 동적으로 뽑은
-  // 상위 수요 지역으로 삼는다. 진단 대상이나 기준일이 바뀔 때마다 다시 계산한다.
+  // ① 전국 관광수요 스캔: 같은 기준일 전국 시군구 방문자 순위를 한 번만 조회해
+  // 지도 핀과 진단 대상 선택지를 넓힌다. 기준일이 바뀔 때만 다시 부른다.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      let peerIds: string[] = [];
       try {
-        const response = await fetch(`${apiBase}/v1/analysis/national-peers`, {
+        const response = await fetch(`${apiBase}/v1/analysis/national-ranking`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ area_cd: regionId, base_ymd: date.replace(/-/g, ''), peer_count: 4 }),
+          body: JSON.stringify({ base_ymd: date.replace(/-/g, '') }),
         });
-        const data = (await response.json()) as NationalPeersSnapshot;
-        if (cancelled) return;
-        setNationalPeers(response.ok ? data : { available: false, reason: (data as { reason?: string }).reason || '전국 스캔 요청에 실패했습니다.', base_ymd: date.replace(/-/g, '') });
-        if (response.ok && data.available) peerIds = data.peers.map((peer) => peer.area_cd);
+        const data = (await response.json()) as NationalRankingSnapshot;
+        if (!cancelled) setNationalRanking(response.ok ? data : { available: false, reason: '전국 스캔 요청에 실패했습니다.', base_ymd: date.replace(/-/g, '') });
       } catch (cause) {
-        if (cancelled) return;
-        setNationalPeers({ available: false, reason: cause instanceof Error ? cause.message : '전국 스캔 요청에 실패했습니다.', base_ymd: date.replace(/-/g, '') });
+        if (!cancelled) setNationalRanking({ available: false, reason: cause instanceof Error ? cause.message : '전국 스캔 요청에 실패했습니다.', base_ymd: date.replace(/-/g, '') });
       }
-
-      // 단기 수요 안정성: 방문자 원천이 지자체 단위로 필터링되지 않으므로, 진단
-      // 대상 + 전국 동적 비교군을 한 번에 조회해 공유 응답에서 변동성을 계산한다.
-      // 전국 비교군을 못 구했을 때만 표본 4개 지역으로 되돌아간다.
-      try {
-        const areaCds = peerIds.length ? [regionId, ...peerIds] : regions.map((item) => item.id);
-        const response = await fetch(`${apiBase}/v1/analysis/visitor-stability`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ area_cds: areaCds, base_ymd: date.replace(/-/g, ''), window_days: 7 }),
-        });
-        const data = await response.json();
-        if (!cancelled) setStability(response.ok ? data : null);
-      } catch { if (!cancelled) setStability(null); }
     })();
     return () => { cancelled = true; };
+  }, [date]);
+
+  // ② 잘 되는 곳들 중 취약점 탐지: 진단 대상 하나의 심층 지표 + 같은 기준일 전국
+  // 순위에서 동적으로 뽑은 상위 수요 지역을 비교군으로 삼는다. 진단 대상이나
+  // 기준일이 바뀔 때마다 다시 계산하며, "기준일 데이터 조회" 버튼으로도 다시 부를 수 있다.
+  const loadDiagnosis = async (targetRegionId: string, targetDate: string, isCancelled: () => boolean) => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await fetch(`${apiBase}/v1/analysis/live-visitor`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ area_cd: targetRegionId, base_ymd: targetDate }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || '실데이터 요청에 실패했습니다.');
+      if (!isCancelled()) setSnapshot(data as LiveSnapshot);
+    } catch (cause) {
+      if (isCancelled()) return;
+      setSnapshot(null);
+      setError(cause instanceof Error ? cause.message : '실데이터 요청에 실패했습니다.');
+    } finally { if (!isCancelled()) setLoading(false); }
+
+    let peerIds: string[] = [];
+    try {
+      const response = await fetch(`${apiBase}/v1/analysis/national-peers`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ area_cd: targetRegionId, base_ymd: targetDate, peer_count: 4 }),
+      });
+      const data = (await response.json()) as NationalPeersSnapshot;
+      if (isCancelled()) return;
+      setNationalPeers(response.ok ? data : { available: false, reason: (data as { reason?: string }).reason || '전국 스캔 요청에 실패했습니다.', base_ymd: targetDate });
+      if (response.ok && data.available) peerIds = data.peers.map((peer) => peer.area_cd);
+    } catch (cause) {
+      if (isCancelled()) return;
+      setNationalPeers({ available: false, reason: cause instanceof Error ? cause.message : '전국 스캔 요청에 실패했습니다.', base_ymd: targetDate });
+    }
+
+    // 단기 수요 안정성: 방문자 원천이 지자체 단위로 필터링되지 않으므로, 진단
+    // 대상 + 전국 동적 비교군을 한 번에 조회해 공유 응답에서 변동성을 계산한다.
+    // 전국 비교군을 못 구했을 때만 표본 4개 지역으로 되돌아간다.
+    try {
+      const areaCds = peerIds.length ? [targetRegionId, ...peerIds] : regions.map((item) => item.id);
+      const response = await fetch(`${apiBase}/v1/analysis/visitor-stability`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ area_cds: areaCds, base_ymd: targetDate, window_days: 7 }),
+      });
+      const data = await response.json();
+      if (!isCancelled()) setStability(response.ok ? data : null);
+    } catch { if (!isCancelled()) setStability(null); }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadDiagnosis(regionId, date.replace(/-/g, ''), () => cancelled);
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, regionId]);
 
   const loadBusinessData = async () => {
@@ -273,6 +333,7 @@ function App() {
     ['중심지 공간확산', '내비게이션 연계 중심 관광지 좌표가 지리적 중심에서 얼마나 넓게 퍼져 있는지를 RMS 거리(km)로 계산합니다. 실제 방문자 점유율의 균등도를 뜻하는 정식 공간분산 D와는 구분합니다.'],
     ['단기 수요 안정성', '최근 7일 외지인 방문자의 변동계수(CV)를 100×(1−CV)로 역산한 파생지표입니다. 연간 계절성을 대신하지 않습니다.'],
     ['전국 동적 비교군', '같은 기준일 전국 시군구 방문자 순위에서 선택지역을 제외한 관광수요 상위 지역을 매번 다시 골라 비교군으로 삼습니다. 아직 유사 관광구조 군집이나 75분위 프론티어 비교는 아닙니다.'],
+    ['지도 좌표', '전국 시군구 중심좌표는 통계청 SGIS 행정동 경계(공공누리 제1유형)를 admdongkor 저장소(CC BY 4.0)가 가공한 2024년 자료를 시군구 단위로 평균해 만들었습니다. 구가 있는 시는 구 좌표 평균으로 근사합니다.'],
     ['취약도', '축별 음의 편차를 임계값으로 나눈 표준화 결손도입니다. 체류·숙박, 소비, 공간, 단기 안정성의 취약 정도를 비교해 정책 개입 순서를 정합니다. 예산 배분 비율이나 효과 예측이 아닙니다.'],
     ['TCEI', '체류(S)·소비(C)·공간분산(D)·계절안정성(B)의 백분위 기하평균입니다. 현재는 연간 계절성과 소비 잔차가 완성되지 않아 산출하지 않습니다.'],
     ['R-GAP', '유사 관광구조 75분위 프론티어 TCEI와 실제 TCEI의 양(+)의 차이입니다. 현재 화면의 규칙기반 유형·우선순위와 동일한 점수가 아닙니다.'],
@@ -282,11 +343,11 @@ function App() {
     <header><div className="logo"><b>R</b>Regional Tourism Scan<i /></div><nav><a href="#map">전국 관광수요</a><a href="#diagnosis">관광현황 진단</a><a href="#business-data">관광사업자 원자료</a><a href="#peer">지역 비교</a><a href="#priority">정책 우선순위</a><a href="#methodology">용어·알고리즘</a></nav><button type="button">정책 브리프 PDF ↗</button></header>
     <main data-live-analysis="true">
       <section className="hero live-hero"><small>● DATA LAB CONNECTION · KTO TOURISM DATA LAB</small><div><article><h1>지금은 <em>Data Lab API 자료</em>로<br />확인합니다.</h1><p>선택한 기준일과 지자체의 한국관광공사 통신 기반 방문자 추정치와 관광지수를 서버에서 조회합니다. 전국에서 관광수요가 이미 충분한 지역들과 비교해 &ldquo;무엇이 상대적으로 부족한가&rdquo;를 진단합니다.</p><a href="#map">기준일 데이터 보기 ↓</a></article><aside><span>DATA STATUS <b>{loading ? 'LOADING' : snapshot ? 'CONNECTED' : 'CONNECTION REQUIRED'}</b></span><strong>{snapshot ? 'OK' : '--'}</strong><div className="bars">{[28, 42, 36, 58, 49, 68, 57, 79].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}</div><p><b>{snapshot ? snapshot.source : 'KTO API 연결 확인 필요'}</b><span>{snapshot?.base_ymd || date.replace(/-/g, '.')}</span></p></aside></div></section>
-      <section id="map" className="section"><div className="heading"><div><small>01 / REGION SELECT</small><h2>지역을 선택하면,<br /><em>진단이 시작됩니다</em></h2></div><div className="live-controls"><label>기준일<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><button type="button" onClick={() => void loadAll()} disabled={loading}>{loading ? '조회 중' : '기준일 데이터 조회'}</button></div></div>
-        <div className="maplayout"><article className="map"><div>외지인 방문자 · KTO 일별 집계 <span>선택 지역을 클릭하세요</span></div><MapContainer center={[36.25, 127.8]} zoom={6.3} scrollWheelZoom={false}><TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />{regions.map((item) => <CircleMarker key={item.id} center={[item.lat, item.lng]} radius={item.id === regionId ? 18 : 10} pathOptions={{ color: item.id === regionId ? '#173b2b' : '#fff', weight: item.id === regionId ? 4 : 2, fillColor: item.id === regionId ? '#4f8249' : '#99c982', fillOpacity: .9 }} eventHandlers={{ click: () => select(item.id) }}><Tooltip>{item.province} {item.name}</Tooltip></CircleMarker>)}</MapContainer><small>※ 진단 대상 4개 관광거점 중에서 선택하세요. 아래 비교군은 선택 지역과 무관하게 전국 시군구 방문자 순위에서 매번 동적으로 뽑습니다.</small></article>
+      <section id="map" className="section"><div className="heading"><div><small>01 / REGION SELECT</small><h2>지역을 선택하면,<br /><em>진단이 시작됩니다</em></h2></div><div className="live-controls"><label>기준일<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><button type="button" onClick={() => void loadDiagnosis(regionId, date.replace(/-/g, ''), () => false)} disabled={loading}>{loading ? '조회 중' : '기준일 데이터 조회'}</button></div></div>
+        <div className="maplayout"><article className="map"><div>외지인 방문자 · KTO 일별 집계 <span>{mapRegions.length > regions.length ? `전국 ${mapRegions.length}개 시군구 중 클릭하세요` : '선택 지역을 클릭하세요'}</span></div><MapContainer center={[36.25, 127.8]} zoom={6.3} scrollWheelZoom={false}><TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />{mapRegions.map((item) => <CircleMarker key={item.id} center={[item.lat, item.lng]} radius={item.id === regionId ? 16 : 5} pathOptions={{ color: item.id === regionId ? '#173b2b' : '#fff', weight: item.id === regionId ? 4 : 1, fillColor: item.id === regionId ? '#4f8249' : '#99c982', fillOpacity: item.id === regionId ? .9 : .75 }} eventHandlers={{ click: () => select(item.id) }}><Tooltip>{item.province} {item.name}</Tooltip></CircleMarker>)}</MapContainer><small>※ {mapRegions.length > regions.length ? `전국 시군구 방문자 순위(같은 기준일)에서 좌표를 확인할 수 있는 ${mapRegions.length}곳을 진단 대상으로 선택할 수 있습니다.` : '전국 스캔 결과를 불러오는 중입니다. 우선 4개 관광거점 중에서 선택하세요.'} 아래 비교군은 선택 지역과 무관하게 전국 시군구 방문자 순위에서 매번 동적으로 뽑습니다.</small></article>
           <aside className="summary"><small>SELECTED MUNICIPALITY</small><h3>{region.province} {region.name}</h3><label>기준일 외지인 방문자</label><strong>{snapshot ? formatNumber.format(snapshot.area.outside_visitors) : '--'}</strong><i><b style={{ width: `${snapshot?.national_comparison.outside_visitor_percentile || 0}%` }} /></i><p>전국 270개 코드 내 백분위 <b>{snapshot ? `${snapshot.national_comparison.outside_visitor_percentile}%` : '--'}</b></p><label>데이터 상태</label><div className="badges"><span>{snapshot ? 'KTO 통신기반 추정치' : '조회 대기'}</span><span>{snapshot ? snapshot.base_ymd : date.replace(/-/g, '')}</span></div><p className="desc">{error || (snapshot ? '선택 기준일의 외지인 방문자 추정치입니다. 아래 비교진단은 전국 시군구 중 관광수요 상위 지역의 중앙값을 기준으로 합니다.' : '조회 버튼을 눌러 KTO 방문자 데이터를 불러오세요.')}</p></aside></div>
       </section>
-      <section id="diagnosis" className="section live-section"><div className="heading"><div><small>02 / OBSERVED METRICS</small><h2>{region.name}의<br /><em>관측자료 기반 진단</em></h2></div><label>진단 대상<select value={regionId} onChange={(event) => select(event.target.value)}>{regions.map((item) => <option key={item.id} value={item.id}>{item.province} {item.name}</option>)}</select></label></div>
+      <section id="diagnosis" className="section live-section"><div className="heading"><div><small>02 / OBSERVED METRICS</small><h2>{region.name}의<br /><em>관측자료 기반 진단</em></h2></div><label>진단 대상{mapRegions.length > regions.length && <em className="tier tier-derived">전국 {mapRegions.length}곳</em>}<select value={regionId} onChange={(event) => select(event.target.value)}>{mapRegions.map((item) => <option key={item.id} value={item.id}>{item.province} {item.name}</option>)}</select></label></div>
         <div className="live-stats">{stats.map(([label, value, caption, tier]) => <article key={label as string}><small>{label} <Tier tier={tier as DataTier} /></small><strong>{value}</strong><p>{caption}</p></article>)}</div>
       </section>
       <section id="business-data" className="section live-section business-data"><div className="heading"><div><small>03 / BUSINESS REGISTER SOURCE</small><h2>관광사업자 원자료로<br /><em>숙박 공급을 확인합니다</em></h2></div><p>행정안전부 문화·관광사업자 조회서비스 원자료입니다. 업소 수와 객실 수는 서로 다른 값입니다.</p></div>

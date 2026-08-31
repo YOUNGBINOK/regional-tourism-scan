@@ -63,6 +63,9 @@ class NationalPeersRequest(BaseModel):
     base_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260701"])
     peer_count: int = Field(default=4, ge=1, le=8)
 
+class NationalRankingRequest(BaseModel):
+    base_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260701"])
+
 @app.get("/health")
 def health(): return {"status": "ok", "service": "R-GAP API"}
 
@@ -398,6 +401,21 @@ async def national_peers(payload: NationalPeersRequest):
         },
         "peers_failed": sum(1 for row in peer_rows if not row["fetch_ok"]),
     }
+
+@app.post("/v1/analysis/national-ranking")
+async def national_ranking(payload: NationalRankingRequest):
+    """Same-day national outside-visitor ranking only (no per-peer axis calls).
+
+    One cheap KTO call. Used to populate every currently-reporting municipality
+    as a selectable diagnosis target — e.g. clickable map pins — beyond the
+    4 curated cities. Never raises: a scan failure degrades to
+    available:false with HTTP 200.
+    """
+    try:
+        ranking = await fetch_national_visitor_ranking(payload.base_ymd)
+        return {"available": True, "base_ymd": payload.base_ymd, "regions": ranking}
+    except Exception as error:
+        return {"available": False, "reason": str(error), "base_ymd": payload.base_ymd}
 
 @app.post("/v1/metrics/tcei")
 def tcei(payload: TceiInput): return calculate_tcei(payload)
