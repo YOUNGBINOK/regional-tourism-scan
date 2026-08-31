@@ -546,15 +546,25 @@ async def fetch_national_visitor_ranking(base_ymd: str) -> list[dict[str, object
         return ranking
     return await _cached(f"ranking:{base_ymd}", _fetch)
 
-def select_national_peers(ranking: list[dict[str, object]], exclude_area_cd: str, count: int) -> list[dict[str, object]]:
-    """Top-N other municipalities by national demand — "이미 잘 오는 지역들".
+def is_city_level(area_name: str) -> bool:
+    """True for a 시/군 aggregate (경주시, 완주군, 세종특별자치시, ...), false for
+    any 구 — both a sub-city district ("수원시 팔달구", which KTO's area_name
+    always carries as "OO시 XX구" with a space) and a standalone metro-city
+    district (강남구, 해운대구). Diagnosis targets and their peer comparison
+    group are both restricted to this granularity so a 시 is never benchmarked
+    against a 구, which isn't the same kind of administrative unit."""
+    return area_name.endswith("시") or area_name.endswith("군")
 
-    ``ranking`` is already sorted descending by demand, so this is simply the
-    highest-demand regions other than the one being diagnosed: the peer group
-    used to reveal a hidden weakness within an already-successful cohort,
-    not an arbitrary or hardcoded sample.
+def select_national_peers(ranking: list[dict[str, object]], exclude_area_cd: str, count: int) -> list[dict[str, object]]:
+    """Top-N other city/county-level municipalities by national demand —
+    "이미 잘 오는 지역들". ``ranking`` is already sorted descending by demand,
+    so this is simply the highest-demand 시/군 other than the one being
+    diagnosed: the peer group used to reveal a hidden weakness within an
+    already-successful cohort, not an arbitrary or hardcoded sample. 구-level
+    entries are excluded so a 시 is only ever compared against other 시/군.
     """
-    return [entry for entry in ranking if entry["area_cd"] != exclude_area_cd][:count]
+    return [entry for entry in ranking
+            if entry["area_cd"] != exclude_area_cd and is_city_level(str(entry["area_name"]))][:count]
 
 def build_live_visitor_snapshot(payload: object, area_cd: str, base_ymd: str) -> dict[str, object]:
     """Turn the KTO GW response into a traceable, non-modelled live snapshot.

@@ -10,7 +10,7 @@ from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_reg
                            fetch_attraction_concentration, summarize_attraction_concentration,
                            fetch_municipal_hub_attractions, compute_hub_spatial_spread,
                            fetch_visitor_window, compute_visitor_stability,
-                           fetch_national_visitor_ranking, select_national_peers,
+                           fetch_national_visitor_ranking, select_national_peers, is_city_level,
                            fetch_kosis_statistics, fetch_mois_tourism_business,
                            summarize_mois_tourism_business, mois_tourism_business_regions,
                            fetch_mois_tourism_business_for_region, _cached)
@@ -393,7 +393,10 @@ async def national_peers(payload: NationalPeersRequest):
         return {"available": False, "reason": str(error), "base_ymd": payload.base_ymd}
 
     target = next((entry for entry in ranking if entry["area_cd"] == payload.area_cd), None)
-    peers = select_national_peers(ranking, payload.area_cd, payload.peer_count)
+    # 비교군은 시/군 단위로만 구성한다 — 구는 시와 같은 행정 단위가 아니므로 대상이
+    # 시/군인 이상 비교군도 시/군만으로 뽑는다(강남구·해운대구 같은 구는 제외).
+    city_level_ranking = [entry for entry in ranking if is_city_level(str(entry["area_name"]))]
+    peers = select_national_peers(city_level_ranking, payload.area_cd, payload.peer_count)
     base_ym = payload.base_ymd[:6]
     peer_axes = await asyncio.gather(*[_fetch_peer_axis_snapshot(peer["area_cd"], base_ym) for peer in peers])
     peer_rows = [{
@@ -405,9 +408,9 @@ async def national_peers(payload: NationalPeersRequest):
     return {
         "available": True,
         "base_ymd": payload.base_ymd,
-        "municipality_count": len(ranking),
+        "municipality_count": len(city_level_ranking),
         "target": target,
-        "national_median_outside_visitors": _median([entry["outside_visitors"] for entry in ranking]),
+        "national_median_outside_visitors": _median([entry["outside_visitors"] for entry in city_level_ranking]),
         "peers": peer_rows,
         "peer_medians": {
             "outside_visitors": _median([row["outside_visitors"] for row in peer_rows]),

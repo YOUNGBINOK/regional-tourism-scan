@@ -2,7 +2,7 @@ from app.data_sources import (compute_hub_spatial_spread, compute_visitor_stabil
                               summarize_attraction_concentration,
                               summarize_mois_tourism_business,
                               mois_tourism_business_regions,
-                              _aggregate_national_visitors, select_national_peers,
+                              _aggregate_national_visitors, select_national_peers, is_city_level,
                               build_live_visitor_snapshot)
 
 
@@ -29,6 +29,31 @@ def test_national_ranking_selects_top_demand_peers_excluding_target():
     assert [peer["area_cd"] for peer in peers] == ["A", "B"]
     # The excluded target itself must never appear among its own peers.
     assert all(peer["area_cd"] != "C" for peer in peers)
+
+
+def test_is_city_level_excludes_both_kinds_of_gu():
+    assert is_city_level("경주시") is True
+    assert is_city_level("완주군") is True
+    assert is_city_level("세종특별자치시") is True
+    assert is_city_level("강남구") is False  # standalone metro-city district
+    assert is_city_level("수원시 팔달구") is False  # sub-city district of a 시
+
+
+def test_national_peers_never_include_a_gu_even_if_it_outranks_every_si():
+    # A 구 (강남구) has far higher demand than any 시/군 here, but a 시 target
+    # should only ever be benchmarked against other 시/군 — comparing a city
+    # to a district isn't the same administrative unit.
+    items = [
+        _visitor_item("11680", "강남구", "외지인(b)", "900"),
+        _visitor_item("41110", "수원시", "외지인(b)", "500"),
+        _visitor_item("47130", "경주시", "외지인(b)", "300"),
+        _visitor_item("51150", "강릉시", "외지인(b)", "200"),
+    ]
+    by_area = _aggregate_national_visitors(items)
+    ranking = sorted(by_area.values(), key=lambda entry: -entry["outside_visitors"])
+    peers = select_national_peers(ranking, exclude_area_cd="47130", count=3)
+    assert [peer["area_cd"] for peer in peers] == ["41110", "51150"]
+    assert all(is_city_level(str(peer["area_name"])) for peer in peers)
 
 
 def test_national_visitor_percentile_covers_every_municipality_in_the_feed():
