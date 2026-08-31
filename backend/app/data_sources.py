@@ -455,18 +455,16 @@ def compute_visitor_stability(items: list[dict], area_cds: list[str]) -> dict[st
         result[code] = {"days_observed": len(values), "stability_index": stability_index}
     return result
 
-def build_live_visitor_snapshot(payload: object, area_cd: str, base_ymd: str) -> dict[str, object]:
-    """Turn the KTO GW response into a traceable, non-modelled live snapshot.
+def _aggregate_national_visitors(items: list[dict]) -> dict[str, dict[str, object]]:
+    """Sum same-day visitor records into one entry per municipality.
 
-    TCEI and R-GAP are intentionally not inferred here: those measures need
-    stay, spend, dispersion and seasonal inputs. Returning null prevents a
-    visitor-only feed from being presented as a completed R-GAP diagnosis.
+    The KTO daily feed (locgoRegnVisitrDDList) already returns every
+    municipality nationwide in one call — no per-region fan-out needed for
+    a same-day national ranking. Shared by the single-region snapshot and
+    the nationwide demand scan so both read the exact same aggregation.
     """
-    data = normalize_kto_xml(payload)
-    if not isinstance(data, dict) or data.get("result_code") != "0000":
-        raise ValueError("KTO visitor response could not be normalized")
     by_area: dict[str, dict[str, object]] = {}
-    for item in data.get("items", []):
+    for item in items:
         code = item.get("signguCode")
         if not code:
             continue
@@ -486,12 +484,57 @@ def build_live_visitor_snapshot(payload: object, area_cd: str, base_ymd: str) ->
             entry["foreign_visitors"] = float(entry["foreign_visitors"]) + value
         elif category.startswith("현지인"):
             entry["resident_visitors"] = float(entry["resident_visitors"]) + value
+    return by_area
+
+def _percentile_rank(current: float, all_values: list[float]) -> float:
+    return round(100 * sum(value <= current for value in all_values) / len(all_values), 1) if all_values else 0.0
+
+async def fetch_national_visitor_ranking(base_ymd: str) -> list[dict[str, object]]:
+    """Nationwide same-day outside-visitor ranking, sorted descending.
+
+    This is Step① (전국 관광수요 스캔) of the diagnosis pipeline: a single KTO
+    call already covers every municipality for the day, so peer selection
+    can be based on real national demand instead of a fixed sample list.
+    """
+    raw = await fetch_kto_regional_visitors("local", base_ymd, base_ymd, 1, 1000)
+    data = normalize_kto_xml(raw)
+    if not isinstance(data, dict) or data.get("result_code") != "0000":
+        raise ValueError("KTO visitor response could not be normalized")
+    by_area = _aggregate_national_visitors(data.get("items", []))
+    all_values = [float(entry["outside_visitors"]) for entry in by_area.values()]
+    ranking = sorted(by_area.values(), key=lambda entry: -float(entry["outside_visitors"]))
+    for index, entry in enumerate(ranking):
+        entry["rank"] = index + 1
+        entry["percentile"] = _percentile_rank(float(entry["outside_visitors"]), all_values)
+    return ranking
+
+def select_national_peers(ranking: list[dict[str, object]], exclude_area_cd: str, count: int) -> list[dict[str, object]]:
+    """Top-N other municipalities by national demand — "이미 잘 오는 지역들".
+
+    ``ranking`` is already sorted descending by demand, so this is simply the
+    highest-demand regions other than the one being diagnosed: the peer group
+    used to reveal a hidden weakness within an already-successful cohort,
+    not an arbitrary or hardcoded sample.
+    """
+    return [entry for entry in ranking if entry["area_cd"] != exclude_area_cd][:count]
+
+def build_live_visitor_snapshot(payload: object, area_cd: str, base_ymd: str) -> dict[str, object]:
+    """Turn the KTO GW response into a traceable, non-modelled live snapshot.
+
+    TCEI and R-GAP are intentionally not inferred here: those measures need
+    stay, spend, dispersion and seasonal inputs. Returning null prevents a
+    visitor-only feed from being presented as a completed R-GAP diagnosis.
+    """
+    data = normalize_kto_xml(payload)
+    if not isinstance(data, dict) or data.get("result_code") != "0000":
+        raise ValueError("KTO visitor response could not be normalized")
+    by_area = _aggregate_national_visitors(data.get("items", []))
     target = by_area.get(area_cd)
     if not target:
         raise ValueError("Selected municipality is not present in this KTO daily response")
-    external_values = sorted(float(entry["outside_visitors"]) for entry in by_area.values())
+    all_values = [float(entry["outside_visitors"]) for entry in by_area.values()]
     current = float(target["outside_visitors"])
-    percentile = round(100 * sum(value <= current for value in external_values) / len(external_values), 1) if external_values else 0.0
+    percentile = _percentile_rank(current, all_values)
     total = sum(float(target[key]) for key in ("resident_visitors", "outside_visitors", "foreign_visitors"))
     return {
         "source": "한국관광공사 빅데이터 지역별 방문자수_GW",

@@ -10,6 +10,7 @@ from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_reg
                            fetch_attraction_concentration, summarize_attraction_concentration,
                            fetch_municipal_hub_attractions, compute_hub_spatial_spread,
                            fetch_visitor_window, compute_visitor_stability,
+                           fetch_national_visitor_ranking, select_national_peers,
                            fetch_kosis_statistics, fetch_mois_tourism_business,
                            summarize_mois_tourism_business, mois_tourism_business_regions,
                            fetch_mois_tourism_business_for_region)
@@ -56,6 +57,11 @@ class VisitorStabilityRequest(BaseModel):
     area_cds: list[str] = Field(min_length=1, max_length=12)
     base_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260701"])
     window_days: int = Field(default=7, ge=3, le=14)
+
+class NationalPeersRequest(BaseModel):
+    area_cd: str = Field(pattern=r"^\d{5}$", examples=["47130"])
+    base_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260701"])
+    peer_count: int = Field(default=4, ge=1, le=8)
 
 @app.get("/health")
 def health(): return {"status": "ok", "service": "R-GAP API"}
@@ -226,6 +232,20 @@ async def kto_region_snapshot(payload: KtoRegionSnapshotRequest):
     except Exception as error:
         raise HTTPException(status_code=502, detail=f"KTO region-snapshot request failed: {error}")
 
+def _first_metric(response: object, value_key: str, area_cd: str) -> float | None:
+    if not isinstance(response, dict): return None
+    body = response.get("response", {}).get("body", {})
+    items = body.get("items") if isinstance(body, dict) else None
+    item = items.get("item") if isinstance(items, dict) else None
+    records = item if isinstance(item, list) else ([item] if isinstance(item, dict) else [])
+    target_codes = {"52111", "52113"} if area_cd == "52110" else {area_cd}
+    values = []
+    for record in records:
+        if record.get("signguCd") not in target_codes or record.get(value_key) is None: continue
+        try: values.append(float(record[value_key]))
+        except (TypeError, ValueError): continue
+    return round(sum(values) / len(values), 2) if values else None
+
 async def _safe_attraction_concentration(area_cd: str):
     """Concentration forecast is best-effort: missing/unapproved config must not fail the whole snapshot."""
     try: return await fetch_attraction_concentration(area_cd)
@@ -260,32 +280,18 @@ async def live_visitor_analysis(payload: LiveVisitorRequest):
         concentration = summarize_attraction_concentration(concentration_raw)
         hub_spread = compute_hub_spatial_spread(hubs_raw)
 
-        def first_metric(response: object, value_key: str) -> float | None:
-            if not isinstance(response, dict): return None
-            body = response.get("response", {}).get("body", {})
-            items = body.get("items") if isinstance(body, dict) else None
-            item = items.get("item") if isinstance(items, dict) else None
-            records = item if isinstance(item, list) else ([item] if isinstance(item, dict) else [])
-            target_codes = {"52111", "52113"} if payload.area_cd == "52110" else {payload.area_cd}
-            values = []
-            for record in records:
-                if record.get("signguCd") not in target_codes or record.get(value_key) is None: continue
-                try: values.append(float(record[value_key]))
-                except (TypeError, ValueError): continue
-            return round(sum(values) / len(values), 2) if values else None
-
         snapshot["observed_indices"] = {
             "base_ym": payload.base_ymd[:6],
             "aggregation": "전주시 2개 구 단순평균" if payload.area_cd == "52110" else "해당 시군구",
-            "stay_intensity": first_metric(stay, "tarSjrnDsIxVal"),
-            "lodging_share_index": first_metric(lodging_share, "tarSjrnDsIxVal"),
-            "one_night_index": first_metric(one_night, "tarSjrnDsIxVal"),
-            "two_nights_index": first_metric(two_nights, "tarSjrnDsIxVal"),
-            "three_plus_nights_index": first_metric(three_plus_nights, "tarSjrnDsIxVal"),
-            "spend_intensity": first_metric(spend, "tarExpDsIxVal"),
-            "visitor_diversity": first_metric(visitor_diversity, "touDivIxVal"),
-            "spend_diversity": first_metric(spend_diversity, "expDivIxVal"),
-            "international_diversity": first_metric(international_diversity, "intlDivIxVal"),
+            "stay_intensity": _first_metric(stay, "tarSjrnDsIxVal", payload.area_cd),
+            "lodging_share_index": _first_metric(lodging_share, "tarSjrnDsIxVal", payload.area_cd),
+            "one_night_index": _first_metric(one_night, "tarSjrnDsIxVal", payload.area_cd),
+            "two_nights_index": _first_metric(two_nights, "tarSjrnDsIxVal", payload.area_cd),
+            "three_plus_nights_index": _first_metric(three_plus_nights, "tarSjrnDsIxVal", payload.area_cd),
+            "spend_intensity": _first_metric(spend, "tarExpDsIxVal", payload.area_cd),
+            "visitor_diversity": _first_metric(visitor_diversity, "touDivIxVal", payload.area_cd),
+            "spend_diversity": _first_metric(spend_diversity, "expDivIxVal", payload.area_cd),
+            "international_diversity": _first_metric(international_diversity, "intlDivIxVal", payload.area_cd),
             "attraction_crowding_forecast": concentration["mean_crowding_rate"] if concentration else None,
             "spatial_dispersion": hub_spread["spread_km"] if hub_spread else None,
             "spatial_dispersion_detail": hub_spread,
@@ -323,6 +329,75 @@ async def visitor_stability(payload: VisitorStabilityRequest):
         raise HTTPException(status_code=422, detail=str(error))
     except Exception as error:
         raise HTTPException(status_code=502, detail=f"KTO visitor stability request failed: {error}")
+
+def _median(values: list[float | None]) -> float | None:
+    clean = sorted(value for value in values if value is not None)
+    if not clean: return None
+    mid = len(clean) // 2
+    return clean[mid] if len(clean) % 2 else (clean[mid - 1] + clean[mid]) / 2
+
+async def _fetch_peer_axis_snapshot(area_cd: str, base_ym: str) -> dict[str, float | None] | None:
+    """Lightweight (3-call) peer snapshot for national peer benchmarking — stay,
+    spend, lodging-share only, to keep quota cost sane across several peers.
+    Returns None for the whole peer on any failure, so one bad peer (quota,
+    network, missing data) just drops out of the median instead of failing
+    the whole national-peers response."""
+    try:
+        metric_payload = KtoAreaMetricRequest(area_cd=area_cd, base_ym=base_ym)
+        stay, spend, lodging = await asyncio.gather(
+            area_metric("demand_intensity", "stay", metric_payload),
+            area_metric("demand_intensity", "spend", metric_payload),
+            area_metric("demand_intensity", "stay", metric_payload, {"tarSjrnDsIxCd": "2102"}),
+        )
+        return {
+            "stay_intensity": _first_metric(stay, "tarSjrnDsIxVal", area_cd),
+            "spend_intensity": _first_metric(spend, "tarExpDsIxVal", area_cd),
+            "lodging_share_index": _first_metric(lodging, "tarSjrnDsIxVal", area_cd),
+        }
+    except Exception:
+        return None
+
+@app.post("/v1/analysis/national-peers")
+async def national_peers(payload: NationalPeersRequest):
+    """Nationwide demand scan + dynamically selected high-demand peers.
+
+    Replaces a fixed sample shortlist: peers are the top N *other*
+    municipalities by same-day national demand (Step① 전국 관광수요 스캔 in
+    AGENTS.md), so "이미 잘 오는 지역들 중 어디가 취약한가" is drawn from real
+    national data rather than a hardcoded 3-4 city list. Never raises for a
+    scan or peer-fetch failure — it degrades to available:false so the UI
+    never has to render a bare error for this section.
+    """
+    try:
+        ranking = await fetch_national_visitor_ranking(payload.base_ymd)
+    except Exception as error:
+        return {"available": False, "reason": str(error), "base_ymd": payload.base_ymd}
+
+    target = next((entry for entry in ranking if entry["area_cd"] == payload.area_cd), None)
+    peers = select_national_peers(ranking, payload.area_cd, payload.peer_count)
+    base_ym = payload.base_ymd[:6]
+    peer_axes = await asyncio.gather(*[_fetch_peer_axis_snapshot(peer["area_cd"], base_ym) for peer in peers])
+    peer_rows = [{
+        "area_cd": peer["area_cd"], "area_name": peer["area_name"], "rank": peer["rank"],
+        "outside_visitors": peer["outside_visitors"], "percentile": peer["percentile"],
+        "axes": axes, "fetch_ok": axes is not None,
+    } for peer, axes in zip(peers, peer_axes)]
+
+    return {
+        "available": True,
+        "base_ymd": payload.base_ymd,
+        "municipality_count": len(ranking),
+        "target": target,
+        "national_median_outside_visitors": _median([entry["outside_visitors"] for entry in ranking]),
+        "peers": peer_rows,
+        "peer_medians": {
+            "outside_visitors": _median([row["outside_visitors"] for row in peer_rows]),
+            "stay_intensity": _median([row["axes"]["stay_intensity"] for row in peer_rows if row["axes"]]),
+            "spend_intensity": _median([row["axes"]["spend_intensity"] for row in peer_rows if row["axes"]]),
+            "lodging_share_index": _median([row["axes"]["lodging_share_index"] for row in peer_rows if row["axes"]]),
+        },
+        "peers_failed": sum(1 for row in peer_rows if not row["fetch_ok"]),
+    }
 
 @app.post("/v1/metrics/tcei")
 def tcei(payload: TceiInput): return calculate_tcei(payload)
