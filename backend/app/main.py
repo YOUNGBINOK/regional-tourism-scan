@@ -13,7 +13,7 @@ from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_reg
                            fetch_national_visitor_ranking, select_national_peers,
                            fetch_kosis_statistics, fetch_mois_tourism_business,
                            summarize_mois_tourism_business, mois_tourism_business_regions,
-                           fetch_mois_tourism_business_for_region)
+                           fetch_mois_tourism_business_for_region, _cached)
 from .settings import cors_origin_list
 
 app = FastAPI(title="R-GAP API", version="0.1.0")
@@ -259,10 +259,7 @@ async def _safe_hub_attractions(area_cd: str, base_ym: str):
     try: return await fetch_municipal_hub_attractions(area_cd, base_ym)
     except Exception: return None
 
-@app.post("/v1/analysis/live-visitor")
-async def live_visitor_analysis(payload: LiveVisitorRequest):
-    """Live KTO visitor analysis, explicitly separated from incomplete R-GAP inputs."""
-    try:
+async def _build_live_visitor_snapshot(payload: LiveVisitorRequest) -> dict:
         metric_payload = KtoAreaMetricRequest(area_cd=payload.area_cd, base_ym=payload.base_ymd[:6])
         (raw, stay, lodging_share, one_night, two_nights, three_plus_nights,
          spend, visitor_diversity, spend_diversity, international_diversity, concentration_raw, hubs_raw) = await asyncio.gather(
@@ -309,6 +306,18 @@ async def live_visitor_analysis(payload: LiveVisitorRequest):
             "missing_inputs": missing_inputs,
         }
         return snapshot
+
+@app.post("/v1/analysis/live-visitor")
+async def live_visitor_analysis(payload: LiveVisitorRequest):
+    """Live KTO visitor analysis, explicitly separated from incomplete R-GAP inputs.
+
+    Cached by (area_cd, base_ymd): this fans out 12 KTO calls, so revisiting
+    the same diagnosis target on the same day (a click, a date-picker no-op,
+    a page refresh) reuses the cached snapshot instead of repeating them.
+    """
+    try:
+        return await _cached(f"live:{payload.area_cd}:{payload.base_ymd}",
+                             lambda: _build_live_visitor_snapshot(payload))
     except ValueError as error:
         raise HTTPException(status_code=422, detail=str(error))
     except Exception as error:
@@ -344,21 +353,28 @@ async def _fetch_peer_axis_snapshot(area_cd: str, base_ym: str) -> dict[str, flo
     spend, lodging-share only, to keep quota cost sane across several peers.
     Returns None for the whole peer on any failure, so one bad peer (quota,
     network, missing data) just drops out of the median instead of failing
-    the whole national-peers response."""
-    try:
-        metric_payload = KtoAreaMetricRequest(area_cd=area_cd, base_ym=base_ym)
-        stay, spend, lodging = await asyncio.gather(
-            area_metric("demand_intensity", "stay", metric_payload),
-            area_metric("demand_intensity", "spend", metric_payload),
-            area_metric("demand_intensity", "stay", metric_payload, {"tarSjrnDsIxCd": "2102"}),
-        )
-        return {
-            "stay_intensity": _first_metric(stay, "tarSjrnDsIxVal", area_cd),
-            "spend_intensity": _first_metric(spend, "tarExpDsIxVal", area_cd),
-            "lodging_share_index": _first_metric(lodging, "tarSjrnDsIxVal", area_cd),
-        }
-    except Exception:
-        return None
+    the whole national-peers response.
+
+    Cached by (area_cd, base_ym): the same handful of national top-demand
+    regions (e.g. 강남구, 서초구) show up as peers for most diagnosis targets,
+    so this avoids re-fetching their axis data on every target switch.
+    """
+    async def _fetch() -> dict[str, float | None] | None:
+        try:
+            metric_payload = KtoAreaMetricRequest(area_cd=area_cd, base_ym=base_ym)
+            stay, spend, lodging = await asyncio.gather(
+                area_metric("demand_intensity", "stay", metric_payload),
+                area_metric("demand_intensity", "spend", metric_payload),
+                area_metric("demand_intensity", "stay", metric_payload, {"tarSjrnDsIxCd": "2102"}),
+            )
+            return {
+                "stay_intensity": _first_metric(stay, "tarSjrnDsIxVal", area_cd),
+                "spend_intensity": _first_metric(spend, "tarExpDsIxVal", area_cd),
+                "lodging_share_index": _first_metric(lodging, "tarSjrnDsIxVal", area_cd),
+            }
+        except Exception:
+            return None
+    return await _cached(f"peeraxis:{area_cd}:{base_ym}", _fetch)
 
 @app.post("/v1/analysis/national-peers")
 async def national_peers(payload: NationalPeersRequest):

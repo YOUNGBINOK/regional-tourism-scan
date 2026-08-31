@@ -6,11 +6,34 @@ differ by Data Lab account and competition scope.
 from dataclasses import dataclass
 from copy import deepcopy
 import asyncio
+import time
 from urllib.parse import parse_qsl, urljoin, unquote, urlsplit
 from xml.etree import ElementTree
 from math import asin, cos, radians, sin, sqrt
 import httpx
 from .settings import get_settings
+
+# KTO's daily per-product call quota (commonly 1,000/day) is the tightest
+# constraint on this app, not latency, and every value here is keyed by a
+# same-day input (a base_ymd or a specific area+month) that cannot change
+# within that day. Caching those results — even for a modest TTL — turns
+# repeat requests (switching between diagnosis targets that share the same
+# national top-demand peers, re-fetching the same 7-day stability window,
+# revisiting a region) from real KTO calls into free cache hits. This only
+# helps within one warm process (a dev server, or a warm serverless
+# instance during a burst of traffic) — it resets on a cold start — but
+# that is exactly the pattern that was burning through quota: many requests
+# in quick succession re-deriving the same national scan.
+_CACHE_TTL_SECONDS = 1800.0
+_response_cache: dict[str, tuple[float, object]] = {}
+
+async def _cached(key: str, factory, ttl: float = _CACHE_TTL_SECONDS) -> object:
+    entry = _response_cache.get(key)
+    if entry is not None and time.monotonic() - entry[0] <= ttl:
+        return entry[1]
+    value = await factory()
+    _response_cache[key] = (time.monotonic(), value)
+    return value
 
 KTO_SERVICE_CATALOG = {
     "regional_visitors": {"service": "DataLabService", "endpoints": {"metro": "metcoRegnVisitrDDList", "local": "locgoRegnVisitrDDList"}, "coverage": ["외지인·현지인·외국인 일별 방문자"], "integration_status": "verified"},
@@ -411,19 +434,28 @@ def summarize_attraction_concentration(data: object) -> dict[str, object] | None
     }
 
 async def fetch_visitor_window(start_ymd: str, end_ymd: str) -> list[dict]:
-    """Fetch every daily local-visitor record in [start_ymd, end_ymd], paginating as needed."""
-    page_no, num_rows, items = 1, 1000, []
-    while True:
-        raw = await fetch_kto_regional_visitors("local", start_ymd, end_ymd, page_no, num_rows)
-        data = normalize_kto_xml(raw)
-        if not isinstance(data, dict) or data.get("result_code") != "0000":
-            raise ValueError("KTO visitor window response could not be normalized")
-        page_items = data.get("items", [])
-        items.extend(page_items)
-        total = int(data.get("total_count") or 0)
-        if not page_items or page_no * num_rows >= total: break
-        page_no += 1
-    return items
+    """Fetch every daily local-visitor record in [start_ymd, end_ymd], paginating as needed.
+
+    Cached by (start_ymd, end_ymd): the result is identical no matter which
+    area_cds a caller later filters it down to, so repeat stability requests
+    for the same window (e.g. across several diagnosis-target switches on the
+    same day) reuse one paginated fetch instead of re-running it — this
+    endpoint alone can cost 6+ KTO calls per request.
+    """
+    async def _fetch() -> list[dict]:
+        page_no, num_rows, items = 1, 1000, []
+        while True:
+            raw = await fetch_kto_regional_visitors("local", start_ymd, end_ymd, page_no, num_rows)
+            data = normalize_kto_xml(raw)
+            if not isinstance(data, dict) or data.get("result_code") != "0000":
+                raise ValueError("KTO visitor window response could not be normalized")
+            page_items = data.get("items", [])
+            items.extend(page_items)
+            total = int(data.get("total_count") or 0)
+            if not page_items or page_no * num_rows >= total: break
+            page_no += 1
+        return items
+    return await _cached(f"window:{start_ymd}:{end_ymd}", _fetch)
 
 def compute_visitor_stability(items: list[dict], area_cds: list[str]) -> dict[str, dict[str, object]]:
     """Day-to-day outside-visitor volatility within the fetched window, per area.
@@ -495,18 +527,24 @@ async def fetch_national_visitor_ranking(base_ymd: str) -> list[dict[str, object
     This is Step① (전국 관광수요 스캔) of the diagnosis pipeline: a single KTO
     call already covers every municipality for the day, so peer selection
     can be based on real national demand instead of a fixed sample list.
+
+    Cached by base_ymd. Both /national-ranking and /national-peers need this
+    same scan on every page load and every diagnosis-target switch — without
+    caching, that's two full KTO calls for identical same-day data every time.
     """
-    raw = await fetch_kto_regional_visitors("local", base_ymd, base_ymd, 1, 1000)
-    data = normalize_kto_xml(raw)
-    if not isinstance(data, dict) or data.get("result_code") != "0000":
-        raise ValueError("KTO visitor response could not be normalized")
-    by_area = _aggregate_national_visitors(data.get("items", []))
-    all_values = [float(entry["outside_visitors"]) for entry in by_area.values()]
-    ranking = sorted(by_area.values(), key=lambda entry: -float(entry["outside_visitors"]))
-    for index, entry in enumerate(ranking):
-        entry["rank"] = index + 1
-        entry["percentile"] = _percentile_rank(float(entry["outside_visitors"]), all_values)
-    return ranking
+    async def _fetch() -> list[dict[str, object]]:
+        raw = await fetch_kto_regional_visitors("local", base_ymd, base_ymd, 1, 1000)
+        data = normalize_kto_xml(raw)
+        if not isinstance(data, dict) or data.get("result_code") != "0000":
+            raise ValueError("KTO visitor response could not be normalized")
+        by_area = _aggregate_national_visitors(data.get("items", []))
+        all_values = [float(entry["outside_visitors"]) for entry in by_area.values()]
+        ranking = sorted(by_area.values(), key=lambda entry: -float(entry["outside_visitors"]))
+        for index, entry in enumerate(ranking):
+            entry["rank"] = index + 1
+            entry["percentile"] = _percentile_rank(float(entry["outside_visitors"]), all_values)
+        return ranking
+    return await _cached(f"ranking:{base_ymd}", _fetch)
 
 def select_national_peers(ranking: list[dict[str, object]], exclude_area_cd: str, count: int) -> list[dict[str, object]]:
     """Top-N other municipalities by national demand — "이미 잘 오는 지역들".
