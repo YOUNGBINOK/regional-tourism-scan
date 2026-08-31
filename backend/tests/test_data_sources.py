@@ -1,5 +1,7 @@
 import asyncio
 
+import pytest
+
 from app.data_sources import (compute_hub_spatial_spread, compute_visitor_stability,
                               summarize_attraction_concentration,
                               summarize_mois_tourism_business, fetch_mois_city_business_summary,
@@ -7,7 +9,7 @@ from app.data_sources import (compute_hub_spatial_spread, compute_visitor_stabil
                               _aggregate_national_visitors, _percentile_rank, _quantile,
                               classify_admin_type, is_independent_municipality,
                               is_capital_region, resolve_region_province, resolve_region_area,
-                              build_peer_group,
+                              build_peer_group, fetch_national_visitor_ranking_window,
                               build_live_visitor_snapshot)
 
 
@@ -125,6 +127,33 @@ def test_resolve_region_area_sums_districts_for_a_split_city():
     assert suwon_area is not None and gyeongju_area is not None
     assert 100 < suwon_area < 200  # Suwon is ~121 km²
     assert 1200 < gyeongju_area < 1400  # Gyeongju is ~1,324 km², a direct match
+
+
+def test_national_ranking_window_averages_across_days_not_a_single_spike(monkeypatch):
+    # A one-off spike day (a festival, a local holiday) must not carry the
+    # same weight as a full window of steady demand — the windowed ranking
+    # exists specifically so a single day can't dictate a region's national
+    # position (fixes the "단일 일자 의존" weakness). 가시 gets one huge day
+    # and two zero days (avg 333); 나시 gets 300 every day (avg 300) — 가시
+    # still edges ahead here, but only because its *3-day average* does, not
+    # because one spike day alone put it there.
+    window_items = [
+        _visitor_item("10", "가시", "외지인(b)", "1000"),
+        {**_visitor_item("10", "가시", "외지인(b)", "0"), "baseYmd": "20260702"},
+        {**_visitor_item("10", "가시", "외지인(b)", "0"), "baseYmd": "20260703"},
+        _visitor_item("20", "나시", "외지인(b)", "300"),
+        {**_visitor_item("20", "나시", "외지인(b)", "300"), "baseYmd": "20260702"},
+        {**_visitor_item("20", "나시", "외지인(b)", "300"), "baseYmd": "20260703"},
+    ]
+
+    async def fake_window(start_ymd, end_ymd):
+        return window_items
+
+    monkeypatch.setattr("app.data_sources.fetch_visitor_window", fake_window)
+    ranking = asyncio.run(fetch_national_visitor_ranking_window("20260703", days=3))
+    by_code = {entry["area_cd"]: entry for entry in ranking}
+    assert by_code["10"]["outside_visitors"] == pytest.approx(1000 / 3, rel=1e-3)
+    assert by_code["20"]["outside_visitors"] == pytest.approx(300.0, rel=1e-3)
 
 
 def test_quantile_top_quarter_is_at_least_the_median():

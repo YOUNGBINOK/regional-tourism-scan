@@ -5,6 +5,7 @@ differ by Data Lab account and competition scope.
 """
 from dataclasses import dataclass
 from copy import deepcopy
+from datetime import date, timedelta
 import asyncio
 import json
 import time
@@ -592,6 +593,39 @@ async def fetch_national_visitor_ranking(base_ymd: str) -> list[dict[str, object
             entry["percentile"] = _percentile_rank(float(entry["outside_visitors"]), all_values)
         return ranking
     return await _cached(f"ranking:{base_ymd}", _fetch)
+
+async def fetch_national_visitor_ranking_window(end_ymd: str, days: int = 7) -> list[dict[str, object]]:
+    """Multi-day-average nationwide outside-visitor ranking, ending on end_ymd.
+
+    A single day's demand can flip a region's national position or Peer
+    Group membership on an ordinary weekday/weekend swing (a beach city
+    scanned on a Saturday looks completely different from the same city on
+    a Tuesday). This averages daily outside-visitors over `days` calendar
+    days ending on end_ymd — one full weekly cycle by default — before
+    ranking, so demand percentile and peer selection reflect a stable
+    position rather than one day's noise.
+
+    Reuses fetch_visitor_window, so whenever this window matches the one
+    /analysis/visitor-stability requests for the same diagnosis (same
+    end date, same day count), the two endpoints share one cached
+    paginated KTO fetch instead of issuing it twice.
+    """
+    async def _fetch() -> list[dict[str, object]]:
+        end = date(int(end_ymd[:4]), int(end_ymd[4:6]), int(end_ymd[6:8]))
+        start = end - timedelta(days=days - 1)
+        items = await fetch_visitor_window(start.strftime("%Y%m%d"), end_ymd)
+        by_area = _aggregate_national_visitors(items)
+        for entry in by_area.values():
+            entry["outside_visitors"] = round(float(entry["outside_visitors"]) / days, 1)
+            entry["resident_visitors"] = round(float(entry["resident_visitors"]) / days, 1)
+            entry["foreign_visitors"] = round(float(entry["foreign_visitors"]) / days, 1)
+        all_values = [float(entry["outside_visitors"]) for entry in by_area.values()]
+        ranking = sorted(by_area.values(), key=lambda entry: -float(entry["outside_visitors"]))
+        for index, entry in enumerate(ranking):
+            entry["rank"] = index + 1
+            entry["percentile"] = _percentile_rank(float(entry["outside_visitors"]), all_values)
+        return ranking
+    return await _cached(f"ranking_window:{end_ymd}:{days}", _fetch)
 
 def classify_admin_type(area_name: str) -> str:
     """"시" / "군" / "자치구" / "일반구" / "기타".

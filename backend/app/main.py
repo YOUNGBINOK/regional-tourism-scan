@@ -10,7 +10,8 @@ from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_reg
                            fetch_attraction_concentration, summarize_attraction_concentration,
                            fetch_municipal_hub_attractions, compute_hub_spatial_spread,
                            fetch_visitor_window, compute_visitor_stability,
-                           fetch_national_visitor_ranking, is_independent_municipality,
+                           fetch_national_visitor_ranking_window,
+                           is_independent_municipality,
                            build_peer_group, _percentile_rank, _quantile,
                            fetch_kosis_statistics, fetch_mois_tourism_business,
                            summarize_mois_tourism_business, mois_tourism_business_regions,
@@ -62,10 +63,12 @@ class VisitorStabilityRequest(BaseModel):
 class NationalPeersRequest(BaseModel):
     area_cd: str = Field(pattern=r"^\d{5}$", examples=["47130"])
     base_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260701"])
-    peer_count: int = Field(default=4, ge=1, le=8)
+    peer_count: int = Field(default=4, ge=1, le=12)
+    window_days: int = Field(default=7, ge=3, le=14)
 
 class NationalRankingRequest(BaseModel):
     base_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260701"])
+    window_days: int = Field(default=7, ge=3, le=14)
 
 @app.get("/health")
 def health(): return {"status": "ok", "service": "R-GAP API"}
@@ -353,11 +356,11 @@ def _median(values: list[float | None]) -> float | None:
     return clean[mid] if len(clean) % 2 else (clean[mid - 1] + clean[mid]) / 2
 
 async def _fetch_peer_axis_snapshot(area_cd: str, base_ym: str) -> dict[str, float | None] | None:
-    """Lightweight (3-call) peer snapshot for national peer benchmarking — stay,
-    spend, lodging-share only, to keep quota cost sane across several peers.
-    Returns None for the whole peer on any failure, so one bad peer (quota,
-    network, missing data) just drops out of the median instead of failing
-    the whole national-peers response.
+    """Peer snapshot for national peer benchmarking — stay, spend, lodging-share,
+    and hub-attraction spatial spread (4 calls; Jeonju's split-district lookup
+    costs 2). Returns None for the whole peer on any failure, so one bad peer
+    (quota, network, missing data) just drops out of the median instead of
+    failing the whole national-peers response.
 
     Cached by (area_cd, base_ym): the same handful of national top-demand
     regions (e.g. 강남구, 서초구) show up as peers for most diagnosis targets,
@@ -366,15 +369,18 @@ async def _fetch_peer_axis_snapshot(area_cd: str, base_ym: str) -> dict[str, flo
     async def _fetch() -> dict[str, float | None] | None:
         try:
             metric_payload = KtoAreaMetricRequest(area_cd=area_cd, base_ym=base_ym)
-            stay, spend, lodging = await asyncio.gather(
+            stay, spend, lodging, hubs_raw = await asyncio.gather(
                 area_metric("demand_intensity", "stay", metric_payload),
                 area_metric("demand_intensity", "spend", metric_payload),
                 area_metric("demand_intensity", "stay", metric_payload, {"tarSjrnDsIxCd": "2102"}),
+                _safe_hub_attractions(area_cd, base_ym),
             )
+            hub_spread = compute_hub_spatial_spread(hubs_raw) if hubs_raw else None
             return {
                 "stay_intensity": _first_metric(stay, "tarSjrnDsIxVal", area_cd),
                 "spend_intensity": _first_metric(spend, "tarExpDsIxVal", area_cd),
                 "lodging_share_index": _first_metric(lodging, "tarSjrnDsIxVal", area_cd),
+                "dispersion_spread_km": hub_spread["spread_km"] if hub_spread else None,
             }
         except Exception:
             return None
@@ -397,13 +403,13 @@ async def national_peers(payload: NationalPeersRequest):
     available:false so the UI never has to render a bare error here.
     """
     try:
-        ranking = await fetch_national_visitor_ranking(payload.base_ymd)
+        ranking = await fetch_national_visitor_ranking_window(payload.base_ymd, payload.window_days)
     except Exception as error:
         return {"available": False, "reason": str(error), "base_ymd": payload.base_ymd}
 
     target = next((entry for entry in ranking if entry["area_cd"] == payload.area_cd), None)
     if target is None:
-        return {"available": False, "reason": "선택 지역이 오늘 방문자 원천에 없습니다.", "base_ymd": payload.base_ymd}
+        return {"available": False, "reason": "선택 지역이 최근 방문자 원천에 없습니다.", "base_ymd": payload.base_ymd}
 
     # ① 전국 위치: 기초지자체(일반구 제외) 전체를 모집단으로 재계산한다.
     independent_ranking = [entry for entry in ranking if is_independent_municipality(str(entry["area_name"]))]
@@ -426,10 +432,11 @@ async def national_peers(payload: NationalPeersRequest):
     def _peer_values(key: str) -> list[float]:
         return [row["axes"][key] for row in peer_rows if row["axes"] and row["axes"][key] is not None]
 
-    axis_keys = ["stay_intensity", "spend_intensity", "lodging_share_index"]
+    axis_keys = ["stay_intensity", "spend_intensity", "lodging_share_index", "dispersion_spread_km"]
     return {
         "available": True,
         "base_ymd": payload.base_ymd,
+        "window_days": payload.window_days,
         "national": {
             "municipality_count": len(independent_ranking),
             "target_percentile": national_percentile,
@@ -445,6 +452,11 @@ async def national_peers(payload: NationalPeersRequest):
             "peers": peer_rows,
             "medians": {key: _median(_peer_values(key)) for key in axis_keys},
             "top_quartile": {key: _quantile(_peer_values(key), 0.75) for key in axis_keys},
+            # Peer Group's own lower quartile per axis — the distribution-based
+            # floor "취약" judgments are measured against, instead of a fixed
+            # ±p constant that has no relationship to how spread out this
+            # particular peer group actually is (AGENTS.md 원칙 6 후속 조치).
+            "bottom_quartile": {key: _quantile(_peer_values(key), 0.25) for key in axis_keys},
             "target_population": group.get("target_population"),
             "target_population_density": group.get("target_population_density"),
         },
@@ -453,24 +465,36 @@ async def national_peers(payload: NationalPeersRequest):
 
 @app.post("/v1/analysis/national-ranking")
 async def national_ranking(payload: NationalRankingRequest):
-    """Same-day national outside-visitor ranking only (no per-peer axis calls).
+    """Multi-day-average national outside-visitor ranking (no per-peer axis calls).
 
-    One cheap KTO call. Used to populate every currently-reporting municipality
-    as a selectable diagnosis target — e.g. clickable map pins — beyond the
-    4 curated cities. Never raises: a scan failure degrades to
-    available:false with HTTP 200.
+    Used to populate every currently-reporting municipality as a selectable
+    diagnosis target — e.g. clickable map pins — beyond the 4 curated
+    cities. Never raises: a scan failure degrades to available:false with
+    HTTP 200.
     """
     try:
-        ranking = await fetch_national_visitor_ranking(payload.base_ymd)
-        return {"available": True, "base_ymd": payload.base_ymd, "regions": ranking}
+        ranking = await fetch_national_visitor_ranking_window(payload.base_ymd, payload.window_days)
+        return {"available": True, "base_ymd": payload.base_ymd, "window_days": payload.window_days, "regions": ranking}
     except Exception as error:
         return {"available": False, "reason": str(error), "base_ymd": payload.base_ymd}
 
 @app.post("/v1/metrics/tcei")
-def tcei(payload: TceiInput): return calculate_tcei(payload)
+def tcei(payload: TceiInput):
+    """Reference implementation of AGENTS.md §4.6's TCEI formula, given
+    already-computed component scores. Not called by the live diagnosis
+    pipeline: TCEI needs a real visit-share D, annual seasonality, and a
+    spend residual, none of which are backed by verified data sources yet
+    (see build_live_visitor_snapshot's missing_inputs). Exposed so the
+    scoring formula itself is inspectable and testable independent of that
+    data-availability gap — treat its output as a worked example, not a
+    live regional score."""
+    return calculate_tcei(payload)
 
 @app.post("/v1/regions/{region_code}/r-gap")
 def r_gap(region_code: str, actual_tcei: float, frontier_tcei: float):
+    """Reference implementation of AGENTS.md §4.6's R-GAP formula given two
+    already-computed TCEI values. Not called by the live diagnosis pipeline
+    for the same reason as /v1/metrics/tcei — see its docstring."""
     return {"region_code": region_code, "actual_tcei": actual_tcei, "frontier_tcei": frontier_tcei,
             "r_gap": calculate_r_gap(actual_tcei, frontier_tcei)}
 

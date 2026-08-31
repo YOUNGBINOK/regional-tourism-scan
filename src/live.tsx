@@ -32,21 +32,27 @@ type LiveSnapshot = {
   analysis: { status: 'partial'; message: string; missing_inputs: string[] };
 };
 type StabilitySnapshot = { window_days: number; areas: Record<string, { days_observed: number; stability_index: number | null }> };
+type PeerAxisSet = {
+  stay_intensity: number | null; spend_intensity: number | null; lodging_share_index: number | null;
+  dispersion_spread_km: number | null;
+};
 type NationalPeer = {
   area_cd: string; area_name: string; rank: number; outside_visitors: number; percentile: number;
   population: number | null; population_density: number | null;
-  axes: { stay_intensity: number | null; spend_intensity: number | null; lodging_share_index: number | null } | null;
+  axes: PeerAxisSet | null;
   fetch_ok: boolean;
 };
-type PeerAxisStats = { stay_intensity: number | null; spend_intensity: number | null; lodging_share_index: number | null };
+type PeerAxisStats = PeerAxisSet;
 type PeerGroup = {
   admin_type: string; capital_region: boolean; relaxed: boolean; criteria_note: string;
   count: number; peers: NationalPeer[]; medians: PeerAxisStats; top_quartile: PeerAxisStats;
+  bottom_quartile: PeerAxisStats;
   target_population: number | null; target_population_density: number | null;
 };
 type NationalPeersSnapshot = {
   available: true;
   base_ymd: string;
+  window_days: number;
   national: { municipality_count: number; target_percentile: number; demand_level: '충분' | '부족' };
   target: { area_cd: string; area_name: string; rank: number; outside_visitors: number; percentile: number } | null;
   peer_group: PeerGroup;
@@ -65,7 +71,7 @@ type MoisBusinessSnapshot = {
   items: Array<Record<string, string | null>>;
 };
 type RankedRegion = { area_cd: string; area_name: string; resident_visitors: number; outside_visitors: number; foreign_visitors: number; rank: number; percentile: number };
-type NationalRankingSnapshot = { available: true; base_ymd: string; regions: RankedRegion[] } | { available: false; reason: string; base_ymd: string };
+type NationalRankingSnapshot = { available: true; base_ymd: string; window_days: number; regions: RankedRegion[] } | { available: false; reason: string; base_ymd: string };
 
 const centroids = sigunguCentroids as Record<string, { name: string; province: string; lat: number; lng: number }>;
 // KTO 방문자 원천은 구가 있는 시(수원·전주 등)를 시 단위로 집계해 별도 코드를 쓰지만,
@@ -112,6 +118,18 @@ const median = (values: number[]) => {
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
 };
 
+// 백엔드 _quantile()과 동일한 선형보간 분위수 — 안정성 축처럼 서버가 미리 계산해
+// 주지 않는 값도 같은 방식으로 Peer 하위 25%를 구해 취약 판정 기준을 통일한다.
+const quantile = (values: number[], q: number) => {
+  if (!values.length) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const position = q * (sorted.length - 1);
+  const lower = Math.floor(position);
+  const upper = Math.min(lower + 1, sorted.length - 1);
+  const fraction = position - lower;
+  return sorted[lower] + (sorted[upper] - sorted[lower]) * fraction;
+};
+
 // 지역명 받침 유무에 따라 '은/는' 조사를 선택한다 (예: 경주시는 / 강릉시는 / 안산시는 / 전주시는).
 const topicParticle = (name: string) => {
   const code = name.charCodeAt(name.length - 1) - 0xac00;
@@ -120,8 +138,8 @@ const topicParticle = (name: string) => {
 };
 
 type Axis = {
-  key: string; label: string; diff: number | null; unit: '%' | 'p'; threshold: number; tier: DataTier; note: string;
-  value: number | null; peerMedian: number | null; peerTop25: number | null;
+  key: string; label: string; diff: number | null; unit: '%' | 'p'; tier: DataTier; note: string;
+  value: number | null; peerMedian: number | null; peerTop25: number | null; peerBottom25: number | null;
 };
 
 function App() {
@@ -189,7 +207,7 @@ function App() {
       try {
         const response = await fetch(`${apiBase}/v1/analysis/national-ranking`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ base_ymd: date.replace(/-/g, '') }),
+          body: JSON.stringify({ base_ymd: date.replace(/-/g, ''), window_days: 7 }),
         });
         const data = (await response.json()) as NationalRankingSnapshot;
         if (!cancelled) setNationalRanking(response.ok ? data : { available: false, reason: '전국 스캔 요청에 실패했습니다.', base_ymd: date.replace(/-/g, '') });
@@ -224,7 +242,7 @@ function App() {
     try {
       const response = await fetch(`${apiBase}/v1/analysis/national-peers`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ area_cd: targetRegionId, base_ymd: targetDate, peer_count: 8 }),
+        body: JSON.stringify({ area_cd: targetRegionId, base_ymd: targetDate, peer_count: 6, window_days: 7 }),
       });
       const data = (await response.json()) as NationalPeersSnapshot;
       if (isCancelled()) return;
@@ -285,9 +303,7 @@ function App() {
   const stayDiff = snapshot && peerGroup ? pointDiff(snapshot.observed_indices.stay_intensity, peerGroup.medians.stay_intensity) : null;
   const lodgingDiff = snapshot && peerGroup ? pointDiff(snapshot.observed_indices.lodging_share_index, peerGroup.medians.lodging_share_index) : null;
   const spendDiff = snapshot && peerGroup ? pointDiff(snapshot.observed_indices.spend_intensity, peerGroup.medians.spend_intensity) : null;
-  // 공간확산은 지역마다 별도 API 호출이 필요해 Peer Group 전체에는 아직 적용하지 않는다.
-  // 전국 중앙값 등으로 대체하지 않고, 정직하게 "Peer 비교 준비 중"으로 표시한다.
-  const dispersionDiff: number | null = null;
+  const dispersionDiff = snapshot && peerGroup ? pointDiff(snapshot.observed_indices.spatial_dispersion, peerGroup.medians.dispersion_spread_km) : null;
 
   // 단기 수요 안정성: 최근 7일 변동성에서 진단 대상과 Peer Group의 값을 뽑아 중앙값과 비교한다.
   const stabilityValue = (id: string) => stability?.areas[id]?.stability_index ?? null;
@@ -299,20 +315,37 @@ function App() {
   const peerBasisNote = peerGroup
     ? `${peerGroup.criteria_note} ${peerGroup.count}곳 중앙값 대비${peerGroup.relaxed ? ' (수도권 조건 완화)' : ''}`
     : 'Peer Group 조회 대기';
+  const peerStabilityBottom25 = quantile(peerStabilityValues, 0.25);
   const axes: Axis[] = [
-    { key: 'stay', label: '체류강도', diff: stayDiff, unit: 'p', threshold: 5, tier: 'derived', note: `KTO 체류강도 지수 · ${peerBasisNote}`,
-      value: snapshot?.observed_indices.stay_intensity ?? null, peerMedian: peerGroup?.medians.stay_intensity ?? null, peerTop25: peerGroup?.top_quartile.stay_intensity ?? null },
-    { key: 'spend', label: '소비강도', diff: spendDiff, unit: 'p', threshold: 5, tier: 'derived', note: `KTO 소비강도 지수 · ${peerBasisNote}`,
-      value: snapshot?.observed_indices.spend_intensity ?? null, peerMedian: peerGroup?.medians.spend_intensity ?? null, peerTop25: peerGroup?.top_quartile.spend_intensity ?? null },
-    { key: 'stayShare', label: '숙박비중', diff: lodgingDiff, unit: 'p', threshold: 5, tier: 'derived', note: `KTO 숙박 비중 지수(2102) · ${peerBasisNote}`,
-      value: snapshot?.observed_indices.lodging_share_index ?? null, peerMedian: peerGroup?.medians.lodging_share_index ?? null, peerTop25: peerGroup?.top_quartile.lodging_share_index ?? null },
-    { key: 'dispersion', label: '중심지 공간확산', diff: dispersionDiff, unit: '%', threshold: 10, tier: 'pending', note: '내비게이션 중심 관광지 좌표의 RMS 확산거리 · Peer Group 확장 예정(현재는 진단 대상 값만 제공)',
-      value: snapshot?.observed_indices.spatial_dispersion ?? null, peerMedian: null, peerTop25: null },
-    { key: 'stability', label: '단기 수요 안정성', diff: stabilityDiff, unit: 'p', threshold: 5, tier: 'derived', note: `최근 7일 외지인 방문자 변동계수 역산값 · ${peerBasisNote} · 연간 계절성 지표가 아님`,
-      value: stabilityValue(regionId), peerMedian: peerStabilityMedian, peerTop25: null },
+    { key: 'stay', label: '체류강도', diff: stayDiff, unit: 'p', tier: 'derived', note: `KTO 체류강도 지수 · ${peerBasisNote}`,
+      value: snapshot?.observed_indices.stay_intensity ?? null, peerMedian: peerGroup?.medians.stay_intensity ?? null,
+      peerTop25: peerGroup?.top_quartile.stay_intensity ?? null, peerBottom25: peerGroup?.bottom_quartile.stay_intensity ?? null },
+    { key: 'spend', label: '소비강도', diff: spendDiff, unit: 'p', tier: 'derived', note: `KTO 소비강도 지수 · ${peerBasisNote}`,
+      value: snapshot?.observed_indices.spend_intensity ?? null, peerMedian: peerGroup?.medians.spend_intensity ?? null,
+      peerTop25: peerGroup?.top_quartile.spend_intensity ?? null, peerBottom25: peerGroup?.bottom_quartile.spend_intensity ?? null },
+    { key: 'stayShare', label: '숙박비중', diff: lodgingDiff, unit: 'p', tier: 'derived', note: `KTO 숙박 비중 지수(2102) · ${peerBasisNote}`,
+      value: snapshot?.observed_indices.lodging_share_index ?? null, peerMedian: peerGroup?.medians.lodging_share_index ?? null,
+      peerTop25: peerGroup?.top_quartile.lodging_share_index ?? null, peerBottom25: peerGroup?.bottom_quartile.lodging_share_index ?? null },
+    { key: 'dispersion', label: '중심지 공간확산', diff: dispersionDiff, unit: 'p', tier: peerGroup?.medians.dispersion_spread_km != null ? 'derived' : 'pending',
+      note: `내비게이션 중심 관광지 좌표의 RMS 확산거리(km) · ${peerBasisNote}`,
+      value: snapshot?.observed_indices.spatial_dispersion ?? null, peerMedian: peerGroup?.medians.dispersion_spread_km ?? null,
+      peerTop25: peerGroup?.top_quartile.dispersion_spread_km ?? null, peerBottom25: peerGroup?.bottom_quartile.dispersion_spread_km ?? null },
+    { key: 'stability', label: '단기 수요 안정성', diff: stabilityDiff, unit: 'p', tier: 'derived', note: `최근 7일 외지인 방문자 변동계수 역산값 · ${peerBasisNote} · 연간 계절성 지표가 아님`,
+      value: stabilityValue(regionId), peerMedian: peerStabilityMedian, peerTop25: null, peerBottom25: peerStabilityBottom25 },
   ];
-  const severity = (axis: Axis) => axis.diff == null ? 0 : Math.max(0, -axis.diff / axis.threshold);
-  const isWeak = (diff: number | null, threshold: number) => diff != null && diff <= -threshold;
+  // 취약 판정은 "Peer 중앙값보다 몇 p 낮은가"라는 고정 상수가 아니라, 이 Peer
+  // Group 자체의 하위 25% 문턱과 비교한다 — 그룹마다 실제 편차가 다르므로,
+  // 같은 ±5p라도 어떤 그룹에서는 흔한 편차이고 어떤 그룹에서는 이례적일 수 있다.
+  const severity = (axis: Axis) => {
+    if (axis.value == null || axis.peerBottom25 == null || axis.peerMedian == null) return 0;
+    const span = axis.peerMedian - axis.peerBottom25;
+    if (span <= 0) return 0;
+    return Math.max(0, (axis.peerBottom25 - axis.value) / span);
+  };
+  const isWeak = (axis: Axis) => axis.value != null && axis.peerBottom25 != null && axis.value < axis.peerBottom25;
+  // 차트·막대 정규화에 쓰는 편차 단위: Peer 중앙값과 하위 25% 사이 폭(없으면 5p로 대체).
+  const axisSpan = (axis: Axis) => axis.peerMedian != null && axis.peerBottom25 != null && axis.peerMedian - axis.peerBottom25 > 0.01
+    ? axis.peerMedian - axis.peerBottom25 : 5;
 
   // ①전국 위치 → ②수요 충분 여부 → ③Peer 성과비교 → ④유형판정 → ⑤원인분해.
   // "관광수요가 이미 확보된 지역의 숨은 취약점을 찾는다"는 문제의식을 지키기 위해,
@@ -320,7 +353,7 @@ function App() {
   const coreAxes = [
     { axis: axes[0], key: 'stay' as const }, { axis: axes[1], key: 'spend' as const }, { axis: axes[2], key: 'stayShare' as const },
   ];
-  const weakCoreAxes = coreAxes.filter(({ axis }) => isWeak(axis.diff, axis.threshold));
+  const weakCoreAxes = coreAxes.filter(({ axis }) => isWeak(axis));
   const hasCoreData = stayDiff != null && spendDiff != null && lodgingDiff != null;
   const hasWeakPerformance = weakCoreAxes.length > 0;
 
@@ -361,7 +394,7 @@ function App() {
   // 근거로 삼는다. OPN_ATMY_GRP_CD가 시군구가 아니라 도 단위로만 걸러지는 걸
   // 확인했기 때문에(백엔드가 도 전체를 받아 주소로 재필터링), 지금은 검증된
   // 4개 지역(경주·강릉·제주·전주)에서만 자동 연결한다.
-  const lodgingIsWeak = isWeak(lodgingDiff, axes[2].threshold);
+  const lodgingIsWeak = isWeak(axes[2]);
   useEffect(() => {
     if (!lodgingIsWeak || !regions.some((item) => item.id === regionId)) { setLodgingEvidence(null); return; }
     let cancelled = false;
@@ -383,7 +416,7 @@ function App() {
   const priorities = [...rankedWeak, ...pendingAxes].slice(0, 3);
   // 관광수요 자체는 이미 충분(전국 상위 절반)하므로, 홍보 확대보다 Peer 대비 취약축이 우선이다.
   const promotionLowPriority = demandLevel === '충분';
-  const chartData = axes.filter((axis) => axis.diff != null).map((axis) => ({ name: axis.label, diff: (axis.diff as number) / axis.threshold }));
+  const chartData = axes.filter((axis) => axis.diff != null).map((axis) => ({ name: axis.label, diff: (axis.diff as number) / axisSpan(axis) }));
 
   const stats = snapshot ? [
     ['외지인 방문자', formatNumber.format(snapshot.area.outside_visitors), '선택 기준일 · 통신자료 기반 KTO 추정치', 'measured' as DataTier],
@@ -450,7 +483,7 @@ function App() {
           </details>}
           {axes.map((axis) => <div className="sbar" key={axis.key}>
             <span>{axis.label} <Tier tier={axis.tier} /></span>
-            <i><b style={{ width: axis.diff == null ? '0%' : `${Math.min(100, 20 * Math.abs(axis.diff) / axis.threshold)}%`, background: axis.diff == null ? '#d7ddd4' : axis.diff < 0 ? '#d45f43' : '#8fbc7e' }} /></i>
+            <i><b style={{ width: axis.diff == null ? '0%' : `${Math.min(100, 20 * Math.abs(axis.diff) / axisSpan(axis))}%`, background: axis.diff == null ? '#d7ddd4' : axis.diff < 0 ? '#d45f43' : '#8fbc7e' }} /></i>
             <em>{axis.diff == null ? '데이터 없음' : formatSigned(axis.diff, axis.unit)}</em>
           </div>)}
           <div className="peer-value-table">{axes.filter((axis) => axis.value != null || axis.peerMedian != null).map((axis) => <p key={axis.key}><span>{axis.label}</span><b>{region.name} {axis.value != null ? axis.value.toFixed(1) : '--'}</b><b>Peer 중앙값 {axis.peerMedian != null ? axis.peerMedian.toFixed(1) : '--'}</b><b>Peer 상위25% {axis.peerTop25 != null ? axis.peerTop25.toFixed(1) : '--'}</b></p>)}</div>
