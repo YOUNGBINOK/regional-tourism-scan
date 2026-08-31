@@ -138,11 +138,14 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regionId, nationalRanking, snapshot]);
 
-  // 전국에서 좌표를 확인할 수 있는 모든 시군구를 지도 핀으로 확장한다. 스캔 전에는
-  // 기존 4개 관광거점만 보여준다. 구가 있는 시는 resolveCentroid()가 구 좌표 평균으로 근사한다.
+  // 전국에서 좌표를 확인할 수 있는 시 단위 지역만 지도 핀·선택지로 확장한다. 스캔 전에는
+  // 기존 4개 관광거점만 보여준다. KTO 방문자 원천은 구가 있는 시의 구를 "OO시 XX구"로
+  // 표기하므로 공백이 있으면 구 단위로 보고 제외한다(구가 있는 시 자체의 집계 코드는 유지).
+  const isCityLevel = (name: string) => !name.includes(' ');
   const mapRegions = useMemo(() => {
     if (!rankingRegions.length) return regions;
     const resolved = rankingRegions
+      .filter((item) => isCityLevel(item.area_name))
       .map((item) => {
         const coord = resolveCentroid(item.area_cd, item.area_name);
         return coord ? { id: item.area_cd, name: item.area_name, province: coord.province, lat: coord.lat, lng: coord.lng } : null;
@@ -151,6 +154,14 @@ function App() {
     return resolved.length ? resolved : regions;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nationalRanking]);
+
+  // 검색창: 이름이 같은 지역이 여러 도에 있을 수 있어(예: 중구) 도 이름을 붙여 매칭한다.
+  const [regionQuery, setRegionQuery] = useState('');
+  const regionMatches = useMemo(() => {
+    const query = regionQuery.trim();
+    if (!query) return [];
+    return mapRegions.filter((item) => `${item.province}${item.name}`.includes(query)).slice(0, 8);
+  }, [regionQuery, mapRegions]);
 
   const select = (next: string) => { setRegionId(next); };
 
@@ -343,8 +354,8 @@ function App() {
     <header><div className="logo"><b>R</b>Regional Tourism Scan<i /></div><nav><a href="#map">전국 관광수요</a><a href="#diagnosis">관광현황 진단</a><a href="#business-data">관광사업자 원자료</a><a href="#peer">지역 비교</a><a href="#priority">정책 우선순위</a><a href="#methodology">용어·알고리즘</a></nav><button type="button">정책 브리프 PDF ↗</button></header>
     <main data-live-analysis="true">
       <section className="hero live-hero"><small>● DATA LAB CONNECTION · KTO TOURISM DATA LAB</small><div><article><h1>지금은 <em>Data Lab API 자료</em>로<br />확인합니다.</h1><p>선택한 기준일과 지자체의 한국관광공사 통신 기반 방문자 추정치와 관광지수를 서버에서 조회합니다. 전국에서 관광수요가 이미 충분한 지역들과 비교해 &ldquo;무엇이 상대적으로 부족한가&rdquo;를 진단합니다.</p><a href="#map">기준일 데이터 보기 ↓</a></article><aside><span>DATA STATUS <b>{loading ? 'LOADING' : snapshot ? 'CONNECTED' : 'CONNECTION REQUIRED'}</b></span><strong>{snapshot ? 'OK' : '--'}</strong><div className="bars">{[28, 42, 36, 58, 49, 68, 57, 79].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}</div><p><b>{snapshot ? snapshot.source : 'KTO API 연결 확인 필요'}</b><span>{snapshot?.base_ymd || date.replace(/-/g, '.')}</span></p></aside></div></section>
-      <section id="map" className="section"><div className="heading"><div><small>01 / REGION SELECT</small><h2>지역을 선택하면,<br /><em>진단이 시작됩니다</em></h2></div><div className="live-controls"><label>기준일<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><button type="button" onClick={() => void loadDiagnosis(regionId, date.replace(/-/g, ''), () => false)} disabled={loading}>{loading ? '조회 중' : '기준일 데이터 조회'}</button></div></div>
-        <div className="maplayout"><article className="map"><div>외지인 방문자 · KTO 일별 집계 <span>{mapRegions.length > regions.length ? `전국 ${mapRegions.length}개 시군구 중 클릭하세요` : '선택 지역을 클릭하세요'}</span></div><MapContainer center={[36.25, 127.8]} zoom={6.3} scrollWheelZoom={false}><TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />{mapRegions.map((item) => <CircleMarker key={item.id} center={[item.lat, item.lng]} radius={item.id === regionId ? 16 : 5} pathOptions={{ color: item.id === regionId ? '#173b2b' : '#fff', weight: item.id === regionId ? 4 : 1, fillColor: item.id === regionId ? '#4f8249' : '#99c982', fillOpacity: item.id === regionId ? .9 : .75 }} eventHandlers={{ click: () => select(item.id) }}><Tooltip>{item.province} {item.name}</Tooltip></CircleMarker>)}</MapContainer><small>※ {mapRegions.length > regions.length ? `전국 시군구 방문자 순위(같은 기준일)에서 좌표를 확인할 수 있는 ${mapRegions.length}곳을 진단 대상으로 선택할 수 있습니다.` : '전국 스캔 결과를 불러오는 중입니다. 우선 4개 관광거점 중에서 선택하세요.'} 아래 비교군은 선택 지역과 무관하게 전국 시군구 방문자 순위에서 매번 동적으로 뽑습니다.</small></article>
+      <section id="map" className="section"><div className="heading"><div><small>01 / REGION SELECT</small><h2>지역을 선택하면,<br /><em>진단이 시작됩니다</em></h2></div><div className="live-controls"><div className="region-search"><label>지역 검색<input type="text" value={regionQuery} placeholder="예: 강남구, 경상북도" onChange={(event) => setRegionQuery(event.target.value)} /></label>{regionMatches.length > 0 && <ul className="region-search-results">{regionMatches.map((item) => <li key={item.id}><button type="button" onClick={() => { select(item.id); setRegionQuery(''); }}>{item.province} {item.name}</button></li>)}</ul>}</div><label>기준일<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><button type="button" onClick={() => void loadDiagnosis(regionId, date.replace(/-/g, ''), () => false)} disabled={loading}>{loading ? '조회 중' : '기준일 데이터 조회'}</button></div></div>
+        <div className="maplayout"><article className="map"><div>외지인 방문자 · KTO 일별 집계 <span>{mapRegions.length > regions.length ? `전국 ${mapRegions.length}개 시군구 중 클릭하세요` : '선택 지역을 클릭하세요'}</span></div><MapContainer center={[36.25, 127.8]} zoom={6.3} scrollWheelZoom={false}><TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />{mapRegions.map((item) => <CircleMarker key={item.id} center={[item.lat, item.lng]} radius={item.id === regionId ? 16 : 6} pathOptions={{ color: item.id === regionId ? '#173b2b' : '#7a1f0f', weight: item.id === regionId ? 4 : 1.5, fillColor: item.id === regionId ? '#4f8249' : '#e8622f', fillOpacity: item.id === regionId ? .95 : .9 }} eventHandlers={{ click: () => select(item.id) }}><Tooltip>{item.province} {item.name}</Tooltip></CircleMarker>)}</MapContainer><small>※ {mapRegions.length > regions.length ? `전국 시군구 방문자 순위(같은 기준일)에서 좌표를 확인할 수 있는 시 단위 ${mapRegions.length}곳을 진단 대상으로 선택할 수 있습니다.` : '전국 스캔 결과를 불러오는 중입니다. 우선 4개 관광거점 중에서 선택하세요.'} 아래 비교군은 선택 지역과 무관하게 전국 시군구 방문자 순위에서 매번 동적으로 뽑습니다.</small></article>
           <aside className="summary"><small>SELECTED MUNICIPALITY</small><h3>{region.province} {region.name}</h3><label>기준일 외지인 방문자</label><strong>{snapshot ? formatNumber.format(snapshot.area.outside_visitors) : '--'}</strong><i><b style={{ width: `${snapshot?.national_comparison.outside_visitor_percentile || 0}%` }} /></i><p>전국 270개 코드 내 백분위 <b>{snapshot ? `${snapshot.national_comparison.outside_visitor_percentile}%` : '--'}</b></p><label>데이터 상태</label><div className="badges"><span>{snapshot ? 'KTO 통신기반 추정치' : '조회 대기'}</span><span>{snapshot ? snapshot.base_ymd : date.replace(/-/g, '')}</span></div><p className="desc">{error || (snapshot ? '선택 기준일의 외지인 방문자 추정치입니다. 아래 비교진단은 전국 시군구 중 관광수요 상위 지역의 중앙값을 기준으로 합니다.' : '조회 버튼을 눌러 KTO 방문자 데이터를 불러오세요.')}</p></aside></div>
       </section>
       <section id="diagnosis" className="section live-section"><div className="heading"><div><small>02 / OBSERVED METRICS</small><h2>{region.name}의<br /><em>관측자료 기반 진단</em></h2></div><label>진단 대상{mapRegions.length > regions.length && <em className="tier tier-derived">전국 {mapRegions.length}곳</em>}<select value={regionId} onChange={(event) => select(event.target.value)}>{mapRegions.map((item) => <option key={item.id} value={item.id}>{item.province} {item.name}</option>)}</select></label></div>
