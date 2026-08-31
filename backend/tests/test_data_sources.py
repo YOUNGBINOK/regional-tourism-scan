@@ -1,11 +1,27 @@
+import asyncio
+
 from app.data_sources import (compute_hub_spatial_spread, compute_visitor_stability,
                               summarize_attraction_concentration,
                               summarize_mois_tourism_business,
                               mois_tourism_business_regions,
                               _aggregate_national_visitors, _percentile_rank, _quantile,
                               classify_admin_type, is_independent_municipality,
-                              is_capital_region, resolve_region_province, build_peer_group,
+                              is_capital_region, resolve_region_province, resolve_region_area,
+                              build_peer_group,
                               build_live_visitor_snapshot)
+
+
+async def _no_population(area_cds: list, base_ym: str) -> dict:
+    return {}
+
+
+def _build_peer_group_without_population(monkeypatch, ranking, target_cd, target_name, count):
+    """Most peer-group tests care about admin-type/demand-scale behavior, not
+    population — stub the KOSIS call so they stay fast, offline, and
+    deterministic, and incidentally cover the "no population data" fallback
+    path every real request can also hit (missing key, KOSIS outage, ...)."""
+    monkeypatch.setattr("app.data_sources.fetch_population_by_codes", _no_population)
+    return asyncio.run(build_peer_group(ranking, target_cd, target_name, count, base_ym="202607"))
 
 
 def _visitor_item(code: str, name: str, category: str, count: str) -> dict:
@@ -36,7 +52,7 @@ def test_is_independent_municipality_excludes_only_ilban_gu():
     assert is_independent_municipality("수원시 팔달구") is False
 
 
-def test_build_peer_group_never_mixes_admin_types():
+def test_build_peer_group_never_mixes_admin_types(monkeypatch):
     # 강남구(자치구) has far higher demand than every 시/군 here, but a 시
     # target must only ever be benchmarked against other 시/군 — 구 is a
     # different kind of administrative unit, not simply a smaller peer.
@@ -47,17 +63,18 @@ def test_build_peer_group_never_mixes_admin_types():
         _visitor_item("52130", "군산시", "외지인(b)", "150"),
     ]
     ranking = _ranking(items)
-    group = build_peer_group(ranking, "47130", "경주시", count=3)
+    group = _build_peer_group_without_population(monkeypatch, ranking, "47130", "경주시", count=3)
     assert group["admin_type"] == "시"
     peer_cds = [peer["area_cd"] for peer in group["peers"]]
     assert "11680" not in peer_cds  # the 자치구 must never appear as a 시's peer
     assert set(peer_cds) == {"51150", "52130"}
 
 
-def test_build_peer_group_picks_closest_demand_scale_not_simply_the_top():
-    # Five 시 with descending demand; the target (C, rank 3) should be
-    # benchmarked against the two *closest* in demand scale (B and D), not
-    # simply "the other top performers nationally" (A and B).
+def test_build_peer_group_picks_closest_demand_scale_without_population_data(monkeypatch):
+    # Five 시 with descending demand; with no population data available (the
+    # fallback every real request can also hit), similarity falls back to
+    # demand scale alone: the target (C, rank 3) should be benchmarked
+    # against the two *closest* in demand (B and D), not the top performers.
     items = [
         _visitor_item("10", "가시", "외지인(b)", "500"),
         _visitor_item("20", "나시", "외지인(b)", "400"),
@@ -66,13 +83,48 @@ def test_build_peer_group_picks_closest_demand_scale_not_simply_the_top():
         _visitor_item("50", "마시", "외지인(b)", "100"),
     ]
     ranking = _ranking(items)
-    group = build_peer_group(ranking, "30", "다시", count=2)
+    group = _build_peer_group_without_population(monkeypatch, ranking, "30", "다시", count=2)
     assert [peer["area_cd"] for peer in group["peers"]] == ["20", "40"]
+    assert "인구 데이터 미확보" in group["criteria_note"]
+
+
+def test_build_peer_group_uses_population_and_density_when_available(monkeypatch):
+    # Same demand for every candidate (so demand alone can't distinguish
+    # them), but the target's population/density profile clearly matches C
+    # over B or D — the peer group must pick up on that structural signal.
+    items = [
+        _visitor_item("10", "가시", "외지인(b)", "100"),
+        _visitor_item("20", "나시", "외지인(b)", "100"),
+        _visitor_item("30", "다시", "외지인(b)", "100"),
+        _visitor_item("40", "라시", "외지인(b)", "100"),
+    ]
+    ranking = _ranking(items)
+
+    async def fake_population(area_cds, base_ym):
+        return {"10": 500_000.0, "20": 50_000.0, "30": 45_000.0, "40": 40_000.0}
+
+    monkeypatch.setattr("app.data_sources.fetch_population_by_codes", fake_population)
+    monkeypatch.setattr("app.data_sources.resolve_region_area", lambda area_cd, area_name: 100.0)
+    group = asyncio.run(build_peer_group(ranking, "30", "다시", count=1, base_ym="202607"))
+    assert [peer["area_cd"] for peer in group["peers"]] == ["40"]  # 45k is closer to 40k than to 500k/50k
+    assert group["peers"][0]["population"] == 40_000.0
+    assert "인구·인구밀도" in group["criteria_note"]
 
 
 def test_capital_region_lookup_for_a_known_gyeonggi_and_non_capital_city():
     assert is_capital_region(resolve_region_province("41110", "수원시")) is True
     assert is_capital_region(resolve_region_province("47130", "경주시")) is False
+
+
+def test_resolve_region_area_sums_districts_for_a_split_city():
+    # 수원시's aggregate code isn't in the boundary file (only its 4 구 are),
+    # so its area must be the *sum* of those districts, not an average like
+    # the centroid lookup uses for coordinates.
+    suwon_area = resolve_region_area("41110", "수원시")
+    gyeongju_area = resolve_region_area("47130", "경주시")
+    assert suwon_area is not None and gyeongju_area is not None
+    assert 100 < suwon_area < 200  # Suwon is ~121 km²
+    assert 1200 < gyeongju_area < 1400  # Gyeongju is ~1,324 km², a direct match
 
 
 def test_quantile_top_quarter_is_at_least_the_median():

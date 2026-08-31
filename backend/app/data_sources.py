@@ -574,7 +574,13 @@ def _load_region_centroids() -> dict[str, dict[str, object]]:
     with path.open(encoding="utf-8") as file:
         return json.load(file)
 
+def _load_region_areas() -> dict[str, float]:
+    path = Path(__file__).resolve().parent / "kr_sigungu_area.json"
+    with path.open(encoding="utf-8") as file:
+        return json.load(file)
+
 _REGION_CENTROIDS = _load_region_centroids()
+_REGION_AREAS = _load_region_areas()
 
 def resolve_region_province(area_cd: str, area_name: str) -> str | None:
     """지역의 소속 시·도를 확인한다. 직접 코드가 있으면 그대로, 없으면(예:
@@ -587,8 +593,68 @@ def resolve_region_province(area_cd: str, area_name: str) -> str | None:
             return str(entry["province"])
     return None
 
+def resolve_region_area(area_cd: str, area_name: str) -> float | None:
+    """지역 면적(km²). 통계청 SGIS 행정동 경계를 시군구 단위로 합산해 계산했다
+    (구면 좌표 등장방형 근사 — 경주시 1,323.5km² vs 공식 1,324.4km², 강남구
+    38.3km² vs 공식 39.5km², 오차 3% 이내). 직접 코드가 없으면(구가 있는
+    시의 방문자 원천 집계 코드) 그 시 이름으로 시작하는 구들의 면적을
+    합산한다 — 중심좌표와 달리 면적은 평균이 아니라 합이어야 시 전체
+    면적이 된다."""
+    direct = _REGION_AREAS.get(area_cd)
+    if direct is not None: return direct
+    matching_codes = [code for code, entry in _REGION_CENTROIDS.items() if str(entry["name"]).startswith(area_name)]
+    if not matching_codes: return None
+    return sum(_REGION_AREAS.get(code, 0.0) for code in matching_codes) or None
+
 def is_capital_region(province: str | None) -> bool:
     return province in _CAPITAL_REGION_PROVINCES
+
+KOSIS_POPULATION_ORG_ID = "101"
+KOSIS_POPULATION_TABLE_ID = "DT_1B04005N"  # 행정구역(읍면동)별/5세별 주민등록인구
+
+async def fetch_population_by_codes(area_cds: list[str], base_ym: str) -> dict[str, float]:
+    """주민등록인구(총인구수) per area_cd from KOSIS, in the exact same 5-digit
+    code scheme KTO uses (verified directly: 47130/11680/41110 all resolve to
+    the right 시군구/자치구 population without any remapping). One batched
+    request covers the whole candidate pool. Returns {} (never raises) on any
+    failure — population/density similarity is a refinement, not a hard
+    dependency, so a KOSIS outage must degrade to demand-only peer selection,
+    not break the whole Peer Group.
+    """
+    s = get_settings()
+    if not s.kosis_api_key or not area_cds:
+        return {}
+
+    async def _fetch() -> dict[str, float]:
+        params = {
+            "method": "getList", "apiKey": s.kosis_api_key, "itmId": "T2",
+            "objL1": "+".join(area_cds), "objL2": "0", "format": "json", "jsonVD": "Y",
+            "prdSe": "M", "startPrdDe": base_ym, "endPrdDe": base_ym,
+            "orgId": KOSIS_POPULATION_ORG_ID, "tblId": KOSIS_POPULATION_TABLE_ID,
+        }
+        endpoint = s.kosis_statistics_endpoint.strip("/")
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await client.get(f"{s.kosis_base_url.rstrip('/')}/{endpoint}", params=params,
+                                        headers={"Accept": "application/json"})
+            if response.is_error: return {}
+            try:
+                rows = response.json()
+            except ValueError:
+                return {}
+            if not isinstance(rows, list): return {}
+            result: dict[str, float] = {}
+            for row in rows:
+                code, value = row.get("C1"), row.get("DT")
+                if not code or value is None: continue
+                try: result[str(code)] = float(value)
+                except (TypeError, ValueError): continue
+            return result
+
+    try:
+        key = f"population:{base_ym}:{','.join(sorted(area_cds))}"
+        return await _cached(key, _fetch, ttl=6 * 3600.0)
+    except Exception:
+        return {}
 
 def _quantile(values: list[float], q: float) -> float | None:
     """Linear-interpolation quantile (q in [0,1]); None for an empty sample."""
@@ -599,8 +665,11 @@ def _quantile(values: list[float], q: float) -> float | None:
     fraction = position - lower
     return ordered[lower] + (ordered[upper] - ordered[lower]) * fraction
 
-def build_peer_group(ranking: list[dict[str, object]], target_area_cd: str, target_area_name: str,
-                     count: int) -> dict[str, object]:
+def _percentile_within(value: float, pool_values: list[float]) -> float:
+    return _percentile_rank(value, pool_values) if pool_values else 50.0
+
+async def build_peer_group(ranking: list[dict[str, object]], target_area_cd: str, target_area_name: str,
+                           count: int, base_ym: str) -> dict[str, object]:
     """Structural-condition peer group, NOT a "top-N by national demand" list.
 
     Peers must share the target's 행정유형(시/군/자치구) — a 시 is never
@@ -608,16 +677,21 @@ def build_peer_group(ranking: list[dict[str, object]], target_area_cd: str, targ
     transit/lodging/business-tourism demand) and provincial cities aren't
     the same kind of place. For 시/군, peers are additionally restricted to
     the same 수도권 여부, since a capital-region 시 and a non-capital
-    provincial 시 have structurally different demand bases. Within that
-    pool, peers are the closest matches by national demand *scale*
-    (percentile proximity) — not simply the highest-demand regions
-    nationally, which would make the "peer benchmark" just be Gangnam-gu
-    and Seocho-gu for almost every target regardless of its own condition.
+    provincial 시 have structurally different demand bases.
 
-    Deliberately does not use any performance/outcome variable (stay,
-    spend, lodging, ...) to form the group — only administrative type,
-    capital-region status, and demand scale, so the peer group is the
-    target's *condition*, not a self-referential slice of the very
+    Within that pool, peers are ranked by a combined structural-similarity
+    distance across national demand scale, population, and population
+    density — each converted to a percentile *within this same pool* first,
+    so the three end up on a comparable 0–100 scale despite very different
+    raw units (visitor counts vs. person counts vs. person/km²). A candidate
+    missing population/area data still ranks — its distance just falls back
+    to whichever dimensions are actually available for it, rather than being
+    dropped or crashing the whole comparison.
+
+    Deliberately does not use any performance/outcome variable (stay, spend,
+    lodging, ...) to form the group — only administrative type, capital-
+    region status, demand scale, population, and density, so the peer group
+    is the target's *condition*, not a self-referential slice of the very
     outcomes being diagnosed.
     """
     admin_type = classify_admin_type(target_area_name)
@@ -638,17 +712,53 @@ def build_peer_group(ranking: list[dict[str, object]], target_area_cd: str, targ
         else:
             relaxed = True  # too few same-수도권-status candidates; fall back to admin-type only
 
-    if target_percentile is not None:
-        pool = sorted(pool, key=lambda entry: abs(float(entry["percentile"]) - target_percentile))
-    peers = pool[:count]
+    # 인구·인구밀도: 대상 + 후보 풀 전체를 한 번에 조회한 뒤, 이 풀 안에서의
+    # 백분위로 변환한다(단위가 다른 세 지표를 같은 0~100 척도로 비교하기 위함).
+    all_codes = [target_area_cd] + [str(entry["area_cd"]) for entry in pool]
+    population_by_code = await fetch_population_by_codes(all_codes, base_ym)
 
-    if admin_type in ("시", "군"):
-        region_note = f"{'수도권' if target_capital else '비수도권'} {admin_type} · 관광수요 규모가 유사한 지역"
-    else:
-        region_note = f"{admin_type} · 관광수요 규모가 유사한 지역"
+    def _density(area_cd: str, area_name: str) -> float | None:
+        population = population_by_code.get(area_cd)
+        area_km2 = resolve_region_area(area_cd, area_name)
+        return population / area_km2 if population is not None and area_km2 else None
+
+    pool_populations = [population_by_code[str(e["area_cd"])] for e in pool if str(e["area_cd"]) in population_by_code]
+    pool_densities = [d for e in pool if (d := _density(str(e["area_cd"]), str(e["area_name"]))) is not None]
+    target_population = population_by_code.get(target_area_cd)
+    target_density = _density(target_area_cd, target_area_name)
+    target_population_pct = _percentile_within(target_population, pool_populations) if target_population is not None else None
+    target_density_pct = _percentile_within(target_density, pool_densities) if target_density is not None else None
+    has_structure_data = bool(pool_populations) and target_population_pct is not None
+
+    def distance(entry: dict[str, object]) -> float:
+        area_cd, area_name = str(entry["area_cd"]), str(entry["area_name"])
+        diffs: list[float] = []
+        if target_percentile is not None:
+            diffs.append(abs(float(entry["percentile"]) - target_percentile))
+        population = population_by_code.get(area_cd)
+        if population is not None and target_population_pct is not None:
+            diffs.append(abs(_percentile_within(population, pool_populations) - target_population_pct))
+        density = _density(area_cd, area_name)
+        if density is not None and target_density_pct is not None:
+            diffs.append(abs(_percentile_within(density, pool_densities) - target_density_pct))
+        return sum(diffs) / len(diffs) if diffs else 100.0  # no comparable data at all: sort last
+
+    pool = sorted(pool, key=distance)
+    peers = []
+    for entry in pool[:count]:
+        area_cd, area_name = str(entry["area_cd"]), str(entry["area_name"])
+        population = population_by_code.get(area_cd)
+        density = _density(area_cd, area_name)
+        peers.append({**entry, "population": population,
+                      "population_density": round(density, 1) if density is not None else None})
+
+    base_note = f"{'수도권' if target_capital else '비수도권'} {admin_type}" if admin_type in ("시", "군") else admin_type
+    region_note = f"{base_note} · 관광수요·인구·인구밀도 규모가 유사한 지역" if has_structure_data \
+        else f"{base_note} · 관광수요 규모가 유사한 지역 (인구 데이터 미확보로 인구·밀도는 이번 비교에서 제외)"
     return {
         "admin_type": admin_type, "capital_region": target_capital, "relaxed": relaxed,
         "criteria_note": region_note, "peers": peers,
+        "target_population": target_population, "target_population_density": round(target_density, 1) if target_density is not None else None,
     }
 
 def build_live_visitor_snapshot(payload: object, area_cd: str, base_ymd: str) -> dict[str, object]:

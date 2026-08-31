@@ -408,14 +408,15 @@ async def national_peers(payload: NationalPeersRequest):
     national_percentile = _percentile_rank(float(target["outside_visitors"]), independent_values)
     demand_level = "충분" if national_percentile >= 50 else "부족"
 
-    # ② Peer Group: 행정유형 + 수도권 여부 + 관광수요 규모 유사도로 구성한다.
-    group = build_peer_group(independent_ranking, payload.area_cd, str(target["area_name"]), payload.peer_count)
-    peers = group["peers"]
+    # ② Peer Group: 행정유형 + 수도권 여부 + 관광수요·인구·인구밀도 규모 유사도로 구성한다.
     base_ym = payload.base_ymd[:6]
+    group = await build_peer_group(independent_ranking, payload.area_cd, str(target["area_name"]), payload.peer_count, base_ym)
+    peers = group["peers"]
     peer_axes = await asyncio.gather(*[_fetch_peer_axis_snapshot(peer["area_cd"], base_ym) for peer in peers])
     peer_rows = [{
         "area_cd": peer["area_cd"], "area_name": peer["area_name"], "rank": peer["rank"],
         "outside_visitors": peer["outside_visitors"], "percentile": peer["percentile"],
+        "population": peer.get("population"), "population_density": peer.get("population_density"),
         "axes": axes, "fetch_ok": axes is not None,
     } for peer, axes in zip(peers, peer_axes)]
 
@@ -441,6 +442,8 @@ async def national_peers(payload: NationalPeersRequest):
             "peers": peer_rows,
             "medians": {key: _median(_peer_values(key)) for key in axis_keys},
             "top_quartile": {key: _quantile(_peer_values(key), 0.75) for key in axis_keys},
+            "target_population": group.get("target_population"),
+            "target_population_density": group.get("target_population_density"),
         },
         "peers_failed": sum(1 for row in peer_rows if not row["fetch_ok"]),
     }

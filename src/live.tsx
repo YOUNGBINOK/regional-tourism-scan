@@ -34,6 +34,7 @@ type LiveSnapshot = {
 type StabilitySnapshot = { window_days: number; areas: Record<string, { days_observed: number; stability_index: number | null }> };
 type NationalPeer = {
   area_cd: string; area_name: string; rank: number; outside_visitors: number; percentile: number;
+  population: number | null; population_density: number | null;
   axes: { stay_intensity: number | null; spend_intensity: number | null; lodging_share_index: number | null } | null;
   fetch_ok: boolean;
 };
@@ -41,6 +42,7 @@ type PeerAxisStats = { stay_intensity: number | null; spend_intensity: number | 
 type PeerGroup = {
   admin_type: string; capital_region: boolean; relaxed: boolean; criteria_note: string;
   count: number; peers: NationalPeer[]; medians: PeerAxisStats; top_quartile: PeerAxisStats;
+  target_population: number | null; target_population_density: number | null;
 };
 type NationalPeersSnapshot = {
   available: true;
@@ -98,6 +100,7 @@ const regions: Region[] = [
 ];
 const apiBase = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 const formatNumber = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 });
+const formatManUnit = (value: number) => `${(value / 10000).toFixed(1)}만`;
 const formatSigned = (value: number, unit: '%' | 'p') => `${value > 0 ? '+' : ''}${value.toFixed(1)}${unit}`;
 
 const median = (values: number[]) => {
@@ -381,7 +384,8 @@ function App() {
     ['관광지 혼잡 예측', '각 관광지의 가장 붐비는 시기를 100으로 둔 향후 30일 상대 혼잡도입니다. 관광지 간 방문 점유율이 아니므로 공간분산 지수로 사용하지 않습니다.'],
     ['중심지 공간확산', '내비게이션 연계 중심 관광지 좌표가 지리적 중심에서 얼마나 넓게 퍼져 있는지를 RMS 거리(km)로 계산합니다. 실제 방문자 점유율의 균등도를 뜻하는 정식 공간분산 D와는 구분합니다.'],
     ['단기 수요 안정성', '최근 7일 외지인 방문자의 변동계수(CV)를 100×(1−CV)로 역산한 파생지표입니다. 연간 계절성을 대신하지 않습니다.'],
-    ['전국 위치 vs Peer Group', '전국 위치(①)는 기초지자체 전체 중 관광수요 백분위로 수요 수준만 판정합니다. Peer Group(②)은 체류·숙박·소비 취약성을 진단할 때만 쓰며, 같은 행정유형(시/군/자치구)·수도권 여부·관광수요 규모가 비슷한 지역으로 구성합니다. 전국 상위지역 중앙값을 그대로 비교기준으로 쓰지 않습니다.'],
+    ['전국 위치 vs Peer Group', '전국 위치(①)는 기초지자체 전체 중 관광수요 백분위로 수요 수준만 판정합니다. Peer Group(②)은 체류·숙박·소비 취약성을 진단할 때만 쓰며, 같은 행정유형(시/군/자치구)·수도권 여부 안에서 관광수요·인구·인구밀도 규모가 가장 비슷한 지역으로 구성합니다(각 지표를 비교군 내 백분위로 바꿔 함께 비교). 전국 상위지역 중앙값을 그대로 비교기준으로 쓰지 않습니다.'],
+    ['인구·인구밀도 출처', '주민등록인구(KOSIS 행정구역별 주민등록인구, 월간)를 KTO와 동일한 5자리 지역코드로 직접 조회합니다. 면적은 통계청 SGIS 행정동 경계를 시군구 단위로 합산해 추정했습니다(지도 좌표와 같은 출처, 오차 3% 이내). 인구 데이터를 못 가져오면 관광수요 규모만으로 비교군을 구성합니다.'],
     ['행정유형 분리', '자치구(강남구·해운대구)는 기초지자체이지만 일반구(수원시 팔달구처럼 상위 시 이름이 붙는 구)는 기초지자체가 아니므로 진단 대상·Peer Group 어디에도 포함하지 않습니다. 시는 시·군끼리만, 자치구는 자치구끼리만 비교합니다.'],
     ['관광수요 판정 기준', '전국 기초지자체 백분위 50% 이상이면 “충분”, 미만이면 “부족”으로 1차 판정합니다. 부족 판정 지역은 체류·숙박 원인분해보다 관광수요 확보를 우선 과제로 제시합니다.'],
     ['Peer Group 상위 25%', 'Peer Group 중앙값과 함께, 그 안에서 실제로 잘하는 지역의 수준(상위 25% 지점)을 같이 보여줍니다. 중앙값보다 낮더라도 상위 25%와의 격차를 통해 개선 여지를 가늠할 수 있습니다.'],
@@ -416,10 +420,10 @@ function App() {
         </article></div>
         <div className="cards"><article className="peer-diagnosis"><small>② Peer Group 비교 — 내 문제 찾기</small>
           <p className="peer-note">{peerGroup
-            ? `비교군: ${peerGroup.criteria_note} · ${peerGroup.count}곳${peerGroup.relaxed ? ' (수도권 조건을 완화해 표본을 채웠습니다)' : ''}`
+            ? `비교군: ${peerGroup.criteria_note} · ${peerGroup.count}곳${peerGroup.relaxed ? ' (수도권 조건을 완화해 표본을 채웠습니다)' : ''}${peerGroup.target_population != null ? ` · ${region.name} 인구 ${formatManUnit(peerGroup.target_population)}${peerGroup.target_population_density != null ? ` · 밀도 ${formatNumber.format(peerGroup.target_population_density)}명/km²` : ''}` : ''}`
             : nationalPeers && !nationalPeers.available ? `Peer Group 조회에 실패했습니다: ${nationalPeers.reason}` : 'Peer Group을 구성하는 중입니다…'}</p>
           {peerGroup && <details className="peer-list-disclosure"><summary>비교군 지역 목록 펼쳐보기 ({peerGroup.peers.length}곳)</summary>
-            <ul className="peer-list">{peerGroup.peers.map((peer) => <li key={peer.area_cd}>{peer.area_name} <span>전국 {peer.rank}위 · 상위 {(100 - peer.percentile).toFixed(0)}%</span></li>)}</ul>
+            <ul className="peer-list">{peerGroup.peers.map((peer) => <li key={peer.area_cd}>{peer.area_name} <span>전국 {peer.rank}위 · 상위 {(100 - peer.percentile).toFixed(0)}%{peer.population != null ? ` · 인구 ${formatManUnit(peer.population)}` : ''}{peer.population_density != null ? ` · 밀도 ${formatNumber.format(peer.population_density)}명/km²` : ''}</span></li>)}</ul>
           </details>}
           {axes.map((axis) => <div className="sbar" key={axis.key}>
             <span>{axis.label} <Tier tier={axis.tier} /></span>
