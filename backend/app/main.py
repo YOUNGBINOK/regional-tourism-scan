@@ -457,6 +457,17 @@ async def national_peers(payload: NationalPeersRequest):
             # ±p constant that has no relationship to how spread out this
             # particular peer group actually is (AGENTS.md 원칙 6 후속 조치).
             "bottom_quartile": {key: _quantile(_peer_values(key), 0.25) for key in axis_keys},
+            # How many peers actually backed each axis's bottom_quartile.
+            # With only 3-4 points, a linear-interpolation 25th percentile
+            # is really just "the 2nd-lowest value" — a target barely below
+            # it looks "weak" far more often than the label should mean.
+            # Discovered by running scripts/national_diagnosis_snapshot.py
+            # across 100 real municipalities: ~56% came back 숨은취약형 with
+            # this sample size, an implausible rate that only a live batch
+            # run — not code review alone — surfaced. The frontend must
+            # gate weak-axis judgments on this count instead of trusting
+            # any bottom_quartile value that happens to be non-null.
+            "sample_size": {key: len(_peer_values(key)) for key in axis_keys},
             "target_population": group.get("target_population"),
             "target_population_density": group.get("target_population_density"),
         },

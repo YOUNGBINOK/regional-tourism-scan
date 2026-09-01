@@ -1,0 +1,7667 @@
+[
+  {
+    "area_cd": "11680",
+    "area_name": "강남구",
+    "national_percentile": 100.0,
+    "outside_visitors_7d_avg": 671064.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 101.32,
+      "spend_intensity": 108.91,
+      "lodging_share_index": 54.2,
+      "dispersion_spread_km": 2.15
+    },
+    "peers": [
+      {
+        "area_cd": "11500",
+        "area_name": "강서구",
+        "axes": {
+          "error": ""
+        }
+      },
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11350",
+        "area_name": "노원구",
+        "axes": {
+          "stay_intensity": 75.29,
+          "spend_intensity": 67.37,
+          "lodging_share_index": 59.0,
+          "dispersion_spread_km": 2.07
+        }
+      },
+      {
+        "area_cd": "11620",
+        "area_name": "관악구",
+        "axes": {
+          "stay_intensity": 85.2,
+          "spend_intensity": 71.09,
+          "lodging_share_index": 62.41,
+          "dispersion_spread_km": 2.01
+        }
+      },
+      {
+        "area_cd": "11710",
+        "area_name": "송파구",
+        "axes": {
+          "stay_intensity": 96.39,
+          "spend_intensity": 84.24,
+          "lodging_share_index": 58.07,
+          "dispersion_spread_km": 2.05
+        }
+      },
+      {
+        "area_cd": "28237",
+        "area_name": "부평구",
+        "axes": {
+          "stay_intensity": 77.68,
+          "spend_intensity": 77.5,
+          "lodging_share_index": 64.29,
+          "dispersion_spread_km": 2.01
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41110",
+    "area_name": "수원시",
+    "national_percentile": 99.7,
+    "outside_visitors_7d_avg": 558174.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "41130",
+        "area_name": "성남시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41190",
+        "area_name": "부천시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41280",
+        "area_name": "고양시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41170",
+        "area_name": "안양시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41460",
+        "area_name": "용인시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41270",
+        "area_name": "안산시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11650",
+    "area_name": "서초구",
+    "national_percentile": 99.3,
+    "outside_visitors_7d_avg": 550630.0,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 87.28,
+      "spend_intensity": 86.9,
+      "lodging_share_index": 52.29,
+      "dispersion_spread_km": 2.47
+    },
+    "peers": [
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28200",
+        "area_name": "남동구",
+        "axes": {
+          "stay_intensity": 76.44,
+          "spend_intensity": 78.78,
+          "lodging_share_index": 60.58,
+          "dispersion_spread_km": 3.3
+        }
+      },
+      {
+        "area_cd": "26350",
+        "area_name": "해운대구",
+        "axes": {
+          "stay_intensity": 104.94,
+          "spend_intensity": 64.49,
+          "lodging_share_index": 71.2,
+          "dispersion_spread_km": 2.18
+        }
+      },
+      {
+        "area_cd": "26230",
+        "area_name": "부산진구",
+        "axes": {
+          "stay_intensity": 84.76,
+          "spend_intensity": 71.05,
+          "lodging_share_index": 60.82,
+          "dispersion_spread_km": 1.41
+        }
+      },
+      {
+        "area_cd": "11500",
+        "area_name": "강서구",
+        "axes": {
+          "error": ""
+        }
+      },
+      {
+        "area_cd": "28185",
+        "area_name": "연수구",
+        "axes": {
+          "stay_intensity": 76.0,
+          "spend_intensity": 76.72,
+          "lodging_share_index": 62.61,
+          "dispersion_spread_km": 3.13
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41130",
+    "area_name": "성남시",
+    "national_percentile": 99.0,
+    "outside_visitors_7d_avg": 436051.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "41280",
+        "area_name": "고양시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41190",
+        "area_name": "부천시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41110",
+        "area_name": "수원시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41270",
+        "area_name": "안산시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41170",
+        "area_name": "안양시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41460",
+        "area_name": "용인시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11110",
+    "area_name": "종로구",
+    "national_percentile": 98.7,
+    "outside_visitors_7d_avg": 432413.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 84.35,
+      "spend_intensity": 92.05,
+      "lodging_share_index": 52.75,
+      "dispersion_spread_km": 1.84
+    },
+    "peers": [
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11140",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 79.53,
+          "spend_intensity": 155.25,
+          "lodging_share_index": 51.17,
+          "dispersion_spread_km": 1.24
+        }
+      },
+      {
+        "area_cd": "11170",
+        "area_name": "용산구",
+        "axes": {
+          "stay_intensity": 82.71,
+          "spend_intensity": 86.02,
+          "lodging_share_index": 53.91,
+          "dispersion_spread_km": 1.79
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "27110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 76.56,
+          "spend_intensity": 76.51,
+          "lodging_share_index": 54.16,
+          "dispersion_spread_km": 0.86
+        }
+      },
+      {
+        "area_cd": "26170",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": 74.76,
+          "spend_intensity": 74.43,
+          "lodging_share_index": 56.95,
+          "dispersion_spread_km": 1.33
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11140",
+    "area_name": "중구",
+    "national_percentile": 98.3,
+    "outside_visitors_7d_avg": 420119.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 79.53,
+      "spend_intensity": 155.25,
+      "lodging_share_index": 51.17,
+      "dispersion_spread_km": 1.24
+    },
+    "peers": [
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11170",
+        "area_name": "용산구",
+        "axes": {
+          "stay_intensity": 82.71,
+          "spend_intensity": 86.02,
+          "lodging_share_index": 53.91,
+          "dispersion_spread_km": 1.79
+        }
+      },
+      {
+        "area_cd": "27110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 76.56,
+          "spend_intensity": 76.51,
+          "lodging_share_index": 54.16,
+          "dispersion_spread_km": 0.86
+        }
+      },
+      {
+        "area_cd": "11110",
+        "area_name": "종로구",
+        "axes": {
+          "stay_intensity": 84.35,
+          "spend_intensity": 92.05,
+          "lodging_share_index": 52.75,
+          "dispersion_spread_km": 1.84
+        }
+      },
+      {
+        "area_cd": "26110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 74.29,
+          "spend_intensity": 74.42,
+          "lodging_share_index": 55.66,
+          "dispersion_spread_km": 0.61
+        }
+      },
+      {
+        "area_cd": "26170",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": 74.76,
+          "spend_intensity": 74.43,
+          "lodging_share_index": 56.95,
+          "dispersion_spread_km": 1.33
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41460",
+    "area_name": "용인시",
+    "national_percentile": 98.0,
+    "outside_visitors_7d_avg": 418663.0,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "41590",
+        "area_name": "화성시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41280",
+        "area_name": "고양시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41360",
+        "area_name": "남양주시",
+        "axes": {
+          "stay_intensity": 85.19,
+          "spend_intensity": 78.28,
+          "lodging_share_index": 63.35,
+          "dispersion_spread_km": 8.99
+        }
+      },
+      {
+        "area_cd": "41220",
+        "area_name": "평택시",
+        "axes": {
+          "stay_intensity": 86.98,
+          "spend_intensity": 74.0,
+          "lodging_share_index": 69.43,
+          "dispersion_spread_km": 9.98
+        }
+      },
+      {
+        "area_cd": "41130",
+        "area_name": "성남시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41270",
+        "area_name": "안산시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11710",
+    "area_name": "송파구",
+    "national_percentile": 97.7,
+    "outside_visitors_7d_avg": 413483.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 96.39,
+      "spend_intensity": 84.24,
+      "lodging_share_index": 58.07,
+      "dispersion_spread_km": 2.05
+    },
+    "peers": [
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11740",
+        "area_name": "강동구",
+        "axes": {
+          "stay_intensity": 79.41,
+          "spend_intensity": 69.26,
+          "lodging_share_index": 62.52,
+          "dispersion_spread_km": 1.91
+        }
+      },
+      {
+        "area_cd": "11680",
+        "area_name": "강남구",
+        "axes": {
+          "stay_intensity": 101.32,
+          "spend_intensity": 108.91,
+          "lodging_share_index": 54.2,
+          "dispersion_spread_km": 2.15
+        }
+      },
+      {
+        "area_cd": "11620",
+        "area_name": "관악구",
+        "axes": {
+          "stay_intensity": 85.2,
+          "spend_intensity": 71.09,
+          "lodging_share_index": 62.41,
+          "dispersion_spread_km": 2.01
+        }
+      },
+      {
+        "area_cd": "11290",
+        "area_name": "성북구",
+        "axes": {
+          "stay_intensity": 79.07,
+          "spend_intensity": 67.19,
+          "lodging_share_index": 61.76,
+          "dispersion_spread_km": 1.99
+        }
+      },
+      {
+        "area_cd": "11500",
+        "area_name": "강서구",
+        "axes": {
+          "error": ""
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41280",
+    "area_name": "고양시",
+    "national_percentile": 97.3,
+    "outside_visitors_7d_avg": 405846.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "41130",
+        "area_name": "성남시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41460",
+        "area_name": "용인시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41270",
+        "area_name": "안산시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41590",
+        "area_name": "화성시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41110",
+        "area_name": "수원시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41190",
+        "area_name": "부천시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41590",
+    "area_name": "화성시",
+    "national_percentile": 97.0,
+    "outside_visitors_7d_avg": 367617.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "41360",
+        "area_name": "남양주시",
+        "axes": {
+          "stay_intensity": 85.19,
+          "spend_intensity": 78.28,
+          "lodging_share_index": 63.35,
+          "dispersion_spread_km": 8.99
+        }
+      },
+      {
+        "area_cd": "41460",
+        "area_name": "용인시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41220",
+        "area_name": "평택시",
+        "axes": {
+          "stay_intensity": 86.98,
+          "spend_intensity": 74.0,
+          "lodging_share_index": 69.43,
+          "dispersion_spread_km": 9.98
+        }
+      },
+      {
+        "area_cd": "41280",
+        "area_name": "고양시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41270",
+        "area_name": "안산시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41130",
+        "area_name": "성남시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11560",
+    "area_name": "영등포구",
+    "national_percentile": 96.7,
+    "outside_visitors_7d_avg": 361423.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 86.36,
+      "spend_intensity": 91.15,
+      "lodging_share_index": 55.68,
+      "dispersion_spread_km": 1.67
+    },
+    "peers": [
+      {
+        "area_cd": "11440",
+        "area_name": "마포구",
+        "axes": {
+          "stay_intensity": 87.72,
+          "spend_intensity": 87.29,
+          "lodging_share_index": 56.47,
+          "dispersion_spread_km": 2.25
+        }
+      },
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "26230",
+        "area_name": "부산진구",
+        "axes": {
+          "stay_intensity": 84.76,
+          "spend_intensity": 71.05,
+          "lodging_share_index": 60.82,
+          "dispersion_spread_km": 1.41
+        }
+      },
+      {
+        "area_cd": "11410",
+        "area_name": "서대문구",
+        "axes": {
+          "stay_intensity": 85.28,
+          "spend_intensity": 71.37,
+          "lodging_share_index": 57.16,
+          "dispersion_spread_km": 1.65
+        }
+      },
+      {
+        "area_cd": "11200",
+        "area_name": "성동구",
+        "axes": {
+          "stay_intensity": 79.29,
+          "spend_intensity": 79.02,
+          "lodging_share_index": 55.5,
+          "dispersion_spread_km": 1.51
+        }
+      },
+      {
+        "area_cd": "11530",
+        "area_name": "구로구",
+        "axes": {
+          "stay_intensity": 77.81,
+          "spend_intensity": 73.62,
+          "lodging_share_index": 58.25,
+          "dispersion_spread_km": 2.13
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11170",
+    "area_name": "용산구",
+    "national_percentile": 96.3,
+    "outside_visitors_7d_avg": 349718.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 82.71,
+      "spend_intensity": 86.02,
+      "lodging_share_index": 53.91,
+      "dispersion_spread_km": 1.79
+    },
+    "peers": [
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11140",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 79.53,
+          "spend_intensity": 155.25,
+          "lodging_share_index": 51.17,
+          "dispersion_spread_km": 1.24
+        }
+      },
+      {
+        "area_cd": "11110",
+        "area_name": "종로구",
+        "axes": {
+          "stay_intensity": 84.35,
+          "spend_intensity": 92.05,
+          "lodging_share_index": 52.75,
+          "dispersion_spread_km": 1.84
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "27110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 76.56,
+          "spend_intensity": 76.51,
+          "lodging_share_index": 54.16,
+          "dispersion_spread_km": 0.86
+        }
+      },
+      {
+        "area_cd": "11200",
+        "area_name": "성동구",
+        "axes": {
+          "stay_intensity": 79.29,
+          "spend_intensity": 79.02,
+          "lodging_share_index": 55.5,
+          "dispersion_spread_km": 1.51
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11440",
+    "area_name": "마포구",
+    "national_percentile": 96.0,
+    "outside_visitors_7d_avg": 348894.0,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 87.72,
+      "spend_intensity": 87.29,
+      "lodging_share_index": 56.47,
+      "dispersion_spread_km": 2.25
+    },
+    "peers": [
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11560",
+        "area_name": "영등포구",
+        "axes": {
+          "stay_intensity": 86.36,
+          "spend_intensity": 91.15,
+          "lodging_share_index": 55.68,
+          "dispersion_spread_km": 1.67
+        }
+      },
+      {
+        "area_cd": "26230",
+        "area_name": "부산진구",
+        "axes": {
+          "stay_intensity": 84.76,
+          "spend_intensity": 71.05,
+          "lodging_share_index": 60.82,
+          "dispersion_spread_km": 1.41
+        }
+      },
+      {
+        "area_cd": "11410",
+        "area_name": "서대문구",
+        "axes": {
+          "stay_intensity": 85.28,
+          "spend_intensity": 71.37,
+          "lodging_share_index": 57.16,
+          "dispersion_spread_km": 1.65
+        }
+      },
+      {
+        "area_cd": "11200",
+        "area_name": "성동구",
+        "axes": {
+          "stay_intensity": 79.29,
+          "spend_intensity": 79.02,
+          "lodging_share_index": 55.5,
+          "dispersion_spread_km": 1.51
+        }
+      },
+      {
+        "area_cd": "11215",
+        "area_name": "광진구",
+        "axes": {
+          "stay_intensity": 78.36,
+          "spend_intensity": 75.7,
+          "lodging_share_index": 58.54,
+          "dispersion_spread_km": 1.65
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "43110",
+    "area_name": "청주시",
+    "national_percentile": 95.7,
+    "outside_visitors_7d_avg": 334137.5,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "44130",
+        "area_name": "천안시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "48120",
+        "area_name": "창원시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "52110",
+        "area_name": "전주시",
+        "axes": {
+          "stay_intensity": 76.91,
+          "spend_intensity": 69.96,
+          "lodging_share_index": 67.38,
+          "dispersion_spread_km": 3.59
+        }
+      },
+      {
+        "area_cd": "48250",
+        "area_name": "김해시",
+        "axes": {
+          "stay_intensity": 77.5,
+          "spend_intensity": 67.12,
+          "lodging_share_index": 65.88,
+          "dispersion_spread_km": 6.59
+        }
+      },
+      {
+        "area_cd": "50110",
+        "area_name": "제주시",
+        "axes": {
+          "stay_intensity": 131.39,
+          "spend_intensity": 79.18,
+          "lodging_share_index": 97.22,
+          "dispersion_spread_km": 20.97
+        }
+      },
+      {
+        "area_cd": "36110",
+        "area_name": "세종특별자치시",
+        "axes": {
+          "stay_intensity": 75.98,
+          "spend_intensity": 69.62,
+          "lodging_share_index": 71.31,
+          "dispersion_spread_km": 7.58
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "48120",
+    "area_name": "창원시",
+    "national_percentile": 95.3,
+    "outside_visitors_7d_avg": 328368.5,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "43110",
+        "area_name": "청주시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "44130",
+        "area_name": "천안시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "52110",
+        "area_name": "전주시",
+        "axes": {
+          "stay_intensity": 76.91,
+          "spend_intensity": 69.96,
+          "lodging_share_index": 67.38,
+          "dispersion_spread_km": 3.59
+        }
+      },
+      {
+        "area_cd": "48250",
+        "area_name": "김해시",
+        "axes": {
+          "stay_intensity": 77.5,
+          "spend_intensity": 67.12,
+          "lodging_share_index": 65.88,
+          "dispersion_spread_km": 6.59
+        }
+      },
+      {
+        "area_cd": "50110",
+        "area_name": "제주시",
+        "axes": {
+          "stay_intensity": 131.39,
+          "spend_intensity": 79.18,
+          "lodging_share_index": 97.22,
+          "dispersion_spread_km": 20.97
+        }
+      },
+      {
+        "area_cd": "36110",
+        "area_name": "세종특별자치시",
+        "axes": {
+          "stay_intensity": 75.98,
+          "spend_intensity": 69.62,
+          "lodging_share_index": 71.31,
+          "dispersion_spread_km": 7.58
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41190",
+    "area_name": "부천시",
+    "national_percentile": 95.0,
+    "outside_visitors_7d_avg": 298886.0,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "41170",
+        "area_name": "안양시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41130",
+        "area_name": "성남시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41110",
+        "area_name": "수원시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41280",
+        "area_name": "고양시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41270",
+        "area_name": "안산시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41360",
+        "area_name": "남양주시",
+        "axes": {
+          "stay_intensity": 85.19,
+          "spend_intensity": 78.28,
+          "lodging_share_index": 63.35,
+          "dispersion_spread_km": 8.99
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11500",
+    "area_name": "강서구",
+    "national_percentile": 94.6,
+    "outside_visitors_7d_avg": 277902.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "error": ""
+    },
+    "peers": [
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11680",
+        "area_name": "강남구",
+        "axes": {
+          "stay_intensity": 101.32,
+          "spend_intensity": 108.91,
+          "lodging_share_index": 54.2,
+          "dispersion_spread_km": 2.15
+        }
+      },
+      {
+        "area_cd": "11350",
+        "area_name": "노원구",
+        "axes": {
+          "stay_intensity": 75.29,
+          "spend_intensity": 67.37,
+          "lodging_share_index": 59.0,
+          "dispersion_spread_km": 2.07
+        }
+      },
+      {
+        "area_cd": "11620",
+        "area_name": "관악구",
+        "axes": {
+          "stay_intensity": 85.2,
+          "spend_intensity": 71.09,
+          "lodging_share_index": 62.41,
+          "dispersion_spread_km": 2.01
+        }
+      },
+      {
+        "area_cd": "28200",
+        "area_name": "남동구",
+        "axes": {
+          "stay_intensity": 76.44,
+          "spend_intensity": 78.78,
+          "lodging_share_index": 60.58,
+          "dispersion_spread_km": 3.3
+        }
+      },
+      {
+        "area_cd": "27290",
+        "area_name": "달서구",
+        "axes": {
+          "stay_intensity": 79.06,
+          "spend_intensity": 68.8,
+          "lodging_share_index": 63.74,
+          "dispersion_spread_km": 3.14
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11200",
+    "area_name": "성동구",
+    "national_percentile": 94.3,
+    "outside_visitors_7d_avg": 273143.0,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 79.29,
+      "spend_intensity": 79.02,
+      "lodging_share_index": 55.5,
+      "dispersion_spread_km": 1.51
+    },
+    "peers": [
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11410",
+        "area_name": "서대문구",
+        "axes": {
+          "stay_intensity": 85.28,
+          "spend_intensity": 71.37,
+          "lodging_share_index": 57.16,
+          "dispersion_spread_km": 1.65
+        }
+      },
+      {
+        "area_cd": "26260",
+        "area_name": "동래구",
+        "axes": {
+          "stay_intensity": 72.4,
+          "spend_intensity": 68.06,
+          "lodging_share_index": 59.4,
+          "dispersion_spread_km": 1.45
+        }
+      },
+      {
+        "area_cd": "11440",
+        "area_name": "마포구",
+        "axes": {
+          "stay_intensity": 87.72,
+          "spend_intensity": 87.29,
+          "lodging_share_index": 56.47,
+          "dispersion_spread_km": 2.25
+        }
+      },
+      {
+        "area_cd": "11215",
+        "area_name": "광진구",
+        "axes": {
+          "stay_intensity": 78.36,
+          "spend_intensity": 75.7,
+          "lodging_share_index": 58.54,
+          "dispersion_spread_km": 1.65
+        }
+      },
+      {
+        "area_cd": "11560",
+        "area_name": "영등포구",
+        "axes": {
+          "stay_intensity": 86.36,
+          "spend_intensity": 91.15,
+          "lodging_share_index": 55.68,
+          "dispersion_spread_km": 1.67
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11410",
+    "area_name": "서대문구",
+    "national_percentile": 93.6,
+    "outside_visitors_7d_avg": 261982.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 85.28,
+      "spend_intensity": 71.37,
+      "lodging_share_index": 57.16,
+      "dispersion_spread_km": 1.65
+    },
+    "peers": [
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11200",
+        "area_name": "성동구",
+        "axes": {
+          "stay_intensity": 79.29,
+          "spend_intensity": 79.02,
+          "lodging_share_index": 55.5,
+          "dispersion_spread_km": 1.51
+        }
+      },
+      {
+        "area_cd": "11215",
+        "area_name": "광진구",
+        "axes": {
+          "stay_intensity": 78.36,
+          "spend_intensity": 75.7,
+          "lodging_share_index": 58.54,
+          "dispersion_spread_km": 1.65
+        }
+      },
+      {
+        "area_cd": "11440",
+        "area_name": "마포구",
+        "axes": {
+          "stay_intensity": 87.72,
+          "spend_intensity": 87.29,
+          "lodging_share_index": 56.47,
+          "dispersion_spread_km": 2.25
+        }
+      },
+      {
+        "area_cd": "11560",
+        "area_name": "영등포구",
+        "axes": {
+          "stay_intensity": 86.36,
+          "spend_intensity": 91.15,
+          "lodging_share_index": 55.68,
+          "dispersion_spread_km": 1.67
+        }
+      },
+      {
+        "area_cd": "11530",
+        "area_name": "구로구",
+        "axes": {
+          "stay_intensity": 77.81,
+          "spend_intensity": 73.62,
+          "lodging_share_index": 58.25,
+          "dispersion_spread_km": 2.13
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "28110",
+    "area_name": "중구",
+    "national_percentile": 93.3,
+    "outside_visitors_7d_avg": 255302.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요 규모가 유사한 지역 (인구 데이터 미확보로 인구·밀도는 이번 비교에서 제외)",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "11410",
+        "area_name": "서대문구",
+        "axes": {
+          "stay_intensity": 85.28,
+          "spend_intensity": 71.37,
+          "lodging_share_index": 57.16,
+          "dispersion_spread_km": 1.65
+        }
+      },
+      {
+        "area_cd": "11200",
+        "area_name": "성동구",
+        "axes": {
+          "stay_intensity": 79.29,
+          "spend_intensity": 79.02,
+          "lodging_share_index": 55.5,
+          "dispersion_spread_km": 1.51
+        }
+      },
+      {
+        "area_cd": "11500",
+        "area_name": "강서구",
+        "axes": {
+          "error": ""
+        }
+      },
+      {
+        "area_cd": "11620",
+        "area_name": "관악구",
+        "axes": {
+          "stay_intensity": 85.2,
+          "spend_intensity": 71.09,
+          "lodging_share_index": 62.41,
+          "dispersion_spread_km": 2.01
+        }
+      },
+      {
+        "area_cd": "26230",
+        "area_name": "부산진구",
+        "axes": {
+          "stay_intensity": 84.76,
+          "spend_intensity": 71.05,
+          "lodging_share_index": 60.82,
+          "dispersion_spread_km": 1.41
+        }
+      },
+      {
+        "area_cd": "11440",
+        "area_name": "마포구",
+        "axes": {
+          "stay_intensity": 87.72,
+          "spend_intensity": 87.29,
+          "lodging_share_index": 56.47,
+          "dispersion_spread_km": 2.25
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "44130",
+    "area_name": "천안시",
+    "national_percentile": 93.0,
+    "outside_visitors_7d_avg": 236620.5,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "43110",
+        "area_name": "청주시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "52110",
+        "area_name": "전주시",
+        "axes": {
+          "stay_intensity": 76.91,
+          "spend_intensity": 69.96,
+          "lodging_share_index": 67.38,
+          "dispersion_spread_km": 3.59
+        }
+      },
+      {
+        "area_cd": "48120",
+        "area_name": "창원시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "48250",
+        "area_name": "김해시",
+        "axes": {
+          "stay_intensity": 77.5,
+          "spend_intensity": 67.12,
+          "lodging_share_index": 65.88,
+          "dispersion_spread_km": 6.59
+        }
+      },
+      {
+        "area_cd": "50110",
+        "area_name": "제주시",
+        "axes": {
+          "stay_intensity": 131.39,
+          "spend_intensity": 79.18,
+          "lodging_share_index": 97.22,
+          "dispersion_spread_km": 20.97
+        }
+      },
+      {
+        "area_cd": "36110",
+        "area_name": "세종특별자치시",
+        "axes": {
+          "stay_intensity": 75.98,
+          "spend_intensity": 69.62,
+          "lodging_share_index": 71.31,
+          "dispersion_spread_km": 7.58
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41270",
+    "area_name": "안산시",
+    "national_percentile": 92.6,
+    "outside_visitors_7d_avg": 229249.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "41390",
+        "area_name": "시흥시",
+        "axes": {
+          "stay_intensity": 79.12,
+          "spend_intensity": 81.6,
+          "lodging_share_index": 62.57,
+          "dispersion_spread_km": 6.27
+        }
+      },
+      {
+        "area_cd": "41280",
+        "area_name": "고양시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41170",
+        "area_name": "안양시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41360",
+        "area_name": "남양주시",
+        "axes": {
+          "stay_intensity": 85.19,
+          "spend_intensity": 78.28,
+          "lodging_share_index": 63.35,
+          "dispersion_spread_km": 8.99
+        }
+      },
+      {
+        "area_cd": "41450",
+        "area_name": "하남시",
+        "axes": {
+          "stay_intensity": 72.57,
+          "spend_intensity": 78.07,
+          "lodging_share_index": 56.4,
+          "dispersion_spread_km": 3.28
+        }
+      },
+      {
+        "area_cd": "41130",
+        "area_name": "성남시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11620",
+    "area_name": "관악구",
+    "national_percentile": 92.0,
+    "outside_visitors_7d_avg": 213856.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 85.2,
+      "spend_intensity": 71.09,
+      "lodging_share_index": 62.41,
+      "dispersion_spread_km": 2.01
+    },
+    "peers": [
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11290",
+        "area_name": "성북구",
+        "axes": {
+          "stay_intensity": 79.07,
+          "spend_intensity": 67.19,
+          "lodging_share_index": 61.76,
+          "dispersion_spread_km": 1.99
+        }
+      },
+      {
+        "area_cd": "11350",
+        "area_name": "노원구",
+        "axes": {
+          "stay_intensity": 75.29,
+          "spend_intensity": 67.37,
+          "lodging_share_index": 59.0,
+          "dispersion_spread_km": 2.07
+        }
+      },
+      {
+        "area_cd": "28237",
+        "area_name": "부평구",
+        "axes": {
+          "stay_intensity": 77.68,
+          "spend_intensity": 77.5,
+          "lodging_share_index": 64.29,
+          "dispersion_spread_km": 2.01
+        }
+      },
+      {
+        "area_cd": "11500",
+        "area_name": "강서구",
+        "axes": {
+          "stay_intensity": 84.84,
+          "spend_intensity": 97.21,
+          "lodging_share_index": 57.73,
+          "dispersion_spread_km": 2.28
+        }
+      },
+      {
+        "area_cd": "28177",
+        "area_name": "미추홀구",
+        "axes": {
+          "stay_intensity": 75.13,
+          "spend_intensity": 71.24,
+          "lodging_share_index": 62.6,
+          "dispersion_spread_km": 1.99
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41170",
+    "area_name": "안양시",
+    "national_percentile": 91.6,
+    "outside_visitors_7d_avg": 209809.0,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "41190",
+        "area_name": "부천시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41270",
+        "area_name": "안산시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41130",
+        "area_name": "성남시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41210",
+        "area_name": "광명시",
+        "axes": {
+          "stay_intensity": 69.92,
+          "spend_intensity": 72.64,
+          "lodging_share_index": 56.91,
+          "dispersion_spread_km": 2.82
+        }
+      },
+      {
+        "area_cd": "41390",
+        "area_name": "시흥시",
+        "axes": {
+          "stay_intensity": 79.12,
+          "spend_intensity": 81.6,
+          "lodging_share_index": 62.57,
+          "dispersion_spread_km": 6.27
+        }
+      },
+      {
+        "area_cd": "41110",
+        "area_name": "수원시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "52110",
+    "area_name": "전주시",
+    "national_percentile": 91.3,
+    "outside_visitors_7d_avg": 206741.0,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 76.91,
+      "spend_intensity": 69.96,
+      "lodging_share_index": 67.38,
+      "dispersion_spread_km": 3.59
+    },
+    "peers": [
+      {
+        "area_cd": "44130",
+        "area_name": "천안시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "48120",
+        "area_name": "창원시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "43110",
+        "area_name": "청주시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "48250",
+        "area_name": "김해시",
+        "axes": {
+          "stay_intensity": 77.5,
+          "spend_intensity": 67.12,
+          "lodging_share_index": 65.88,
+          "dispersion_spread_km": 6.59
+        }
+      },
+      {
+        "area_cd": "50110",
+        "area_name": "제주시",
+        "axes": {
+          "stay_intensity": 131.39,
+          "spend_intensity": 79.18,
+          "lodging_share_index": 97.22,
+          "dispersion_spread_km": 20.97
+        }
+      },
+      {
+        "area_cd": "36110",
+        "area_name": "세종특별자치시",
+        "axes": {
+          "stay_intensity": 75.98,
+          "spend_intensity": 69.62,
+          "lodging_share_index": 71.31,
+          "dispersion_spread_km": 7.58
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "26230",
+    "area_name": "부산진구",
+    "national_percentile": 91.0,
+    "outside_visitors_7d_avg": 206728.0,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 84.76,
+      "spend_intensity": 71.05,
+      "lodging_share_index": 60.82,
+      "dispersion_spread_km": 1.41
+    },
+    "peers": [
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11440",
+        "area_name": "마포구",
+        "axes": {
+          "stay_intensity": 87.72,
+          "spend_intensity": 87.29,
+          "lodging_share_index": 56.47,
+          "dispersion_spread_km": 2.25
+        }
+      },
+      {
+        "area_cd": "26350",
+        "area_name": "해운대구",
+        "axes": {
+          "stay_intensity": 104.94,
+          "spend_intensity": 64.49,
+          "lodging_share_index": 71.2,
+          "dispersion_spread_km": 2.18
+        }
+      },
+      {
+        "area_cd": "11560",
+        "area_name": "영등포구",
+        "axes": {
+          "stay_intensity": 86.36,
+          "spend_intensity": 91.15,
+          "lodging_share_index": 55.68,
+          "dispersion_spread_km": 1.67
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11410",
+        "area_name": "서대문구",
+        "axes": {
+          "stay_intensity": 85.28,
+          "spend_intensity": 71.37,
+          "lodging_share_index": 57.16,
+          "dispersion_spread_km": 1.65
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41360",
+    "area_name": "남양주시",
+    "national_percentile": 90.6,
+    "outside_visitors_7d_avg": 205597.0,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 85.19,
+      "spend_intensity": 78.28,
+      "lodging_share_index": 63.35,
+      "dispersion_spread_km": 8.99
+    },
+    "peers": [
+      {
+        "area_cd": "41220",
+        "area_name": "평택시",
+        "axes": {
+          "stay_intensity": 86.98,
+          "spend_intensity": 74.0,
+          "lodging_share_index": 69.43,
+          "dispersion_spread_km": 9.98
+        }
+      },
+      {
+        "area_cd": "41590",
+        "area_name": "화성시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41570",
+        "area_name": "김포시",
+        "axes": {
+          "stay_intensity": 76.37,
+          "spend_intensity": 79.89,
+          "lodging_share_index": 62.9,
+          "dispersion_spread_km": 7.83
+        }
+      },
+      {
+        "area_cd": "41270",
+        "area_name": "안산시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41460",
+        "area_name": "용인시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41480",
+        "area_name": "파주시",
+        "axes": {
+          "stay_intensity": 81.44,
+          "spend_intensity": 79.0,
+          "lodging_share_index": 65.72,
+          "dispersion_spread_km": 10.28
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "26350",
+    "area_name": "해운대구",
+    "national_percentile": 90.3,
+    "outside_visitors_7d_avg": 202270.5,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 104.94,
+      "spend_intensity": 64.49,
+      "lodging_share_index": 71.2,
+      "dispersion_spread_km": 2.18
+    },
+    "peers": [
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "26230",
+        "area_name": "부산진구",
+        "axes": {
+          "stay_intensity": 84.76,
+          "spend_intensity": 71.05,
+          "lodging_share_index": 60.82,
+          "dispersion_spread_km": 1.41
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "30200",
+        "area_name": "유성구",
+        "axes": {
+          "stay_intensity": 83.79,
+          "spend_intensity": 72.57,
+          "lodging_share_index": 64.17,
+          "dispersion_spread_km": 3.97
+        }
+      },
+      {
+        "area_cd": "27140",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": 78.62,
+          "spend_intensity": 82.8,
+          "lodging_share_index": 58.7,
+          "dispersion_spread_km": 5.39
+        }
+      },
+      {
+        "area_cd": "28185",
+        "area_name": "연수구",
+        "axes": {
+          "stay_intensity": 76.0,
+          "spend_intensity": 76.72,
+          "lodging_share_index": 62.61,
+          "dispersion_spread_km": 3.13
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "27110",
+    "area_name": "중구",
+    "national_percentile": 90.0,
+    "outside_visitors_7d_avg": 201238.0,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 76.56,
+      "spend_intensity": 76.51,
+      "lodging_share_index": 54.16,
+      "dispersion_spread_km": 0.86
+    },
+    "peers": [
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11140",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 79.53,
+          "spend_intensity": 155.25,
+          "lodging_share_index": 51.17,
+          "dispersion_spread_km": 1.24
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "26110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 74.29,
+          "spend_intensity": 74.42,
+          "lodging_share_index": 55.66,
+          "dispersion_spread_km": 0.61
+        }
+      },
+      {
+        "area_cd": "26500",
+        "area_name": "수영구",
+        "axes": {
+          "stay_intensity": 81.04,
+          "spend_intensity": 74.52,
+          "lodging_share_index": 64.31,
+          "dispersion_spread_km": 1.18
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11215",
+    "area_name": "광진구",
+    "national_percentile": 89.6,
+    "outside_visitors_7d_avg": 198799.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 78.36,
+      "spend_intensity": 75.7,
+      "lodging_share_index": 58.54,
+      "dispersion_spread_km": 1.65
+    },
+    "peers": [
+      {
+        "area_cd": "11410",
+        "area_name": "서대문구",
+        "axes": {
+          "stay_intensity": 85.28,
+          "spend_intensity": 71.37,
+          "lodging_share_index": 57.16,
+          "dispersion_spread_km": 1.65
+        }
+      },
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11530",
+        "area_name": "구로구",
+        "axes": {
+          "stay_intensity": 77.81,
+          "spend_intensity": 73.62,
+          "lodging_share_index": 58.25,
+          "dispersion_spread_km": 2.13
+        }
+      },
+      {
+        "area_cd": "11590",
+        "area_name": "동작구",
+        "axes": {
+          "stay_intensity": 77.85,
+          "spend_intensity": 74.77,
+          "lodging_share_index": 58.0,
+          "dispersion_spread_km": 2.43
+        }
+      },
+      {
+        "area_cd": "11230",
+        "area_name": "동대문구",
+        "axes": {
+          "stay_intensity": 78.46,
+          "spend_intensity": 75.2,
+          "lodging_share_index": 61.01,
+          "dispersion_spread_km": 1.57
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11530",
+    "area_name": "구로구",
+    "national_percentile": 89.0,
+    "outside_visitors_7d_avg": 189080.0,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 77.81,
+      "spend_intensity": 73.62,
+      "lodging_share_index": 58.25,
+      "dispersion_spread_km": 2.13
+    },
+    "peers": [
+      {
+        "area_cd": "11590",
+        "area_name": "동작구",
+        "axes": {
+          "stay_intensity": 77.85,
+          "spend_intensity": 74.77,
+          "lodging_share_index": 58.0,
+          "dispersion_spread_km": 2.43
+        }
+      },
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11215",
+        "area_name": "광진구",
+        "axes": {
+          "stay_intensity": 78.36,
+          "spend_intensity": 75.7,
+          "lodging_share_index": 58.54,
+          "dispersion_spread_km": 1.65
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11290",
+        "area_name": "성북구",
+        "axes": {
+          "stay_intensity": 79.07,
+          "spend_intensity": 67.19,
+          "lodging_share_index": 61.76,
+          "dispersion_spread_km": 1.99
+        }
+      },
+      {
+        "area_cd": "11230",
+        "area_name": "동대문구",
+        "axes": {
+          "stay_intensity": 78.46,
+          "spend_intensity": 75.2,
+          "lodging_share_index": 61.01,
+          "dispersion_spread_km": 1.57
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11590",
+    "area_name": "동작구",
+    "national_percentile": 88.6,
+    "outside_visitors_7d_avg": 184518.0,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 77.85,
+      "spend_intensity": 74.77,
+      "lodging_share_index": 58.0,
+      "dispersion_spread_km": 2.43
+    },
+    "peers": [
+      {
+        "area_cd": "11530",
+        "area_name": "구로구",
+        "axes": {
+          "stay_intensity": 77.81,
+          "spend_intensity": 73.62,
+          "lodging_share_index": 58.25,
+          "dispersion_spread_km": 2.13
+        }
+      },
+      {
+        "area_cd": "11230",
+        "area_name": "동대문구",
+        "axes": {
+          "stay_intensity": 78.46,
+          "spend_intensity": 75.2,
+          "lodging_share_index": 61.01,
+          "dispersion_spread_km": 1.57
+        }
+      },
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11215",
+        "area_name": "광진구",
+        "axes": {
+          "stay_intensity": 78.36,
+          "spend_intensity": 75.7,
+          "lodging_share_index": 58.54,
+          "dispersion_spread_km": 1.65
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11260",
+        "area_name": "중랑구",
+        "axes": {
+          "stay_intensity": 72.32,
+          "spend_intensity": 70.17,
+          "lodging_share_index": 63.9,
+          "dispersion_spread_km": 1.57
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "27140",
+    "area_name": "동구",
+    "national_percentile": 88.3,
+    "outside_visitors_7d_avg": 181795.5,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 78.62,
+      "spend_intensity": 82.8,
+      "lodging_share_index": 58.7,
+      "dispersion_spread_km": 5.39
+    },
+    "peers": [
+      {
+        "area_cd": "30200",
+        "area_name": "유성구",
+        "axes": {
+          "stay_intensity": 83.79,
+          "spend_intensity": 72.57,
+          "lodging_share_index": 64.17,
+          "dispersion_spread_km": 3.97
+        }
+      },
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "31140",
+        "area_name": "남구",
+        "axes": {
+          "stay_intensity": 75.27,
+          "spend_intensity": 73.17,
+          "lodging_share_index": 62.44,
+          "dispersion_spread_km": 3.72
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "30140",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 76.98,
+          "spend_intensity": 75.92,
+          "lodging_share_index": 60.37,
+          "dispersion_spread_km": 1.94
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "30170",
+    "area_name": "서구",
+    "national_percentile": 88.0,
+    "outside_visitors_7d_avg": 180751.0,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 85.02,
+      "spend_intensity": 68.18,
+      "lodging_share_index": 64.59,
+      "dispersion_spread_km": 3.93
+    },
+    "peers": [
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "27230",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": 75.56,
+          "spend_intensity": 69.92,
+          "lodging_share_index": 61.28,
+          "dispersion_spread_km": 3.42
+        }
+      },
+      {
+        "area_cd": "27260",
+        "area_name": "수성구",
+        "axes": {
+          "stay_intensity": 76.2,
+          "spend_intensity": 70.5,
+          "lodging_share_index": 61.7,
+          "dispersion_spread_km": 3.32
+        }
+      },
+      {
+        "area_cd": "28185",
+        "area_name": "연수구",
+        "axes": {
+          "stay_intensity": 76.0,
+          "spend_intensity": 76.72,
+          "lodging_share_index": 62.61,
+          "dispersion_spread_km": 3.13
+        }
+      },
+      {
+        "area_cd": "28200",
+        "area_name": "남동구",
+        "axes": {
+          "stay_intensity": 76.44,
+          "spend_intensity": 78.78,
+          "lodging_share_index": 60.58,
+          "dispersion_spread_km": 3.3
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "30200",
+    "area_name": "유성구",
+    "national_percentile": 87.3,
+    "outside_visitors_7d_avg": 176836.0,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 83.79,
+      "spend_intensity": 72.57,
+      "lodging_share_index": 64.17,
+      "dispersion_spread_km": 3.97
+    },
+    "peers": [
+      {
+        "area_cd": "27140",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": 78.62,
+          "spend_intensity": 82.8,
+          "lodging_share_index": 58.7,
+          "dispersion_spread_km": 5.39
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "27230",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": 75.56,
+          "spend_intensity": 69.92,
+          "lodging_share_index": 61.28,
+          "dispersion_spread_km": 3.42
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "31140",
+        "area_name": "남구",
+        "axes": {
+          "stay_intensity": 75.27,
+          "spend_intensity": 73.17,
+          "lodging_share_index": 62.44,
+          "dispersion_spread_km": 3.72
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11350",
+    "area_name": "노원구",
+    "national_percentile": 87.0,
+    "outside_visitors_7d_avg": 174830.0,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 75.29,
+      "spend_intensity": 67.37,
+      "lodging_share_index": 59.0,
+      "dispersion_spread_km": 2.07
+    },
+    "peers": [
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11500",
+        "area_name": "강서구",
+        "axes": {
+          "stay_intensity": 84.84,
+          "spend_intensity": 97.21,
+          "lodging_share_index": 57.73,
+          "dispersion_spread_km": 2.28
+        }
+      },
+      {
+        "area_cd": "28200",
+        "area_name": "남동구",
+        "axes": {
+          "stay_intensity": 76.44,
+          "spend_intensity": 78.78,
+          "lodging_share_index": 60.58,
+          "dispersion_spread_km": 3.3
+        }
+      },
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28237",
+        "area_name": "부평구",
+        "axes": {
+          "stay_intensity": 77.68,
+          "spend_intensity": 77.5,
+          "lodging_share_index": 64.29,
+          "dispersion_spread_km": 2.01
+        }
+      },
+      {
+        "area_cd": "11620",
+        "area_name": "관악구",
+        "axes": {
+          "stay_intensity": 85.2,
+          "spend_intensity": 71.09,
+          "lodging_share_index": 62.41,
+          "dispersion_spread_km": 2.01
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "28200",
+    "area_name": "남동구",
+    "national_percentile": 86.0,
+    "outside_visitors_7d_avg": 165573.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 76.44,
+      "spend_intensity": 78.78,
+      "lodging_share_index": 60.58,
+      "dispersion_spread_km": 3.3
+    },
+    "peers": [
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "27290",
+        "area_name": "달서구",
+        "axes": {
+          "stay_intensity": 79.06,
+          "spend_intensity": 68.8,
+          "lodging_share_index": 63.74,
+          "dispersion_spread_km": 3.14
+        }
+      },
+      {
+        "area_cd": "11350",
+        "area_name": "노원구",
+        "axes": {
+          "stay_intensity": 75.29,
+          "spend_intensity": 67.37,
+          "lodging_share_index": 59.0,
+          "dispersion_spread_km": 2.07
+        }
+      },
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "30170",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": 85.02,
+          "spend_intensity": 68.18,
+          "lodging_share_index": 64.59,
+          "dispersion_spread_km": 3.93
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41220",
+    "area_name": "평택시",
+    "national_percentile": 85.6,
+    "outside_visitors_7d_avg": 165519.0,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 86.98,
+      "spend_intensity": 74.0,
+      "lodging_share_index": 69.43,
+      "dispersion_spread_km": 9.98
+    },
+    "peers": [
+      {
+        "area_cd": "41360",
+        "area_name": "남양주시",
+        "axes": {
+          "stay_intensity": 85.19,
+          "spend_intensity": 78.28,
+          "lodging_share_index": 63.35,
+          "dispersion_spread_km": 8.99
+        }
+      },
+      {
+        "area_cd": "41480",
+        "area_name": "파주시",
+        "axes": {
+          "stay_intensity": 81.44,
+          "spend_intensity": 79.0,
+          "lodging_share_index": 65.72,
+          "dispersion_spread_km": 10.28
+        }
+      },
+      {
+        "area_cd": "41590",
+        "area_name": "화성시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41570",
+        "area_name": "김포시",
+        "axes": {
+          "stay_intensity": 76.37,
+          "spend_intensity": 79.89,
+          "lodging_share_index": 62.9,
+          "dispersion_spread_km": 7.83
+        }
+      },
+      {
+        "area_cd": "41610",
+        "area_name": "광주시",
+        "axes": {
+          "stay_intensity": 75.68,
+          "spend_intensity": 75.48,
+          "lodging_share_index": 63.61,
+          "dispersion_spread_km": 8.08
+        }
+      },
+      {
+        "area_cd": "41270",
+        "area_name": "안산시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11290",
+    "area_name": "성북구",
+    "national_percentile": 85.3,
+    "outside_visitors_7d_avg": 165049.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 79.07,
+      "spend_intensity": 67.19,
+      "lodging_share_index": 61.76,
+      "dispersion_spread_km": 1.99
+    },
+    "peers": [
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28177",
+        "area_name": "미추홀구",
+        "axes": {
+          "stay_intensity": 75.13,
+          "spend_intensity": 71.24,
+          "lodging_share_index": 62.6,
+          "dispersion_spread_km": 1.99
+        }
+      },
+      {
+        "area_cd": "11620",
+        "area_name": "관악구",
+        "axes": {
+          "stay_intensity": 85.2,
+          "spend_intensity": 71.09,
+          "lodging_share_index": 62.41,
+          "dispersion_spread_km": 2.01
+        }
+      },
+      {
+        "area_cd": "11740",
+        "area_name": "강동구",
+        "axes": {
+          "stay_intensity": 79.41,
+          "spend_intensity": 69.26,
+          "lodging_share_index": 62.52,
+          "dispersion_spread_km": 1.91
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11530",
+        "area_name": "구로구",
+        "axes": {
+          "stay_intensity": 77.81,
+          "spend_intensity": 73.62,
+          "lodging_share_index": 58.25,
+          "dispersion_spread_km": 2.13
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11740",
+    "area_name": "강동구",
+    "national_percentile": 84.9,
+    "outside_visitors_7d_avg": 164689.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 79.41,
+      "spend_intensity": 69.26,
+      "lodging_share_index": 62.52,
+      "dispersion_spread_km": 1.91
+    },
+    "peers": [
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11290",
+        "area_name": "성북구",
+        "axes": {
+          "stay_intensity": 79.07,
+          "spend_intensity": 67.19,
+          "lodging_share_index": 61.76,
+          "dispersion_spread_km": 1.99
+        }
+      },
+      {
+        "area_cd": "11710",
+        "area_name": "송파구",
+        "axes": {
+          "stay_intensity": 96.39,
+          "spend_intensity": 84.24,
+          "lodging_share_index": 58.07,
+          "dispersion_spread_km": 2.05
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28237",
+        "area_name": "부평구",
+        "axes": {
+          "stay_intensity": 77.68,
+          "spend_intensity": 77.5,
+          "lodging_share_index": 64.29,
+          "dispersion_spread_km": 2.01
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41390",
+    "area_name": "시흥시",
+    "national_percentile": 84.6,
+    "outside_visitors_7d_avg": 164241.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 79.12,
+      "spend_intensity": 81.6,
+      "lodging_share_index": 62.57,
+      "dispersion_spread_km": 6.27
+    },
+    "peers": [
+      {
+        "area_cd": "41450",
+        "area_name": "하남시",
+        "axes": {
+          "stay_intensity": 72.57,
+          "spend_intensity": 78.07,
+          "lodging_share_index": 56.4,
+          "dispersion_spread_km": 3.28
+        }
+      },
+      {
+        "area_cd": "41570",
+        "area_name": "김포시",
+        "axes": {
+          "stay_intensity": 76.37,
+          "spend_intensity": 79.89,
+          "lodging_share_index": 62.9,
+          "dispersion_spread_km": 7.83
+        }
+      },
+      {
+        "area_cd": "41270",
+        "area_name": "안산시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "41150",
+        "area_name": "의정부시",
+        "axes": {
+          "stay_intensity": 75.55,
+          "spend_intensity": 61.64,
+          "lodging_share_index": 64.52,
+          "dispersion_spread_km": 2.9
+        }
+      },
+      {
+        "area_cd": "41220",
+        "area_name": "평택시",
+        "axes": {
+          "stay_intensity": 86.98,
+          "spend_intensity": 74.0,
+          "lodging_share_index": 69.43,
+          "dispersion_spread_km": 9.98
+        }
+      },
+      {
+        "area_cd": "41360",
+        "area_name": "남양주시",
+        "axes": {
+          "stay_intensity": 85.19,
+          "spend_intensity": 78.28,
+          "lodging_share_index": 63.35,
+          "dispersion_spread_km": 8.99
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11230",
+    "area_name": "동대문구",
+    "national_percentile": 84.3,
+    "outside_visitors_7d_avg": 162388.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 78.46,
+      "spend_intensity": 75.2,
+      "lodging_share_index": 61.01,
+      "dispersion_spread_km": 1.57
+    },
+    "peers": [
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11590",
+        "area_name": "동작구",
+        "axes": {
+          "stay_intensity": 77.85,
+          "spend_intensity": 74.77,
+          "lodging_share_index": 58.0,
+          "dispersion_spread_km": 2.43
+        }
+      },
+      {
+        "area_cd": "11215",
+        "area_name": "광진구",
+        "axes": {
+          "stay_intensity": 78.36,
+          "spend_intensity": 75.7,
+          "lodging_share_index": 58.54,
+          "dispersion_spread_km": 1.65
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11530",
+        "area_name": "구로구",
+        "axes": {
+          "stay_intensity": 77.81,
+          "spend_intensity": 73.62,
+          "lodging_share_index": 58.25,
+          "dispersion_spread_km": 2.13
+        }
+      },
+      {
+        "area_cd": "28110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41450",
+    "area_name": "하남시",
+    "national_percentile": 83.3,
+    "outside_visitors_7d_avg": 160573.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 72.57,
+      "spend_intensity": 78.07,
+      "lodging_share_index": 56.4,
+      "dispersion_spread_km": 3.28
+    },
+    "peers": [
+      {
+        "area_cd": "41390",
+        "area_name": "시흥시",
+        "axes": {
+          "stay_intensity": 79.12,
+          "spend_intensity": 81.6,
+          "lodging_share_index": 62.57,
+          "dispersion_spread_km": 6.27
+        }
+      },
+      {
+        "area_cd": "41570",
+        "area_name": "김포시",
+        "axes": {
+          "stay_intensity": 76.37,
+          "spend_intensity": 79.89,
+          "lodging_share_index": 62.9,
+          "dispersion_spread_km": 7.83
+        }
+      },
+      {
+        "area_cd": "41150",
+        "area_name": "의정부시",
+        "axes": {
+          "stay_intensity": 75.55,
+          "spend_intensity": 61.64,
+          "lodging_share_index": 64.52,
+          "dispersion_spread_km": 2.9
+        }
+      },
+      {
+        "area_cd": "41610",
+        "area_name": "광주시",
+        "axes": {
+          "stay_intensity": 75.68,
+          "spend_intensity": 75.48,
+          "lodging_share_index": 63.61,
+          "dispersion_spread_km": 8.08
+        }
+      },
+      {
+        "area_cd": "41210",
+        "area_name": "광명시",
+        "axes": {
+          "stay_intensity": 69.92,
+          "spend_intensity": 72.64,
+          "lodging_share_index": 56.91,
+          "dispersion_spread_km": 2.82
+        }
+      },
+      {
+        "area_cd": "41270",
+        "area_name": "안산시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "28260",
+    "area_name": "서구",
+    "national_percentile": 82.9,
+    "outside_visitors_7d_avg": 159360.0,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요 규모가 유사한 지역 (인구 데이터 미확보로 인구·밀도는 이번 비교에서 제외)",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "27290",
+        "area_name": "달서구",
+        "axes": {
+          "stay_intensity": 79.06,
+          "spend_intensity": 68.8,
+          "lodging_share_index": 63.74,
+          "dispersion_spread_km": 3.14
+        }
+      },
+      {
+        "area_cd": "11230",
+        "area_name": "동대문구",
+        "axes": {
+          "stay_intensity": 78.46,
+          "spend_intensity": 75.2,
+          "lodging_share_index": 61.01,
+          "dispersion_spread_km": 1.57
+        }
+      },
+      {
+        "area_cd": "11740",
+        "area_name": "강동구",
+        "axes": {
+          "stay_intensity": 79.41,
+          "spend_intensity": 69.26,
+          "lodging_share_index": 62.52,
+          "dispersion_spread_km": 1.91
+        }
+      },
+      {
+        "area_cd": "27260",
+        "area_name": "수성구",
+        "axes": {
+          "stay_intensity": 76.2,
+          "spend_intensity": 70.5,
+          "lodging_share_index": 61.7,
+          "dispersion_spread_km": 3.32
+        }
+      },
+      {
+        "area_cd": "11290",
+        "area_name": "성북구",
+        "axes": {
+          "stay_intensity": 79.07,
+          "spend_intensity": 67.19,
+          "lodging_share_index": 61.76,
+          "dispersion_spread_km": 1.99
+        }
+      },
+      {
+        "area_cd": "27230",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": 75.56,
+          "spend_intensity": 69.92,
+          "lodging_share_index": 61.28,
+          "dispersion_spread_km": 3.42
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "50110",
+    "area_name": "제주시",
+    "national_percentile": 82.6,
+    "outside_visitors_7d_avg": 155545.5,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 131.39,
+      "spend_intensity": 79.18,
+      "lodging_share_index": 97.22,
+      "dispersion_spread_km": 20.97
+    },
+    "peers": [
+      {
+        "area_cd": "47110",
+        "area_name": "포항시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "51130",
+        "area_name": "원주시",
+        "axes": {
+          "stay_intensity": 82.58,
+          "spend_intensity": 60.46,
+          "lodging_share_index": 79.46,
+          "dispersion_spread_km": 8.56
+        }
+      },
+      {
+        "area_cd": "44200",
+        "area_name": "아산시",
+        "axes": {
+          "stay_intensity": 79.17,
+          "spend_intensity": 75.0,
+          "lodging_share_index": 69.65,
+          "dispersion_spread_km": 7.31
+        }
+      },
+      {
+        "area_cd": "48250",
+        "area_name": "김해시",
+        "axes": {
+          "stay_intensity": 77.5,
+          "spend_intensity": 67.12,
+          "lodging_share_index": 65.88,
+          "dispersion_spread_km": 6.59
+        }
+      },
+      {
+        "area_cd": "47190",
+        "area_name": "구미시",
+        "axes": {
+          "stay_intensity": 71.79,
+          "spend_intensity": 65.15,
+          "lodging_share_index": 72.62,
+          "dispersion_spread_km": 6.75
+        }
+      },
+      {
+        "area_cd": "48330",
+        "area_name": "양산시",
+        "axes": {
+          "stay_intensity": 71.87,
+          "spend_intensity": 70.34,
+          "lodging_share_index": 64.55,
+          "dispersion_spread_km": 8.62
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "47110",
+    "area_name": "포항시",
+    "national_percentile": 82.3,
+    "outside_visitors_7d_avg": 153534.0,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "50110",
+        "area_name": "제주시",
+        "axes": {
+          "stay_intensity": 131.39,
+          "spend_intensity": 79.18,
+          "lodging_share_index": 97.22,
+          "dispersion_spread_km": 20.97
+        }
+      },
+      {
+        "area_cd": "51130",
+        "area_name": "원주시",
+        "axes": {
+          "stay_intensity": 82.58,
+          "spend_intensity": 60.46,
+          "lodging_share_index": 79.46,
+          "dispersion_spread_km": 8.56
+        }
+      },
+      {
+        "area_cd": "44200",
+        "area_name": "아산시",
+        "axes": {
+          "stay_intensity": 79.17,
+          "spend_intensity": 75.0,
+          "lodging_share_index": 69.65,
+          "dispersion_spread_km": 7.31
+        }
+      },
+      {
+        "area_cd": "48250",
+        "area_name": "김해시",
+        "axes": {
+          "stay_intensity": 77.5,
+          "spend_intensity": 67.12,
+          "lodging_share_index": 65.88,
+          "dispersion_spread_km": 6.59
+        }
+      },
+      {
+        "area_cd": "47190",
+        "area_name": "구미시",
+        "axes": {
+          "stay_intensity": 71.79,
+          "spend_intensity": 65.15,
+          "lodging_share_index": 72.62,
+          "dispersion_spread_km": 6.75
+        }
+      },
+      {
+        "area_cd": "51110",
+        "area_name": "춘천시",
+        "axes": {
+          "stay_intensity": 79.29,
+          "spend_intensity": 66.97,
+          "lodging_share_index": 84.41,
+          "dispersion_spread_km": 8.11
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "27290",
+    "area_name": "달서구",
+    "national_percentile": 81.9,
+    "outside_visitors_7d_avg": 153460.0,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 79.06,
+      "spend_intensity": 68.8,
+      "lodging_share_index": 63.74,
+      "dispersion_spread_km": 3.14
+    },
+    "peers": [
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28200",
+        "area_name": "남동구",
+        "axes": {
+          "stay_intensity": 76.44,
+          "spend_intensity": 78.78,
+          "lodging_share_index": 60.58,
+          "dispersion_spread_km": 3.3
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11350",
+        "area_name": "노원구",
+        "axes": {
+          "stay_intensity": 75.29,
+          "spend_intensity": 67.37,
+          "lodging_share_index": 59.0,
+          "dispersion_spread_km": 2.07
+        }
+      },
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41480",
+    "area_name": "파주시",
+    "national_percentile": 81.6,
+    "outside_visitors_7d_avg": 153442.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 81.44,
+      "spend_intensity": 79.0,
+      "lodging_share_index": 65.72,
+      "dispersion_spread_km": 10.28
+    },
+    "peers": [
+      {
+        "area_cd": "41610",
+        "area_name": "광주시",
+        "axes": {
+          "stay_intensity": 75.68,
+          "spend_intensity": 75.48,
+          "lodging_share_index": 63.61,
+          "dispersion_spread_km": 8.08
+        }
+      },
+      {
+        "area_cd": "41220",
+        "area_name": "평택시",
+        "axes": {
+          "stay_intensity": 86.98,
+          "spend_intensity": 74.0,
+          "lodging_share_index": 69.43,
+          "dispersion_spread_km": 9.98
+        }
+      },
+      {
+        "area_cd": "41570",
+        "area_name": "김포시",
+        "axes": {
+          "stay_intensity": 76.37,
+          "spend_intensity": 79.89,
+          "lodging_share_index": 62.9,
+          "dispersion_spread_km": 7.83
+        }
+      },
+      {
+        "area_cd": "41500",
+        "area_name": "이천시",
+        "axes": {
+          "stay_intensity": 73.24,
+          "spend_intensity": 79.93,
+          "lodging_share_index": 63.44,
+          "dispersion_spread_km": 8.36
+        }
+      },
+      {
+        "area_cd": "41360",
+        "area_name": "남양주시",
+        "axes": {
+          "stay_intensity": 85.19,
+          "spend_intensity": 78.28,
+          "lodging_share_index": 63.35,
+          "dispersion_spread_km": 8.99
+        }
+      },
+      {
+        "area_cd": "41390",
+        "area_name": "시흥시",
+        "axes": {
+          "stay_intensity": 79.12,
+          "spend_intensity": 81.6,
+          "lodging_share_index": 62.57,
+          "dispersion_spread_km": 6.27
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41570",
+    "area_name": "김포시",
+    "national_percentile": 81.3,
+    "outside_visitors_7d_avg": 150189.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 76.37,
+      "spend_intensity": 79.89,
+      "lodging_share_index": 62.9,
+      "dispersion_spread_km": 7.83
+    },
+    "peers": [
+      {
+        "area_cd": "41610",
+        "area_name": "광주시",
+        "axes": {
+          "stay_intensity": 75.68,
+          "spend_intensity": 75.48,
+          "lodging_share_index": 63.61,
+          "dispersion_spread_km": 8.08
+        }
+      },
+      {
+        "area_cd": "41450",
+        "area_name": "하남시",
+        "axes": {
+          "stay_intensity": 72.57,
+          "spend_intensity": 78.07,
+          "lodging_share_index": 56.4,
+          "dispersion_spread_km": 3.28
+        }
+      },
+      {
+        "area_cd": "41390",
+        "area_name": "시흥시",
+        "axes": {
+          "stay_intensity": 79.12,
+          "spend_intensity": 81.6,
+          "lodging_share_index": 62.57,
+          "dispersion_spread_km": 6.27
+        }
+      },
+      {
+        "area_cd": "41480",
+        "area_name": "파주시",
+        "axes": {
+          "stay_intensity": 81.44,
+          "spend_intensity": 79.0,
+          "lodging_share_index": 65.72,
+          "dispersion_spread_km": 10.28
+        }
+      },
+      {
+        "area_cd": "41220",
+        "area_name": "평택시",
+        "axes": {
+          "stay_intensity": 86.98,
+          "spend_intensity": 74.0,
+          "lodging_share_index": 69.43,
+          "dispersion_spread_km": 9.98
+        }
+      },
+      {
+        "area_cd": "41360",
+        "area_name": "남양주시",
+        "axes": {
+          "stay_intensity": 85.19,
+          "spend_intensity": 78.28,
+          "lodging_share_index": 63.35,
+          "dispersion_spread_km": 8.99
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "27260",
+    "area_name": "수성구",
+    "national_percentile": 80.6,
+    "outside_visitors_7d_avg": 146301.5,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 76.2,
+      "spend_intensity": 70.5,
+      "lodging_share_index": 61.7,
+      "dispersion_spread_km": 3.32
+    },
+    "peers": [
+      {
+        "area_cd": "27230",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": 75.56,
+          "spend_intensity": 69.92,
+          "lodging_share_index": 61.28,
+          "dispersion_spread_km": 3.42
+        }
+      },
+      {
+        "area_cd": "28185",
+        "area_name": "연수구",
+        "axes": {
+          "stay_intensity": 76.0,
+          "spend_intensity": 76.72,
+          "lodging_share_index": 62.61,
+          "dispersion_spread_km": 3.13
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "30170",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": 85.02,
+          "spend_intensity": 68.18,
+          "lodging_share_index": 64.59,
+          "dispersion_spread_km": 3.93
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "27230",
+    "area_name": "북구",
+    "national_percentile": 80.3,
+    "outside_visitors_7d_avg": 144858.5,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 75.56,
+      "spend_intensity": 69.92,
+      "lodging_share_index": 61.28,
+      "dispersion_spread_km": 3.42
+    },
+    "peers": [
+      {
+        "area_cd": "27260",
+        "area_name": "수성구",
+        "axes": {
+          "stay_intensity": 76.2,
+          "spend_intensity": 70.5,
+          "lodging_share_index": 61.7,
+          "dispersion_spread_km": 3.32
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28185",
+        "area_name": "연수구",
+        "axes": {
+          "stay_intensity": 76.0,
+          "spend_intensity": 76.72,
+          "lodging_share_index": 62.61,
+          "dispersion_spread_km": 3.13
+        }
+      },
+      {
+        "area_cd": "30200",
+        "area_name": "유성구",
+        "axes": {
+          "stay_intensity": 83.79,
+          "spend_intensity": 72.57,
+          "lodging_share_index": 64.17,
+          "dispersion_spread_km": 3.97
+        }
+      },
+      {
+        "area_cd": "31140",
+        "area_name": "남구",
+        "axes": {
+          "stay_intensity": 75.27,
+          "spend_intensity": 73.17,
+          "lodging_share_index": 62.44,
+          "dispersion_spread_km": 3.72
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41610",
+    "area_name": "광주시",
+    "national_percentile": 79.6,
+    "outside_visitors_7d_avg": 142288.0,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 75.68,
+      "spend_intensity": 75.48,
+      "lodging_share_index": 63.61,
+      "dispersion_spread_km": 8.08
+    },
+    "peers": [
+      {
+        "area_cd": "41480",
+        "area_name": "파주시",
+        "axes": {
+          "stay_intensity": 81.44,
+          "spend_intensity": 79.0,
+          "lodging_share_index": 65.72,
+          "dispersion_spread_km": 10.28
+        }
+      },
+      {
+        "area_cd": "41630",
+        "area_name": "양주시",
+        "axes": {
+          "stay_intensity": 71.58,
+          "spend_intensity": 76.26,
+          "lodging_share_index": 64.05,
+          "dispersion_spread_km": 8.5
+        }
+      },
+      {
+        "area_cd": "41570",
+        "area_name": "김포시",
+        "axes": {
+          "stay_intensity": 76.37,
+          "spend_intensity": 79.89,
+          "lodging_share_index": 62.9,
+          "dispersion_spread_km": 7.83
+        }
+      },
+      {
+        "area_cd": "41500",
+        "area_name": "이천시",
+        "axes": {
+          "stay_intensity": 73.24,
+          "spend_intensity": 79.93,
+          "lodging_share_index": 63.44,
+          "dispersion_spread_km": 8.36
+        }
+      },
+      {
+        "area_cd": "41450",
+        "area_name": "하남시",
+        "axes": {
+          "stay_intensity": 72.57,
+          "spend_intensity": 78.07,
+          "lodging_share_index": 56.4,
+          "dispersion_spread_km": 3.28
+        }
+      },
+      {
+        "area_cd": "41220",
+        "area_name": "평택시",
+        "axes": {
+          "stay_intensity": 86.98,
+          "spend_intensity": 74.0,
+          "lodging_share_index": 69.43,
+          "dispersion_spread_km": 9.98
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "30140",
+    "area_name": "중구",
+    "national_percentile": 79.3,
+    "outside_visitors_7d_avg": 141919.0,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 76.98,
+      "spend_intensity": 75.92,
+      "lodging_share_index": 60.37,
+      "dispersion_spread_km": 1.94
+    },
+    "peers": [
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "30110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": 74.66,
+          "spend_intensity": 88.79,
+          "lodging_share_index": 59.84,
+          "dispersion_spread_km": 4.51
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "31140",
+        "area_name": "남구",
+        "axes": {
+          "stay_intensity": 75.27,
+          "spend_intensity": 73.17,
+          "lodging_share_index": 62.44,
+          "dispersion_spread_km": 3.72
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "28185",
+    "area_name": "연수구",
+    "national_percentile": 78.9,
+    "outside_visitors_7d_avg": 140012.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 76.0,
+      "spend_intensity": 76.72,
+      "lodging_share_index": 62.61,
+      "dispersion_spread_km": 3.13
+    },
+    "peers": [
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "27260",
+        "area_name": "수성구",
+        "axes": {
+          "stay_intensity": 76.2,
+          "spend_intensity": 70.5,
+          "lodging_share_index": 61.7,
+          "dispersion_spread_km": 3.32
+        }
+      },
+      {
+        "area_cd": "27230",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": 75.56,
+          "spend_intensity": 69.92,
+          "lodging_share_index": 61.28,
+          "dispersion_spread_km": 3.42
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "28237",
+    "area_name": "부평구",
+    "national_percentile": 78.6,
+    "outside_visitors_7d_avg": 138450.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 77.68,
+      "spend_intensity": 77.5,
+      "lodging_share_index": 64.29,
+      "dispersion_spread_km": 2.01
+    },
+    "peers": [
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11350",
+        "area_name": "노원구",
+        "axes": {
+          "stay_intensity": 75.29,
+          "spend_intensity": 67.37,
+          "lodging_share_index": 59.0,
+          "dispersion_spread_km": 2.07
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28177",
+        "area_name": "미추홀구",
+        "axes": {
+          "stay_intensity": 75.13,
+          "spend_intensity": 71.24,
+          "lodging_share_index": 62.6,
+          "dispersion_spread_km": 1.99
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "31140",
+    "area_name": "남구",
+    "national_percentile": 78.3,
+    "outside_visitors_7d_avg": 136644.5,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 75.27,
+      "spend_intensity": 73.17,
+      "lodging_share_index": 62.44,
+      "dispersion_spread_km": 3.72
+    },
+    "peers": [
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "30140",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 76.98,
+          "spend_intensity": 75.92,
+          "lodging_share_index": 60.37,
+          "dispersion_spread_km": 1.94
+        }
+      },
+      {
+        "area_cd": "27140",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": 78.62,
+          "spend_intensity": 82.8,
+          "lodging_share_index": 58.7,
+          "dispersion_spread_km": 5.39
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "29140",
+    "area_name": "서구",
+    "national_percentile": 77.9,
+    "outside_visitors_7d_avg": 135727.5,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요 규모가 유사한 지역 (인구 데이터 미확보로 인구·밀도는 이번 비교에서 제외)",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "31140",
+        "area_name": "남구",
+        "axes": {
+          "stay_intensity": 75.27,
+          "spend_intensity": 73.17,
+          "lodging_share_index": 62.44,
+          "dispersion_spread_km": 3.72
+        }
+      },
+      {
+        "area_cd": "28177",
+        "area_name": "미추홀구",
+        "axes": {
+          "stay_intensity": 75.13,
+          "spend_intensity": 71.24,
+          "lodging_share_index": 62.6,
+          "dispersion_spread_km": 1.99
+        }
+      },
+      {
+        "area_cd": "28237",
+        "area_name": "부평구",
+        "axes": {
+          "stay_intensity": 77.68,
+          "spend_intensity": 77.5,
+          "lodging_share_index": 64.29,
+          "dispersion_spread_km": 2.01
+        }
+      },
+      {
+        "area_cd": "28185",
+        "area_name": "연수구",
+        "axes": {
+          "stay_intensity": 76.0,
+          "spend_intensity": 76.72,
+          "lodging_share_index": 62.61,
+          "dispersion_spread_km": 3.13
+        }
+      },
+      {
+        "area_cd": "30140",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 76.98,
+          "spend_intensity": 75.92,
+          "lodging_share_index": 60.37,
+          "dispersion_spread_km": 1.94
+        }
+      },
+      {
+        "area_cd": "27230",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": 75.56,
+          "spend_intensity": 69.92,
+          "lodging_share_index": 61.28,
+          "dispersion_spread_km": 3.42
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41310",
+    "area_name": "구리시",
+    "national_percentile": 77.6,
+    "outside_visitors_7d_avg": 133647.0,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 70.41,
+      "spend_intensity": 72.63,
+      "lodging_share_index": 56.15,
+      "dispersion_spread_km": 2.23
+    },
+    "peers": [
+      {
+        "area_cd": "41370",
+        "area_name": "오산시",
+        "axes": {
+          "stay_intensity": 70.3,
+          "spend_intensity": 74.25,
+          "lodging_share_index": 62.95,
+          "dispersion_spread_km": 2.45
+        }
+      },
+      {
+        "area_cd": "41150",
+        "area_name": "의정부시",
+        "axes": {
+          "stay_intensity": 75.55,
+          "spend_intensity": 61.64,
+          "lodging_share_index": 64.52,
+          "dispersion_spread_km": 2.9
+        }
+      },
+      {
+        "area_cd": "41430",
+        "area_name": "의왕시",
+        "axes": {
+          "stay_intensity": 68.02,
+          "spend_intensity": 80.2,
+          "lodging_share_index": 56.19,
+          "dispersion_spread_km": 3.96
+        }
+      },
+      {
+        "area_cd": "41210",
+        "area_name": "광명시",
+        "axes": {
+          "stay_intensity": 69.92,
+          "spend_intensity": 72.64,
+          "lodging_share_index": 56.91,
+          "dispersion_spread_km": 2.82
+        }
+      },
+      {
+        "area_cd": "41450",
+        "area_name": "하남시",
+        "axes": {
+          "stay_intensity": 72.57,
+          "spend_intensity": 78.07,
+          "lodging_share_index": 56.4,
+          "dispersion_spread_km": 3.28
+        }
+      },
+      {
+        "area_cd": "41410",
+        "area_name": "군포시",
+        "axes": {
+          "stay_intensity": 64.26,
+          "spend_intensity": 66.25,
+          "lodging_share_index": 60.52,
+          "dispersion_spread_km": 2.29
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "28177",
+    "area_name": "미추홀구",
+    "national_percentile": 77.3,
+    "outside_visitors_7d_avg": 133267.0,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 75.13,
+      "spend_intensity": 71.24,
+      "lodging_share_index": 62.6,
+      "dispersion_spread_km": 1.99
+    },
+    "peers": [
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11290",
+        "area_name": "성북구",
+        "axes": {
+          "stay_intensity": 79.07,
+          "spend_intensity": 67.19,
+          "lodging_share_index": 61.76,
+          "dispersion_spread_km": 1.99
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28237",
+        "area_name": "부평구",
+        "axes": {
+          "stay_intensity": 77.68,
+          "spend_intensity": 77.5,
+          "lodging_share_index": 64.29,
+          "dispersion_spread_km": 2.01
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "47130",
+    "area_name": "경주시",
+    "national_percentile": 76.9,
+    "outside_visitors_7d_avg": 132920.5,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 102.99,
+      "spend_intensity": 77.92,
+      "lodging_share_index": 87.9,
+      "dispersion_spread_km": 10.58
+    },
+    "peers": [
+      {
+        "area_cd": "51150",
+        "area_name": "강릉시",
+        "axes": {
+          "stay_intensity": 109.2,
+          "spend_intensity": 78.71,
+          "lodging_share_index": 107.44,
+          "dispersion_spread_km": 10.66
+        }
+      },
+      {
+        "area_cd": "50130",
+        "area_name": "서귀포시",
+        "axes": {
+          "stay_intensity": 119.19,
+          "spend_intensity": 81.66,
+          "lodging_share_index": 98.43,
+          "dispersion_spread_km": 20.87
+        }
+      },
+      {
+        "area_cd": "43130",
+        "area_name": "충주시",
+        "axes": {
+          "stay_intensity": 74.55,
+          "spend_intensity": 70.5,
+          "lodging_share_index": 72.51,
+          "dispersion_spread_km": 11.04
+        }
+      },
+      {
+        "area_cd": "51110",
+        "area_name": "춘천시",
+        "axes": {
+          "stay_intensity": 79.29,
+          "spend_intensity": 66.97,
+          "lodging_share_index": 84.41,
+          "dispersion_spread_km": 8.11
+        }
+      },
+      {
+        "area_cd": "44270",
+        "area_name": "당진시",
+        "axes": {
+          "stay_intensity": 69.49,
+          "spend_intensity": 75.41,
+          "lodging_share_index": 72.06,
+          "dispersion_spread_km": 12.25
+        }
+      },
+      {
+        "area_cd": "51130",
+        "area_name": "원주시",
+        "axes": {
+          "stay_intensity": 82.58,
+          "spend_intensity": 60.46,
+          "lodging_share_index": 79.46,
+          "dispersion_spread_km": 8.56
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "48250",
+    "area_name": "김해시",
+    "national_percentile": 76.6,
+    "outside_visitors_7d_avg": 132563.5,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 77.5,
+      "spend_intensity": 67.12,
+      "lodging_share_index": 65.88,
+      "dispersion_spread_km": 6.59
+    },
+    "peers": [
+      {
+        "area_cd": "44130",
+        "area_name": "천안시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "52110",
+        "area_name": "전주시",
+        "axes": {
+          "stay_intensity": 76.91,
+          "spend_intensity": 69.96,
+          "lodging_share_index": 67.38,
+          "dispersion_spread_km": 3.59
+        }
+      },
+      {
+        "area_cd": "36110",
+        "area_name": "세종특별자치시",
+        "axes": {
+          "stay_intensity": 75.98,
+          "spend_intensity": 69.62,
+          "lodging_share_index": 71.31,
+          "dispersion_spread_km": 7.58
+        }
+      },
+      {
+        "area_cd": "43110",
+        "area_name": "청주시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "44200",
+        "area_name": "아산시",
+        "axes": {
+          "stay_intensity": 79.17,
+          "spend_intensity": 75.0,
+          "lodging_share_index": 69.65,
+          "dispersion_spread_km": 7.31
+        }
+      },
+      {
+        "area_cd": "48120",
+        "area_name": "창원시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41150",
+    "area_name": "의정부시",
+    "national_percentile": 74.9,
+    "outside_visitors_7d_avg": 127910.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 75.55,
+      "spend_intensity": 61.64,
+      "lodging_share_index": 64.52,
+      "dispersion_spread_km": 2.9
+    },
+    "peers": [
+      {
+        "area_cd": "41450",
+        "area_name": "하남시",
+        "axes": {
+          "stay_intensity": 72.57,
+          "spend_intensity": 78.07,
+          "lodging_share_index": 56.4,
+          "dispersion_spread_km": 3.28
+        }
+      },
+      {
+        "area_cd": "41390",
+        "area_name": "시흥시",
+        "axes": {
+          "stay_intensity": 79.12,
+          "spend_intensity": 81.6,
+          "lodging_share_index": 62.57,
+          "dispersion_spread_km": 6.27
+        }
+      },
+      {
+        "area_cd": "41210",
+        "area_name": "광명시",
+        "axes": {
+          "stay_intensity": 69.92,
+          "spend_intensity": 72.64,
+          "lodging_share_index": 56.91,
+          "dispersion_spread_km": 2.82
+        }
+      },
+      {
+        "area_cd": "41370",
+        "area_name": "오산시",
+        "axes": {
+          "stay_intensity": 70.3,
+          "spend_intensity": 74.25,
+          "lodging_share_index": 62.95,
+          "dispersion_spread_km": 2.45
+        }
+      },
+      {
+        "area_cd": "41310",
+        "area_name": "구리시",
+        "axes": {
+          "stay_intensity": 70.41,
+          "spend_intensity": 72.63,
+          "lodging_share_index": 56.15,
+          "dispersion_spread_km": 2.23
+        }
+      },
+      {
+        "area_cd": "41570",
+        "area_name": "김포시",
+        "axes": {
+          "stay_intensity": 76.37,
+          "spend_intensity": 79.89,
+          "lodging_share_index": 62.9,
+          "dispersion_spread_km": 7.83
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41210",
+    "area_name": "광명시",
+    "national_percentile": 74.2,
+    "outside_visitors_7d_avg": 126962.0,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 69.92,
+      "spend_intensity": 72.64,
+      "lodging_share_index": 56.91,
+      "dispersion_spread_km": 2.82
+    },
+    "peers": [
+      {
+        "area_cd": "41370",
+        "area_name": "오산시",
+        "axes": {
+          "stay_intensity": 70.3,
+          "spend_intensity": 74.25,
+          "lodging_share_index": 62.95,
+          "dispersion_spread_km": 2.45
+        }
+      },
+      {
+        "area_cd": "41150",
+        "area_name": "의정부시",
+        "axes": {
+          "stay_intensity": 75.55,
+          "spend_intensity": 61.64,
+          "lodging_share_index": 64.52,
+          "dispersion_spread_km": 2.9
+        }
+      },
+      {
+        "area_cd": "41410",
+        "area_name": "군포시",
+        "axes": {
+          "stay_intensity": 64.26,
+          "spend_intensity": 66.25,
+          "lodging_share_index": 60.52,
+          "dispersion_spread_km": 2.29
+        }
+      },
+      {
+        "area_cd": "41310",
+        "area_name": "구리시",
+        "axes": {
+          "stay_intensity": 70.41,
+          "spend_intensity": 72.63,
+          "lodging_share_index": 56.15,
+          "dispersion_spread_km": 2.23
+        }
+      },
+      {
+        "area_cd": "41450",
+        "area_name": "하남시",
+        "axes": {
+          "stay_intensity": 72.57,
+          "spend_intensity": 78.07,
+          "lodging_share_index": 56.4,
+          "dispersion_spread_km": 3.28
+        }
+      },
+      {
+        "area_cd": "41170",
+        "area_name": "안양시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "26440",
+    "area_name": "강서구",
+    "national_percentile": 73.2,
+    "outside_visitors_7d_avg": 124247.0,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 71.03,
+      "spend_intensity": 86.66,
+      "lodging_share_index": 55.63,
+      "dispersion_spread_km": 7.79
+    },
+    "peers": [
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "30110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": 74.66,
+          "spend_intensity": 88.79,
+          "lodging_share_index": 59.84,
+          "dispersion_spread_km": 4.51
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "30230",
+        "area_name": "대덕구",
+        "axes": {
+          "stay_intensity": 69.56,
+          "spend_intensity": 78.03,
+          "lodging_share_index": 61.46,
+          "dispersion_spread_km": 4.85
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "29170",
+    "area_name": "북구",
+    "national_percentile": 72.6,
+    "outside_visitors_7d_avg": 123534.5,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요 규모가 유사한 지역 (인구 데이터 미확보로 인구·밀도는 이번 비교에서 제외)",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "26440",
+        "area_name": "강서구",
+        "axes": {
+          "stay_intensity": 71.03,
+          "spend_intensity": 86.66,
+          "lodging_share_index": 55.63,
+          "dispersion_spread_km": 7.79
+        }
+      },
+      {
+        "area_cd": "26260",
+        "area_name": "동래구",
+        "axes": {
+          "stay_intensity": 72.4,
+          "spend_intensity": 68.06,
+          "lodging_share_index": 59.4,
+          "dispersion_spread_km": 1.45
+        }
+      },
+      {
+        "area_cd": "26500",
+        "area_name": "수영구",
+        "axes": {
+          "stay_intensity": 81.04,
+          "spend_intensity": 74.52,
+          "lodging_share_index": 64.31,
+          "dispersion_spread_km": 1.18
+        }
+      },
+      {
+        "area_cd": "30110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": 74.66,
+          "spend_intensity": 88.79,
+          "lodging_share_index": 59.84,
+          "dispersion_spread_km": 4.51
+        }
+      },
+      {
+        "area_cd": "11470",
+        "area_name": "양천구",
+        "axes": {
+          "stay_intensity": 70.86,
+          "spend_intensity": 66.23,
+          "lodging_share_index": 59.52,
+          "dispersion_spread_km": 1.86
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "29200",
+    "area_name": "광산구",
+    "national_percentile": 72.2,
+    "outside_visitors_7d_avg": 123087.0,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요 규모가 유사한 지역 (인구 데이터 미확보로 인구·밀도는 이번 비교에서 제외)",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "26260",
+        "area_name": "동래구",
+        "axes": {
+          "stay_intensity": 72.4,
+          "spend_intensity": 68.06,
+          "lodging_share_index": 59.4,
+          "dispersion_spread_km": 1.45
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "26500",
+        "area_name": "수영구",
+        "axes": {
+          "stay_intensity": 81.04,
+          "spend_intensity": 74.52,
+          "lodging_share_index": 64.31,
+          "dispersion_spread_km": 1.18
+        }
+      },
+      {
+        "area_cd": "26440",
+        "area_name": "강서구",
+        "axes": {
+          "stay_intensity": 71.03,
+          "spend_intensity": 86.66,
+          "lodging_share_index": 55.63,
+          "dispersion_spread_km": 7.79
+        }
+      },
+      {
+        "area_cd": "30110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": 74.66,
+          "spend_intensity": 88.79,
+          "lodging_share_index": 59.84,
+          "dispersion_spread_km": 4.51
+        }
+      },
+      {
+        "area_cd": "11470",
+        "area_name": "양천구",
+        "axes": {
+          "stay_intensity": 70.86,
+          "spend_intensity": 66.23,
+          "lodging_share_index": 59.52,
+          "dispersion_spread_km": 1.86
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "26260",
+    "area_name": "동래구",
+    "national_percentile": 71.9,
+    "outside_visitors_7d_avg": 123051.5,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 72.4,
+      "spend_intensity": 68.06,
+      "lodging_share_index": 59.4,
+      "dispersion_spread_km": 1.45
+    },
+    "peers": [
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "26500",
+        "area_name": "수영구",
+        "axes": {
+          "stay_intensity": 81.04,
+          "spend_intensity": 74.52,
+          "lodging_share_index": 64.31,
+          "dispersion_spread_km": 1.18
+        }
+      },
+      {
+        "area_cd": "11545",
+        "area_name": "금천구",
+        "axes": {
+          "stay_intensity": 70.39,
+          "spend_intensity": 77.99,
+          "lodging_share_index": 60.18,
+          "dispersion_spread_km": 1.39
+        }
+      },
+      {
+        "area_cd": "26470",
+        "area_name": "연제구",
+        "axes": {
+          "stay_intensity": 72.67,
+          "spend_intensity": 74.95,
+          "lodging_share_index": 60.48,
+          "dispersion_spread_km": 1.4
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "26500",
+    "area_name": "수영구",
+    "national_percentile": 71.6,
+    "outside_visitors_7d_avg": 121612.5,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 81.04,
+      "spend_intensity": 74.52,
+      "lodging_share_index": 64.31,
+      "dispersion_spread_km": 1.18
+    },
+    "peers": [
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "26260",
+        "area_name": "동래구",
+        "axes": {
+          "stay_intensity": 72.4,
+          "spend_intensity": 68.06,
+          "lodging_share_index": 59.4,
+          "dispersion_spread_km": 1.45
+        }
+      },
+      {
+        "area_cd": "26470",
+        "area_name": "연제구",
+        "axes": {
+          "stay_intensity": 72.67,
+          "spend_intensity": 74.95,
+          "lodging_share_index": 60.48,
+          "dispersion_spread_km": 1.4
+        }
+      },
+      {
+        "area_cd": "28260",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "30110",
+    "area_name": "동구",
+    "national_percentile": 71.2,
+    "outside_visitors_7d_avg": 120241.0,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 74.66,
+      "spend_intensity": 88.79,
+      "lodging_share_index": 59.84,
+      "dispersion_spread_km": 4.51
+    },
+    "peers": [
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "31200",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": 67.08,
+          "spend_intensity": 73.14,
+          "lodging_share_index": 61.73,
+          "dispersion_spread_km": 5.4
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "30140",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 76.98,
+          "spend_intensity": 75.92,
+          "lodging_share_index": 60.37,
+          "dispersion_spread_km": 1.94
+        }
+      },
+      {
+        "area_cd": "26440",
+        "area_name": "강서구",
+        "axes": {
+          "stay_intensity": 71.03,
+          "spend_intensity": 86.66,
+          "lodging_share_index": 55.63,
+          "dispersion_spread_km": 7.79
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "44200",
+    "area_name": "아산시",
+    "national_percentile": 70.9,
+    "outside_visitors_7d_avg": 119511.5,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 79.17,
+      "spend_intensity": 75.0,
+      "lodging_share_index": 69.65,
+      "dispersion_spread_km": 7.31
+    },
+    "peers": [
+      {
+        "area_cd": "48330",
+        "area_name": "양산시",
+        "axes": {
+          "stay_intensity": 71.87,
+          "spend_intensity": 70.34,
+          "lodging_share_index": 64.55,
+          "dispersion_spread_km": 8.62
+        }
+      },
+      {
+        "area_cd": "36110",
+        "area_name": "세종특별자치시",
+        "axes": {
+          "stay_intensity": 75.98,
+          "spend_intensity": 69.62,
+          "lodging_share_index": 71.31,
+          "dispersion_spread_km": 7.58
+        }
+      },
+      {
+        "area_cd": "47190",
+        "area_name": "구미시",
+        "axes": {
+          "stay_intensity": 71.79,
+          "spend_intensity": 65.15,
+          "lodging_share_index": 72.62,
+          "dispersion_spread_km": 6.75
+        }
+      },
+      {
+        "area_cd": "47290",
+        "area_name": "경산시",
+        "axes": {
+          "stay_intensity": 69.91,
+          "spend_intensity": 70.99,
+          "lodging_share_index": 65.37,
+          "dispersion_spread_km": 7.01
+        }
+      },
+      {
+        "area_cd": "50110",
+        "area_name": "제주시",
+        "axes": {
+          "stay_intensity": 131.39,
+          "spend_intensity": 79.18,
+          "lodging_share_index": 97.22,
+          "dispersion_spread_km": 20.97
+        }
+      },
+      {
+        "area_cd": "51130",
+        "area_name": "원주시",
+        "axes": {
+          "stay_intensity": 82.58,
+          "spend_intensity": 60.46,
+          "lodging_share_index": 79.46,
+          "dispersion_spread_km": 8.56
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11470",
+    "area_name": "양천구",
+    "national_percentile": 70.6,
+    "outside_visitors_7d_avg": 118664.0,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 70.86,
+      "spend_intensity": 66.23,
+      "lodging_share_index": 59.52,
+      "dispersion_spread_km": 1.86
+    },
+    "peers": [
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11260",
+        "area_name": "중랑구",
+        "axes": {
+          "stay_intensity": 72.32,
+          "spend_intensity": 70.17,
+          "lodging_share_index": 63.9,
+          "dispersion_spread_km": 1.57
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28177",
+        "area_name": "미추홀구",
+        "axes": {
+          "stay_intensity": 75.13,
+          "spend_intensity": 71.24,
+          "lodging_share_index": 62.6,
+          "dispersion_spread_km": 1.99
+        }
+      },
+      {
+        "area_cd": "11290",
+        "area_name": "성북구",
+        "axes": {
+          "stay_intensity": 79.07,
+          "spend_intensity": 67.19,
+          "lodging_share_index": 61.76,
+          "dispersion_spread_km": 1.99
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "26710",
+    "area_name": "기장군",
+    "national_percentile": 69.9,
+    "outside_visitors_7d_avg": 114494.5,
+    "admin_type": "군",
+    "capital_region": false,
+    "criteria_note": "비수도권 군 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 75.33,
+      "spend_intensity": 83.4,
+      "lodging_share_index": 61.01,
+      "dispersion_spread_km": 6.37
+    },
+    "peers": [
+      {
+        "area_cd": "31710",
+        "area_name": "울주군",
+        "axes": {
+          "stay_intensity": 72.83,
+          "spend_intensity": 76.92,
+          "lodging_share_index": 62.14,
+          "dispersion_spread_km": 13.76
+        }
+      },
+      {
+        "area_cd": "27710",
+        "area_name": "달성군",
+        "axes": {
+          "stay_intensity": 69.16,
+          "spend_intensity": 72.27,
+          "lodging_share_index": 61.63,
+          "dispersion_spread_km": 10.33
+        }
+      },
+      {
+        "area_cd": "47850",
+        "area_name": "칠곡군",
+        "axes": {
+          "stay_intensity": 67.14,
+          "spend_intensity": 85.06,
+          "lodging_share_index": 58.29,
+          "dispersion_spread_km": 8.86
+        }
+      },
+      {
+        "area_cd": "43770",
+        "area_name": "음성군",
+        "axes": {
+          "stay_intensity": 68.33,
+          "spend_intensity": 79.41,
+          "lodging_share_index": 66.41,
+          "dispersion_spread_km": 9.74
+        }
+      },
+      {
+        "area_cd": "44800",
+        "area_name": "홍성군",
+        "axes": {
+          "stay_intensity": 66.0,
+          "spend_intensity": 70.03,
+          "lodging_share_index": 72.5,
+          "dispersion_spread_km": 9.61
+        }
+      },
+      {
+        "area_cd": "52710",
+        "area_name": "완주군",
+        "axes": {
+          "stay_intensity": 72.5,
+          "spend_intensity": 74.82,
+          "lodging_share_index": 64.42,
+          "dispersion_spread_km": 15.35
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41500",
+    "area_name": "이천시",
+    "national_percentile": 69.2,
+    "outside_visitors_7d_avg": 113523.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 73.24,
+      "spend_intensity": 79.93,
+      "lodging_share_index": 63.44,
+      "dispersion_spread_km": 8.36
+    },
+    "peers": [
+      {
+        "area_cd": "41550",
+        "area_name": "안성시",
+        "axes": {
+          "stay_intensity": 72.12,
+          "spend_intensity": 86.14,
+          "lodging_share_index": 61.62,
+          "dispersion_spread_km": 9.68
+        }
+      },
+      {
+        "area_cd": "41650",
+        "area_name": "포천시",
+        "axes": {
+          "stay_intensity": 75.35,
+          "spend_intensity": 81.76,
+          "lodging_share_index": 70.88,
+          "dispersion_spread_km": 14.45
+        }
+      },
+      {
+        "area_cd": "41630",
+        "area_name": "양주시",
+        "axes": {
+          "stay_intensity": 71.58,
+          "spend_intensity": 76.26,
+          "lodging_share_index": 64.05,
+          "dispersion_spread_km": 8.5
+        }
+      },
+      {
+        "area_cd": "41670",
+        "area_name": "여주시",
+        "axes": {
+          "stay_intensity": 67.29,
+          "spend_intensity": 89.71,
+          "lodging_share_index": 62.65,
+          "dispersion_spread_km": 8.98
+        }
+      },
+      {
+        "area_cd": "41610",
+        "area_name": "광주시",
+        "axes": {
+          "stay_intensity": 75.68,
+          "spend_intensity": 75.48,
+          "lodging_share_index": 63.61,
+          "dispersion_spread_km": 8.08
+        }
+      },
+      {
+        "area_cd": "41480",
+        "area_name": "파주시",
+        "axes": {
+          "stay_intensity": 81.44,
+          "spend_intensity": 79.0,
+          "lodging_share_index": 65.72,
+          "dispersion_spread_km": 10.28
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "50130",
+    "area_name": "서귀포시",
+    "national_percentile": 68.6,
+    "outside_visitors_7d_avg": 112220.5,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 119.19,
+      "spend_intensity": 81.66,
+      "lodging_share_index": 98.43,
+      "dispersion_spread_km": 20.87
+    },
+    "peers": [
+      {
+        "area_cd": "51150",
+        "area_name": "강릉시",
+        "axes": {
+          "stay_intensity": 109.2,
+          "spend_intensity": 78.71,
+          "lodging_share_index": 107.44,
+          "dispersion_spread_km": 10.66
+        }
+      },
+      {
+        "area_cd": "43130",
+        "area_name": "충주시",
+        "axes": {
+          "stay_intensity": 74.55,
+          "spend_intensity": 70.5,
+          "lodging_share_index": 72.51,
+          "dispersion_spread_km": 11.04
+        }
+      },
+      {
+        "area_cd": "47130",
+        "area_name": "경주시",
+        "axes": {
+          "stay_intensity": 102.99,
+          "spend_intensity": 77.92,
+          "lodging_share_index": 87.9,
+          "dispersion_spread_km": 10.58
+        }
+      },
+      {
+        "area_cd": "44270",
+        "area_name": "당진시",
+        "axes": {
+          "stay_intensity": 69.49,
+          "spend_intensity": 75.41,
+          "lodging_share_index": 72.06,
+          "dispersion_spread_km": 12.25
+        }
+      },
+      {
+        "area_cd": "44210",
+        "area_name": "서산시",
+        "axes": {
+          "stay_intensity": 69.85,
+          "spend_intensity": 69.38,
+          "lodging_share_index": 77.98,
+          "dispersion_spread_km": 12.56
+        }
+      },
+      {
+        "area_cd": "51110",
+        "area_name": "춘천시",
+        "axes": {
+          "stay_intensity": 79.29,
+          "spend_intensity": 66.97,
+          "lodging_share_index": 84.41,
+          "dispersion_spread_km": 8.11
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "26110",
+    "area_name": "중구",
+    "national_percentile": 68.2,
+    "outside_visitors_7d_avg": 112119.0,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 74.29,
+      "spend_intensity": 74.42,
+      "lodging_share_index": 55.66,
+      "dispersion_spread_km": 0.61
+    },
+    "peers": [
+      {
+        "area_cd": "26170",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": 74.76,
+          "spend_intensity": 74.43,
+          "lodging_share_index": 56.95,
+          "dispersion_spread_km": 1.33
+        }
+      },
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "27110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 76.56,
+          "spend_intensity": 76.51,
+          "lodging_share_index": 54.16,
+          "dispersion_spread_km": 0.86
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "26170",
+    "area_name": "동구",
+    "national_percentile": 67.9,
+    "outside_visitors_7d_avg": 111991.0,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 74.76,
+      "spend_intensity": 74.43,
+      "lodging_share_index": 56.95,
+      "dispersion_spread_km": 1.33
+    },
+    "peers": [
+      {
+        "area_cd": "26110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 74.29,
+          "spend_intensity": 74.42,
+          "lodging_share_index": 55.66,
+          "dispersion_spread_km": 0.61
+        }
+      },
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "27200",
+        "area_name": "남구",
+        "axes": {
+          "stay_intensity": 69.65,
+          "spend_intensity": 68.99,
+          "lodging_share_index": 59.89,
+          "dispersion_spread_km": 1.6
+        }
+      },
+      {
+        "area_cd": "29110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29140",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41550",
+    "area_name": "안성시",
+    "national_percentile": 67.6,
+    "outside_visitors_7d_avg": 108977.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 72.12,
+      "spend_intensity": 86.14,
+      "lodging_share_index": 61.62,
+      "dispersion_spread_km": 9.68
+    },
+    "peers": [
+      {
+        "area_cd": "41500",
+        "area_name": "이천시",
+        "axes": {
+          "stay_intensity": 73.24,
+          "spend_intensity": 79.93,
+          "lodging_share_index": 63.44,
+          "dispersion_spread_km": 8.36
+        }
+      },
+      {
+        "area_cd": "41650",
+        "area_name": "포천시",
+        "axes": {
+          "stay_intensity": 75.35,
+          "spend_intensity": 81.76,
+          "lodging_share_index": 70.88,
+          "dispersion_spread_km": 14.45
+        }
+      },
+      {
+        "area_cd": "41670",
+        "area_name": "여주시",
+        "axes": {
+          "stay_intensity": 67.29,
+          "spend_intensity": 89.71,
+          "lodging_share_index": 62.65,
+          "dispersion_spread_km": 8.98
+        }
+      },
+      {
+        "area_cd": "41630",
+        "area_name": "양주시",
+        "axes": {
+          "stay_intensity": 71.58,
+          "spend_intensity": 76.26,
+          "lodging_share_index": 64.05,
+          "dispersion_spread_km": 8.5
+        }
+      },
+      {
+        "area_cd": "41610",
+        "area_name": "광주시",
+        "axes": {
+          "stay_intensity": 75.68,
+          "spend_intensity": 75.48,
+          "lodging_share_index": 63.61,
+          "dispersion_spread_km": 8.08
+        }
+      },
+      {
+        "area_cd": "41430",
+        "area_name": "의왕시",
+        "axes": {
+          "stay_intensity": 68.02,
+          "spend_intensity": 80.2,
+          "lodging_share_index": 56.19,
+          "dispersion_spread_km": 3.96
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "31710",
+    "area_name": "울주군",
+    "national_percentile": 66.9,
+    "outside_visitors_7d_avg": 104754.0,
+    "admin_type": "군",
+    "capital_region": false,
+    "criteria_note": "비수도권 군 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 72.83,
+      "spend_intensity": 76.92,
+      "lodging_share_index": 62.14,
+      "dispersion_spread_km": 13.76
+    },
+    "peers": [
+      {
+        "area_cd": "26710",
+        "area_name": "기장군",
+        "axes": {
+          "stay_intensity": 75.33,
+          "spend_intensity": 83.4,
+          "lodging_share_index": 61.01,
+          "dispersion_spread_km": 6.37
+        }
+      },
+      {
+        "area_cd": "27710",
+        "area_name": "달성군",
+        "axes": {
+          "stay_intensity": 69.16,
+          "spend_intensity": 72.27,
+          "lodging_share_index": 61.63,
+          "dispersion_spread_km": 10.33
+        }
+      },
+      {
+        "area_cd": "47850",
+        "area_name": "칠곡군",
+        "axes": {
+          "stay_intensity": 67.14,
+          "spend_intensity": 85.06,
+          "lodging_share_index": 58.29,
+          "dispersion_spread_km": 8.86
+        }
+      },
+      {
+        "area_cd": "43770",
+        "area_name": "음성군",
+        "axes": {
+          "stay_intensity": 68.33,
+          "spend_intensity": 79.41,
+          "lodging_share_index": 66.41,
+          "dispersion_spread_km": 9.74
+        }
+      },
+      {
+        "area_cd": "44800",
+        "area_name": "홍성군",
+        "axes": {
+          "stay_intensity": 66.0,
+          "spend_intensity": 70.03,
+          "lodging_share_index": 72.5,
+          "dispersion_spread_km": 9.61
+        }
+      },
+      {
+        "area_cd": "52710",
+        "area_name": "완주군",
+        "axes": {
+          "stay_intensity": 72.5,
+          "spend_intensity": 74.82,
+          "lodging_share_index": 64.42,
+          "dispersion_spread_km": 15.35
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11380",
+    "area_name": "은평구",
+    "national_percentile": 66.6,
+    "outside_visitors_7d_avg": 104607.0,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 74.6,
+      "spend_intensity": 57.37,
+      "lodging_share_index": 65.5,
+      "dispersion_spread_km": 2.67
+    },
+    "peers": [
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28237",
+        "area_name": "부평구",
+        "axes": {
+          "stay_intensity": 77.68,
+          "spend_intensity": 77.5,
+          "lodging_share_index": 64.29,
+          "dispersion_spread_km": 2.01
+        }
+      },
+      {
+        "area_cd": "11350",
+        "area_name": "노원구",
+        "axes": {
+          "stay_intensity": 75.29,
+          "spend_intensity": 67.37,
+          "lodging_share_index": 59.0,
+          "dispersion_spread_km": 2.07
+        }
+      },
+      {
+        "area_cd": "28177",
+        "area_name": "미추홀구",
+        "axes": {
+          "stay_intensity": 75.13,
+          "spend_intensity": 71.24,
+          "lodging_share_index": 62.6,
+          "dispersion_spread_km": 1.99
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11260",
+    "area_name": "중랑구",
+    "national_percentile": 66.2,
+    "outside_visitors_7d_avg": 104593.0,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 72.32,
+      "spend_intensity": 70.17,
+      "lodging_share_index": 63.9,
+      "dispersion_spread_km": 1.57
+    },
+    "peers": [
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11470",
+        "area_name": "양천구",
+        "axes": {
+          "stay_intensity": 70.86,
+          "spend_intensity": 66.23,
+          "lodging_share_index": 59.52,
+          "dispersion_spread_km": 1.86
+        }
+      },
+      {
+        "area_cd": "29110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11590",
+        "area_name": "동작구",
+        "axes": {
+          "stay_intensity": 77.85,
+          "spend_intensity": 74.77,
+          "lodging_share_index": 58.0,
+          "dispersion_spread_km": 2.43
+        }
+      },
+      {
+        "area_cd": "11530",
+        "area_name": "구로구",
+        "axes": {
+          "stay_intensity": 77.81,
+          "spend_intensity": 73.62,
+          "lodging_share_index": 58.25,
+          "dispersion_spread_km": 2.13
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "51150",
+    "area_name": "강릉시",
+    "national_percentile": 65.9,
+    "outside_visitors_7d_avg": 99297.0,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 109.2,
+      "spend_intensity": 78.71,
+      "lodging_share_index": 107.44,
+      "dispersion_spread_km": 10.66
+    },
+    "peers": [
+      {
+        "area_cd": "50130",
+        "area_name": "서귀포시",
+        "axes": {
+          "stay_intensity": 119.19,
+          "spend_intensity": 81.66,
+          "lodging_share_index": 98.43,
+          "dispersion_spread_km": 20.87
+        }
+      },
+      {
+        "area_cd": "43130",
+        "area_name": "충주시",
+        "axes": {
+          "stay_intensity": 74.55,
+          "spend_intensity": 70.5,
+          "lodging_share_index": 72.51,
+          "dispersion_spread_km": 11.04
+        }
+      },
+      {
+        "area_cd": "47130",
+        "area_name": "경주시",
+        "axes": {
+          "stay_intensity": 102.99,
+          "spend_intensity": 77.92,
+          "lodging_share_index": 87.9,
+          "dispersion_spread_km": 10.58
+        }
+      },
+      {
+        "area_cd": "44270",
+        "area_name": "당진시",
+        "axes": {
+          "stay_intensity": 69.49,
+          "spend_intensity": 75.41,
+          "lodging_share_index": 72.06,
+          "dispersion_spread_km": 12.25
+        }
+      },
+      {
+        "area_cd": "44210",
+        "area_name": "서산시",
+        "axes": {
+          "stay_intensity": 69.85,
+          "spend_intensity": 69.38,
+          "lodging_share_index": 77.98,
+          "dispersion_spread_km": 12.56
+        }
+      },
+      {
+        "area_cd": "51110",
+        "area_name": "춘천시",
+        "axes": {
+          "stay_intensity": 79.29,
+          "spend_intensity": 66.97,
+          "lodging_share_index": 84.41,
+          "dispersion_spread_km": 8.11
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "48330",
+    "area_name": "양산시",
+    "national_percentile": 65.6,
+    "outside_visitors_7d_avg": 99215.0,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 71.87,
+      "spend_intensity": 70.34,
+      "lodging_share_index": 64.55,
+      "dispersion_spread_km": 8.62
+    },
+    "peers": [
+      {
+        "area_cd": "44200",
+        "area_name": "아산시",
+        "axes": {
+          "stay_intensity": 79.17,
+          "spend_intensity": 75.0,
+          "lodging_share_index": 69.65,
+          "dispersion_spread_km": 7.31
+        }
+      },
+      {
+        "area_cd": "36110",
+        "area_name": "세종특별자치시",
+        "axes": {
+          "stay_intensity": 75.98,
+          "spend_intensity": 69.62,
+          "lodging_share_index": 71.31,
+          "dispersion_spread_km": 7.58
+        }
+      },
+      {
+        "area_cd": "47290",
+        "area_name": "경산시",
+        "axes": {
+          "stay_intensity": 69.91,
+          "spend_intensity": 70.99,
+          "lodging_share_index": 65.37,
+          "dispersion_spread_km": 7.01
+        }
+      },
+      {
+        "area_cd": "47190",
+        "area_name": "구미시",
+        "axes": {
+          "stay_intensity": 71.79,
+          "spend_intensity": 65.15,
+          "lodging_share_index": 72.62,
+          "dispersion_spread_km": 6.75
+        }
+      },
+      {
+        "area_cd": "52130",
+        "area_name": "군산시",
+        "axes": {
+          "stay_intensity": 75.43,
+          "spend_intensity": 73.41,
+          "lodging_share_index": 80.56,
+          "dispersion_spread_km": 14.02
+        }
+      },
+      {
+        "area_cd": "52140",
+        "area_name": "익산시",
+        "axes": {
+          "stay_intensity": 69.6,
+          "spend_intensity": 66.11,
+          "lodging_share_index": 70.51,
+          "dispersion_spread_km": 6.86
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "26470",
+    "area_name": "연제구",
+    "national_percentile": 64.9,
+    "outside_visitors_7d_avg": 98965.0,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 72.67,
+      "spend_intensity": 74.95,
+      "lodging_share_index": 60.48,
+      "dispersion_spread_km": 1.4
+    },
+    "peers": [
+      {
+        "area_cd": "11545",
+        "area_name": "금천구",
+        "axes": {
+          "stay_intensity": 70.39,
+          "spend_intensity": 77.99,
+          "lodging_share_index": 60.18,
+          "dispersion_spread_km": 1.39
+        }
+      },
+      {
+        "area_cd": "29110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "26500",
+        "area_name": "수영구",
+        "axes": {
+          "stay_intensity": 81.04,
+          "spend_intensity": 74.52,
+          "lodging_share_index": 64.31,
+          "dispersion_spread_km": 1.18
+        }
+      },
+      {
+        "area_cd": "26260",
+        "area_name": "동래구",
+        "axes": {
+          "stay_intensity": 72.4,
+          "spend_intensity": 68.06,
+          "lodging_share_index": 59.4,
+          "dispersion_spread_km": 1.45
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11320",
+    "area_name": "도봉구",
+    "national_percentile": 64.5,
+    "outside_visitors_7d_avg": 97621.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 68.77,
+      "spend_intensity": 72.0,
+      "lodging_share_index": 60.03,
+      "dispersion_spread_km": 2.02
+    },
+    "peers": [
+      {
+        "area_cd": "11305",
+        "area_name": "강북구",
+        "axes": {
+          "stay_intensity": 71.4,
+          "spend_intensity": 70.17,
+          "lodging_share_index": 63.44,
+          "dispersion_spread_km": 2.06
+        }
+      },
+      {
+        "area_cd": "29110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "26290",
+        "area_name": "남구",
+        "axes": {
+          "stay_intensity": 72.02,
+          "spend_intensity": 72.29,
+          "lodging_share_index": 64.0,
+          "dispersion_spread_km": 2.23
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "26260",
+        "area_name": "동래구",
+        "axes": {
+          "stay_intensity": 72.4,
+          "spend_intensity": 68.06,
+          "lodging_share_index": 59.4,
+          "dispersion_spread_km": 1.45
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41630",
+    "area_name": "양주시",
+    "national_percentile": 64.2,
+    "outside_visitors_7d_avg": 97250.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 71.58,
+      "spend_intensity": 76.26,
+      "lodging_share_index": 64.05,
+      "dispersion_spread_km": 8.5
+    },
+    "peers": [
+      {
+        "area_cd": "41500",
+        "area_name": "이천시",
+        "axes": {
+          "stay_intensity": 73.24,
+          "spend_intensity": 79.93,
+          "lodging_share_index": 63.44,
+          "dispersion_spread_km": 8.36
+        }
+      },
+      {
+        "area_cd": "41610",
+        "area_name": "광주시",
+        "axes": {
+          "stay_intensity": 75.68,
+          "spend_intensity": 75.48,
+          "lodging_share_index": 63.61,
+          "dispersion_spread_km": 8.08
+        }
+      },
+      {
+        "area_cd": "41550",
+        "area_name": "안성시",
+        "axes": {
+          "stay_intensity": 72.12,
+          "spend_intensity": 86.14,
+          "lodging_share_index": 61.62,
+          "dispersion_spread_km": 9.68
+        }
+      },
+      {
+        "area_cd": "41650",
+        "area_name": "포천시",
+        "axes": {
+          "stay_intensity": 75.35,
+          "spend_intensity": 81.76,
+          "lodging_share_index": 70.88,
+          "dispersion_spread_km": 14.45
+        }
+      },
+      {
+        "area_cd": "41430",
+        "area_name": "의왕시",
+        "axes": {
+          "stay_intensity": 68.02,
+          "spend_intensity": 80.2,
+          "lodging_share_index": 56.19,
+          "dispersion_spread_km": 3.96
+        }
+      },
+      {
+        "area_cd": "41570",
+        "area_name": "김포시",
+        "axes": {
+          "stay_intensity": 76.37,
+          "spend_intensity": 79.89,
+          "lodging_share_index": 62.9,
+          "dispersion_spread_km": 7.83
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11305",
+    "area_name": "강북구",
+    "national_percentile": 63.9,
+    "outside_visitors_7d_avg": 96356.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 71.4,
+      "spend_intensity": 70.17,
+      "lodging_share_index": 63.44,
+      "dispersion_spread_km": 2.06
+    },
+    "peers": [
+      {
+        "area_cd": "11320",
+        "area_name": "도봉구",
+        "axes": {
+          "stay_intensity": 68.77,
+          "spend_intensity": 72.0,
+          "lodging_share_index": 60.03,
+          "dispersion_spread_km": 2.02
+        }
+      },
+      {
+        "area_cd": "26290",
+        "area_name": "남구",
+        "axes": {
+          "stay_intensity": 72.02,
+          "spend_intensity": 72.29,
+          "lodging_share_index": 64.0,
+          "dispersion_spread_km": 2.23
+        }
+      },
+      {
+        "area_cd": "29110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "28245",
+        "area_name": "계양구",
+        "axes": {
+          "stay_intensity": 68.21,
+          "spend_intensity": 73.73,
+          "lodging_share_index": 60.21,
+          "dispersion_spread_km": 2.53
+        }
+      },
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "36110",
+    "area_name": "세종특별자치시",
+    "national_percentile": 63.5,
+    "outside_visitors_7d_avg": 95955.0,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 75.98,
+      "spend_intensity": 69.62,
+      "lodging_share_index": 71.31,
+      "dispersion_spread_km": 7.58
+    },
+    "peers": [
+      {
+        "area_cd": "48330",
+        "area_name": "양산시",
+        "axes": {
+          "stay_intensity": 71.87,
+          "spend_intensity": 70.34,
+          "lodging_share_index": 64.55,
+          "dispersion_spread_km": 8.62
+        }
+      },
+      {
+        "area_cd": "44200",
+        "area_name": "아산시",
+        "axes": {
+          "stay_intensity": 79.17,
+          "spend_intensity": 75.0,
+          "lodging_share_index": 69.65,
+          "dispersion_spread_km": 7.31
+        }
+      },
+      {
+        "area_cd": "47190",
+        "area_name": "구미시",
+        "axes": {
+          "stay_intensity": 71.79,
+          "spend_intensity": 65.15,
+          "lodging_share_index": 72.62,
+          "dispersion_spread_km": 6.75
+        }
+      },
+      {
+        "area_cd": "48250",
+        "area_name": "김해시",
+        "axes": {
+          "stay_intensity": 77.5,
+          "spend_intensity": 67.12,
+          "lodging_share_index": 65.88,
+          "dispersion_spread_km": 6.59
+        }
+      },
+      {
+        "area_cd": "51130",
+        "area_name": "원주시",
+        "axes": {
+          "stay_intensity": 82.58,
+          "spend_intensity": 60.46,
+          "lodging_share_index": 79.46,
+          "dispersion_spread_km": 8.56
+        }
+      },
+      {
+        "area_cd": "47290",
+        "area_name": "경산시",
+        "axes": {
+          "stay_intensity": 69.91,
+          "spend_intensity": 70.99,
+          "lodging_share_index": 65.37,
+          "dispersion_spread_km": 7.01
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "51130",
+    "area_name": "원주시",
+    "national_percentile": 63.2,
+    "outside_visitors_7d_avg": 95113.5,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 82.58,
+      "spend_intensity": 60.46,
+      "lodging_share_index": 79.46,
+      "dispersion_spread_km": 8.56
+    },
+    "peers": [
+      {
+        "area_cd": "51110",
+        "area_name": "춘천시",
+        "axes": {
+          "stay_intensity": 79.29,
+          "spend_intensity": 66.97,
+          "lodging_share_index": 84.41,
+          "dispersion_spread_km": 8.11
+        }
+      },
+      {
+        "area_cd": "48170",
+        "area_name": "진주시",
+        "axes": {
+          "stay_intensity": 70.13,
+          "spend_intensity": 57.72,
+          "lodging_share_index": 74.7,
+          "dispersion_spread_km": 6.0
+        }
+      },
+      {
+        "area_cd": "47110",
+        "area_name": "포항시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "44200",
+        "area_name": "아산시",
+        "axes": {
+          "stay_intensity": 79.17,
+          "spend_intensity": 75.0,
+          "lodging_share_index": 69.65,
+          "dispersion_spread_km": 7.31
+        }
+      },
+      {
+        "area_cd": "48330",
+        "area_name": "양산시",
+        "axes": {
+          "stay_intensity": 71.87,
+          "spend_intensity": 70.34,
+          "lodging_share_index": 64.55,
+          "dispersion_spread_km": 8.62
+        }
+      },
+      {
+        "area_cd": "47190",
+        "area_name": "구미시",
+        "axes": {
+          "stay_intensity": 71.79,
+          "spend_intensity": 65.15,
+          "lodging_share_index": 72.62,
+          "dispersion_spread_km": 6.75
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "11545",
+    "area_name": "금천구",
+    "national_percentile": 62.5,
+    "outside_visitors_7d_avg": 94650.0,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 70.39,
+      "spend_intensity": 77.99,
+      "lodging_share_index": 60.18,
+      "dispersion_spread_km": 1.39
+    },
+    "peers": [
+      {
+        "area_cd": "26470",
+        "area_name": "연제구",
+        "axes": {
+          "stay_intensity": 72.67,
+          "spend_intensity": 74.95,
+          "lodging_share_index": 60.48,
+          "dispersion_spread_km": 1.4
+        }
+      },
+      {
+        "area_cd": "29110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "26260",
+        "area_name": "동래구",
+        "axes": {
+          "stay_intensity": 72.4,
+          "spend_intensity": 68.06,
+          "lodging_share_index": 59.4,
+          "dispersion_spread_km": 1.45
+        }
+      },
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "29170",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "26500",
+        "area_name": "수영구",
+        "axes": {
+          "stay_intensity": 81.04,
+          "spend_intensity": 74.52,
+          "lodging_share_index": 64.31,
+          "dispersion_spread_km": 1.18
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "28245",
+    "area_name": "계양구",
+    "national_percentile": 62.2,
+    "outside_visitors_7d_avg": 93309.5,
+    "admin_type": "자치구",
+    "capital_region": true,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 68.21,
+      "spend_intensity": 73.73,
+      "lodging_share_index": 60.21,
+      "dispersion_spread_km": 2.53
+    },
+    "peers": [
+      {
+        "area_cd": "29110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "26380",
+        "area_name": "사하구",
+        "axes": {
+          "stay_intensity": 67.05,
+          "spend_intensity": 69.12,
+          "lodging_share_index": 64.37,
+          "dispersion_spread_km": 2.9
+        }
+      },
+      {
+        "area_cd": "26320",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": 65.86,
+          "spend_intensity": 90.05,
+          "lodging_share_index": 63.4,
+          "dispersion_spread_km": 2.06
+        }
+      },
+      {
+        "area_cd": "11305",
+        "area_name": "강북구",
+        "axes": {
+          "stay_intensity": 71.4,
+          "spend_intensity": 70.17,
+          "lodging_share_index": 63.44,
+          "dispersion_spread_km": 2.06
+        }
+      },
+      {
+        "area_cd": "26290",
+        "area_name": "남구",
+        "axes": {
+          "stay_intensity": 72.02,
+          "spend_intensity": 72.29,
+          "lodging_share_index": 64.0,
+          "dispersion_spread_km": 2.23
+        }
+      },
+      {
+        "area_cd": "29200",
+        "area_name": "광산구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41370",
+    "area_name": "오산시",
+    "national_percentile": 61.9,
+    "outside_visitors_7d_avg": 93188.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 70.3,
+      "spend_intensity": 74.25,
+      "lodging_share_index": 62.95,
+      "dispersion_spread_km": 2.45
+    },
+    "peers": [
+      {
+        "area_cd": "41410",
+        "area_name": "군포시",
+        "axes": {
+          "stay_intensity": 64.26,
+          "spend_intensity": 66.25,
+          "lodging_share_index": 60.52,
+          "dispersion_spread_km": 2.29
+        }
+      },
+      {
+        "area_cd": "41310",
+        "area_name": "구리시",
+        "axes": {
+          "stay_intensity": 70.41,
+          "spend_intensity": 72.63,
+          "lodging_share_index": 56.15,
+          "dispersion_spread_km": 2.23
+        }
+      },
+      {
+        "area_cd": "41210",
+        "area_name": "광명시",
+        "axes": {
+          "stay_intensity": 69.92,
+          "spend_intensity": 72.64,
+          "lodging_share_index": 56.91,
+          "dispersion_spread_km": 2.82
+        }
+      },
+      {
+        "area_cd": "41150",
+        "area_name": "의정부시",
+        "axes": {
+          "stay_intensity": 75.55,
+          "spend_intensity": 61.64,
+          "lodging_share_index": 64.52,
+          "dispersion_spread_km": 2.9
+        }
+      },
+      {
+        "area_cd": "41430",
+        "area_name": "의왕시",
+        "axes": {
+          "stay_intensity": 68.02,
+          "spend_intensity": 80.2,
+          "lodging_share_index": 56.19,
+          "dispersion_spread_km": 3.96
+        }
+      },
+      {
+        "area_cd": "41450",
+        "area_name": "하남시",
+        "axes": {
+          "stay_intensity": 72.57,
+          "spend_intensity": 78.07,
+          "lodging_share_index": 56.4,
+          "dispersion_spread_km": 3.28
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "26290",
+    "area_name": "남구",
+    "national_percentile": 61.2,
+    "outside_visitors_7d_avg": 89289.5,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 72.02,
+      "spend_intensity": 72.29,
+      "lodging_share_index": 64.0,
+      "dispersion_spread_km": 2.23
+    },
+    "peers": [
+      {
+        "area_cd": "29110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "11305",
+        "area_name": "강북구",
+        "axes": {
+          "stay_intensity": 71.4,
+          "spend_intensity": 70.17,
+          "lodging_share_index": 63.44,
+          "dispersion_spread_km": 2.06
+        }
+      },
+      {
+        "area_cd": "26320",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": 65.86,
+          "spend_intensity": 90.05,
+          "lodging_share_index": 63.4,
+          "dispersion_spread_km": 2.06
+        }
+      },
+      {
+        "area_cd": "11320",
+        "area_name": "도봉구",
+        "axes": {
+          "stay_intensity": 68.77,
+          "spend_intensity": 72.0,
+          "lodging_share_index": 60.03,
+          "dispersion_spread_km": 2.02
+        }
+      },
+      {
+        "area_cd": "28245",
+        "area_name": "계양구",
+        "axes": {
+          "stay_intensity": 68.21,
+          "spend_intensity": 73.73,
+          "lodging_share_index": 60.21,
+          "dispersion_spread_km": 2.53
+        }
+      },
+      {
+        "area_cd": "27170",
+        "area_name": "서구",
+        "axes": {
+          "stay_intensity": 67.38,
+          "spend_intensity": 76.95,
+          "lodging_share_index": 59.81,
+          "dispersion_spread_km": 1.45
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41650",
+    "area_name": "포천시",
+    "national_percentile": 60.2,
+    "outside_visitors_7d_avg": 87307.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 75.35,
+      "spend_intensity": 81.76,
+      "lodging_share_index": 70.88,
+      "dispersion_spread_km": 14.45
+    },
+    "peers": [
+      {
+        "area_cd": "41670",
+        "area_name": "여주시",
+        "axes": {
+          "stay_intensity": 67.29,
+          "spend_intensity": 89.71,
+          "lodging_share_index": 62.65,
+          "dispersion_spread_km": 8.98
+        }
+      },
+      {
+        "area_cd": "41550",
+        "area_name": "안성시",
+        "axes": {
+          "stay_intensity": 72.12,
+          "spend_intensity": 86.14,
+          "lodging_share_index": 61.62,
+          "dispersion_spread_km": 9.68
+        }
+      },
+      {
+        "area_cd": "41500",
+        "area_name": "이천시",
+        "axes": {
+          "stay_intensity": 73.24,
+          "spend_intensity": 79.93,
+          "lodging_share_index": 63.44,
+          "dispersion_spread_km": 8.36
+        }
+      },
+      {
+        "area_cd": "41250",
+        "area_name": "동두천시",
+        "axes": {
+          "stay_intensity": 61.46,
+          "spend_intensity": 68.5,
+          "lodging_share_index": 66.06,
+          "dispersion_spread_km": 3.51
+        }
+      },
+      {
+        "area_cd": "41630",
+        "area_name": "양주시",
+        "axes": {
+          "stay_intensity": 71.58,
+          "spend_intensity": 76.26,
+          "lodging_share_index": 64.05,
+          "dispersion_spread_km": 8.5
+        }
+      },
+      {
+        "area_cd": "41430",
+        "area_name": "의왕시",
+        "axes": {
+          "stay_intensity": 68.02,
+          "spend_intensity": 80.2,
+          "lodging_share_index": 56.19,
+          "dispersion_spread_km": 3.96
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "44150",
+    "area_name": "공주시",
+    "national_percentile": 59.9,
+    "outside_visitors_7d_avg": 87127.0,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 77.53,
+      "spend_intensity": 78.0,
+      "lodging_share_index": 68.61,
+      "dispersion_spread_km": 9.69
+    },
+    "peers": [
+      {
+        "area_cd": "48270",
+        "area_name": "밀양시",
+        "axes": {
+          "stay_intensity": 66.96,
+          "spend_intensity": 68.03,
+          "lodging_share_index": 72.16,
+          "dispersion_spread_km": 9.85
+        }
+      },
+      {
+        "area_cd": "47230",
+        "area_name": "영천시",
+        "axes": {
+          "stay_intensity": 63.7,
+          "spend_intensity": 72.91,
+          "lodging_share_index": 64.99,
+          "dispersion_spread_km": 10.11
+        }
+      },
+      {
+        "area_cd": "46110",
+        "area_name": "목포시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "46130",
+        "area_name": "여수시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "46150",
+        "area_name": "순천시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "47250",
+        "area_name": "상주시",
+        "axes": {
+          "stay_intensity": 65.44,
+          "spend_intensity": 69.18,
+          "lodging_share_index": 68.5,
+          "dispersion_spread_km": 14.2
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41430",
+    "area_name": "의왕시",
+    "national_percentile": 59.2,
+    "outside_visitors_7d_avg": 86862.5,
+    "admin_type": "시",
+    "capital_region": true,
+    "criteria_note": "수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 68.02,
+      "spend_intensity": 80.2,
+      "lodging_share_index": 56.19,
+      "dispersion_spread_km": 3.96
+    },
+    "peers": [
+      {
+        "area_cd": "41290",
+        "area_name": "과천시",
+        "axes": {
+          "stay_intensity": 61.45,
+          "spend_intensity": 70.91,
+          "lodging_share_index": 53.01,
+          "dispersion_spread_km": 1.88
+        }
+      },
+      {
+        "area_cd": "41310",
+        "area_name": "구리시",
+        "axes": {
+          "stay_intensity": 70.41,
+          "spend_intensity": 72.63,
+          "lodging_share_index": 56.15,
+          "dispersion_spread_km": 2.23
+        }
+      },
+      {
+        "area_cd": "41370",
+        "area_name": "오산시",
+        "axes": {
+          "stay_intensity": 70.3,
+          "spend_intensity": 74.25,
+          "lodging_share_index": 62.95,
+          "dispersion_spread_km": 2.45
+        }
+      },
+      {
+        "area_cd": "41650",
+        "area_name": "포천시",
+        "axes": {
+          "stay_intensity": 75.35,
+          "spend_intensity": 81.76,
+          "lodging_share_index": 70.88,
+          "dispersion_spread_km": 14.45
+        }
+      },
+      {
+        "area_cd": "41630",
+        "area_name": "양주시",
+        "axes": {
+          "stay_intensity": 71.58,
+          "spend_intensity": 76.26,
+          "lodging_share_index": 64.05,
+          "dispersion_spread_km": 8.5
+        }
+      },
+      {
+        "area_cd": "41410",
+        "area_name": "군포시",
+        "axes": {
+          "stay_intensity": 64.26,
+          "spend_intensity": 66.25,
+          "lodging_share_index": 60.52,
+          "dispersion_spread_km": 2.29
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "41830",
+    "area_name": "양평군",
+    "national_percentile": 58.5,
+    "outside_visitors_7d_avg": 85043.0,
+    "admin_type": "군",
+    "capital_region": true,
+    "criteria_note": "수도권 군 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 78.13,
+      "spend_intensity": 73.64,
+      "lodging_share_index": 72.07,
+      "dispersion_spread_km": 11.14
+    },
+    "peers": [
+      {
+        "area_cd": "28710",
+        "area_name": "강화군",
+        "axes": {
+          "stay_intensity": 74.8,
+          "spend_intensity": 71.86,
+          "lodging_share_index": 84.67,
+          "dispersion_spread_km": 10.55
+        }
+      },
+      {
+        "area_cd": "41820",
+        "area_name": "가평군",
+        "axes": {
+          "stay_intensity": 95.2,
+          "spend_intensity": 80.47,
+          "lodging_share_index": 95.28,
+          "dispersion_spread_km": 11.3
+        }
+      },
+      {
+        "area_cd": "28720",
+        "area_name": "옹진군",
+        "axes": {
+          "stay_intensity": 76.8,
+          "spend_intensity": 70.73,
+          "lodging_share_index": 89.23,
+          "dispersion_spread_km": 60.41
+        }
+      },
+      {
+        "area_cd": "41800",
+        "area_name": "연천군",
+        "axes": {
+          "stay_intensity": 66.65,
+          "spend_intensity": 70.22,
+          "lodging_share_index": 70.69,
+          "dispersion_spread_km": 9.12
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "29110",
+    "area_name": "동구",
+    "national_percentile": 58.2,
+    "outside_visitors_7d_avg": 85008.0,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요 규모가 유사한 지역 (인구 데이터 미확보로 인구·밀도는 이번 비교에서 제외)",
+    "target_axes": {
+      "stay_intensity": null,
+      "spend_intensity": null,
+      "lodging_share_index": null,
+      "dispersion_spread_km": null
+    },
+    "peers": [
+      {
+        "area_cd": "26410",
+        "area_name": "금정구",
+        "axes": {
+          "stay_intensity": 66.95,
+          "spend_intensity": 65.62,
+          "lodging_share_index": 59.12,
+          "dispersion_spread_km": 3.17
+        }
+      },
+      {
+        "area_cd": "26290",
+        "area_name": "남구",
+        "axes": {
+          "stay_intensity": 72.02,
+          "spend_intensity": 72.29,
+          "lodging_share_index": 64.0,
+          "dispersion_spread_km": 2.23
+        }
+      },
+      {
+        "area_cd": "26530",
+        "area_name": "사상구",
+        "axes": {
+          "stay_intensity": 69.13,
+          "spend_intensity": 74.8,
+          "lodging_share_index": 60.78,
+          "dispersion_spread_km": 1.93
+        }
+      },
+      {
+        "area_cd": "30230",
+        "area_name": "대덕구",
+        "axes": {
+          "stay_intensity": 69.56,
+          "spend_intensity": 78.03,
+          "lodging_share_index": 61.46,
+          "dispersion_spread_km": 4.85
+        }
+      },
+      {
+        "area_cd": "28245",
+        "area_name": "계양구",
+        "axes": {
+          "stay_intensity": 68.21,
+          "spend_intensity": 73.73,
+          "lodging_share_index": 60.21,
+          "dispersion_spread_km": 2.53
+        }
+      },
+      {
+        "area_cd": "11545",
+        "area_name": "금천구",
+        "axes": {
+          "stay_intensity": 70.39,
+          "spend_intensity": 77.99,
+          "lodging_share_index": 60.18,
+          "dispersion_spread_km": 1.39
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "27710",
+    "area_name": "달성군",
+    "national_percentile": 57.9,
+    "outside_visitors_7d_avg": 84631.5,
+    "admin_type": "군",
+    "capital_region": false,
+    "criteria_note": "비수도권 군 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 69.16,
+      "spend_intensity": 72.27,
+      "lodging_share_index": 61.63,
+      "dispersion_spread_km": 10.33
+    },
+    "peers": [
+      {
+        "area_cd": "31710",
+        "area_name": "울주군",
+        "axes": {
+          "stay_intensity": 72.83,
+          "spend_intensity": 76.92,
+          "lodging_share_index": 62.14,
+          "dispersion_spread_km": 13.76
+        }
+      },
+      {
+        "area_cd": "26710",
+        "area_name": "기장군",
+        "axes": {
+          "stay_intensity": 75.33,
+          "spend_intensity": 83.4,
+          "lodging_share_index": 61.01,
+          "dispersion_spread_km": 6.37
+        }
+      },
+      {
+        "area_cd": "47850",
+        "area_name": "칠곡군",
+        "axes": {
+          "stay_intensity": 67.14,
+          "spend_intensity": 85.06,
+          "lodging_share_index": 58.29,
+          "dispersion_spread_km": 8.86
+        }
+      },
+      {
+        "area_cd": "43770",
+        "area_name": "음성군",
+        "axes": {
+          "stay_intensity": 68.33,
+          "spend_intensity": 79.41,
+          "lodging_share_index": 66.41,
+          "dispersion_spread_km": 9.74
+        }
+      },
+      {
+        "area_cd": "44800",
+        "area_name": "홍성군",
+        "axes": {
+          "stay_intensity": 66.0,
+          "spend_intensity": 70.03,
+          "lodging_share_index": 72.5,
+          "dispersion_spread_km": 9.61
+        }
+      },
+      {
+        "area_cd": "52710",
+        "area_name": "완주군",
+        "axes": {
+          "stay_intensity": 72.5,
+          "spend_intensity": 74.82,
+          "lodging_share_index": 64.42,
+          "dispersion_spread_km": 15.35
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "26410",
+    "area_name": "금정구",
+    "national_percentile": 57.5,
+    "outside_visitors_7d_avg": 83166.0,
+    "admin_type": "자치구",
+    "capital_region": false,
+    "criteria_note": "자치구 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 66.95,
+      "spend_intensity": 65.62,
+      "lodging_share_index": 59.12,
+      "dispersion_spread_km": 3.17
+    },
+    "peers": [
+      {
+        "area_cd": "29110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "30230",
+        "area_name": "대덕구",
+        "axes": {
+          "stay_intensity": 69.56,
+          "spend_intensity": 78.03,
+          "lodging_share_index": 61.46,
+          "dispersion_spread_km": 4.85
+        }
+      },
+      {
+        "area_cd": "31200",
+        "area_name": "북구",
+        "axes": {
+          "stay_intensity": 67.08,
+          "spend_intensity": 73.14,
+          "lodging_share_index": 61.73,
+          "dispersion_spread_km": 5.4
+        }
+      },
+      {
+        "area_cd": "26530",
+        "area_name": "사상구",
+        "axes": {
+          "stay_intensity": 69.13,
+          "spend_intensity": 74.8,
+          "lodging_share_index": 60.78,
+          "dispersion_spread_km": 1.93
+        }
+      },
+      {
+        "area_cd": "31110",
+        "area_name": "중구",
+        "axes": {
+          "stay_intensity": 65.59,
+          "spend_intensity": 69.77,
+          "lodging_share_index": 61.09,
+          "dispersion_spread_km": 1.92
+        }
+      },
+      {
+        "area_cd": "30110",
+        "area_name": "동구",
+        "axes": {
+          "stay_intensity": 74.66,
+          "spend_intensity": 88.79,
+          "lodging_share_index": 59.84,
+          "dispersion_spread_km": 4.51
+        }
+      }
+    ]
+  },
+  {
+    "area_cd": "43130",
+    "area_name": "충주시",
+    "national_percentile": 56.9,
+    "outside_visitors_7d_avg": 82487.5,
+    "admin_type": "시",
+    "capital_region": false,
+    "criteria_note": "비수도권 시 · 관광수요·인구·인구밀도 규모가 유사한 지역",
+    "target_axes": {
+      "stay_intensity": 74.55,
+      "spend_intensity": 70.5,
+      "lodging_share_index": 72.51,
+      "dispersion_spread_km": 11.04
+    },
+    "peers": [
+      {
+        "area_cd": "51150",
+        "area_name": "강릉시",
+        "axes": {
+          "stay_intensity": 109.2,
+          "spend_intensity": 78.71,
+          "lodging_share_index": 107.44,
+          "dispersion_spread_km": 10.66
+        }
+      },
+      {
+        "area_cd": "50130",
+        "area_name": "서귀포시",
+        "axes": {
+          "stay_intensity": 119.19,
+          "spend_intensity": 81.66,
+          "lodging_share_index": 98.43,
+          "dispersion_spread_km": 20.87
+        }
+      },
+      {
+        "area_cd": "44270",
+        "area_name": "당진시",
+        "axes": {
+          "stay_intensity": 69.49,
+          "spend_intensity": 75.41,
+          "lodging_share_index": 72.06,
+          "dispersion_spread_km": 12.25
+        }
+      },
+      {
+        "area_cd": "46110",
+        "area_name": "목포시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "46130",
+        "area_name": "여수시",
+        "axes": {
+          "stay_intensity": null,
+          "spend_intensity": null,
+          "lodging_share_index": null,
+          "dispersion_spread_km": null
+        }
+      },
+      {
+        "area_cd": "44210",
+        "area_name": "서산시",
+        "axes": {
+          "stay_intensity": 69.85,
+          "spend_intensity": 69.38,
+          "lodging_share_index": 77.98,
+          "dispersion_spread_km": 12.56
+        }
+      }
+    ]
+  }
+]

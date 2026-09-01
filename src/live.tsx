@@ -43,10 +43,11 @@ type NationalPeer = {
   fetch_ok: boolean;
 };
 type PeerAxisStats = PeerAxisSet;
+type PeerSampleSizes = { stay_intensity: number; spend_intensity: number; lodging_share_index: number; dispersion_spread_km: number };
 type PeerGroup = {
   admin_type: string; capital_region: boolean; relaxed: boolean; criteria_note: string;
   count: number; peers: NationalPeer[]; medians: PeerAxisStats; top_quartile: PeerAxisStats;
-  bottom_quartile: PeerAxisStats;
+  bottom_quartile: PeerAxisStats; sample_size: PeerSampleSizes;
   target_population: number | null; target_population_density: number | null;
 };
 type NationalPeersSnapshot = {
@@ -140,7 +141,14 @@ const topicParticle = (name: string) => {
 type Axis = {
   key: string; label: string; diff: number | null; unit: '%' | 'p'; tier: DataTier; note: string;
   value: number | null; peerMedian: number | null; peerTop25: number | null; peerBottom25: number | null;
+  peerSampleSize: number;
 };
+
+// Peer 3~4곳만으로 뽑은 하위 25%는 선형보간상 "두 번째로 작은 값"에 가까워, 그
+// 밑으로만 내려가면 실제로는 흔한 편차인데도 "취약"으로 과다 판정된다(실데이터
+// 100개 지역 배치 진단에서 확인 — 이 최소 표본 미만이면 취약 여부를 판정하지
+// 않고 "판정 보류"로 남긴다).
+const MIN_PEER_SAMPLE_FOR_WEAK_JUDGMENT = 4;
 
 function App() {
   const [regionId, setRegionId] = useState('47130');
@@ -319,30 +327,40 @@ function App() {
   const axes: Axis[] = [
     { key: 'stay', label: '체류강도', diff: stayDiff, unit: 'p', tier: 'derived', note: `KTO 체류강도 지수 · ${peerBasisNote}`,
       value: snapshot?.observed_indices.stay_intensity ?? null, peerMedian: peerGroup?.medians.stay_intensity ?? null,
-      peerTop25: peerGroup?.top_quartile.stay_intensity ?? null, peerBottom25: peerGroup?.bottom_quartile.stay_intensity ?? null },
+      peerTop25: peerGroup?.top_quartile.stay_intensity ?? null, peerBottom25: peerGroup?.bottom_quartile.stay_intensity ?? null,
+      peerSampleSize: peerGroup?.sample_size.stay_intensity ?? 0 },
     { key: 'spend', label: '소비강도', diff: spendDiff, unit: 'p', tier: 'derived', note: `KTO 소비강도 지수 · ${peerBasisNote}`,
       value: snapshot?.observed_indices.spend_intensity ?? null, peerMedian: peerGroup?.medians.spend_intensity ?? null,
-      peerTop25: peerGroup?.top_quartile.spend_intensity ?? null, peerBottom25: peerGroup?.bottom_quartile.spend_intensity ?? null },
+      peerTop25: peerGroup?.top_quartile.spend_intensity ?? null, peerBottom25: peerGroup?.bottom_quartile.spend_intensity ?? null,
+      peerSampleSize: peerGroup?.sample_size.spend_intensity ?? 0 },
     { key: 'stayShare', label: '숙박비중', diff: lodgingDiff, unit: 'p', tier: 'derived', note: `KTO 숙박 비중 지수(2102) · ${peerBasisNote}`,
       value: snapshot?.observed_indices.lodging_share_index ?? null, peerMedian: peerGroup?.medians.lodging_share_index ?? null,
-      peerTop25: peerGroup?.top_quartile.lodging_share_index ?? null, peerBottom25: peerGroup?.bottom_quartile.lodging_share_index ?? null },
+      peerTop25: peerGroup?.top_quartile.lodging_share_index ?? null, peerBottom25: peerGroup?.bottom_quartile.lodging_share_index ?? null,
+      peerSampleSize: peerGroup?.sample_size.lodging_share_index ?? 0 },
     { key: 'dispersion', label: '중심지 공간확산', diff: dispersionDiff, unit: 'p', tier: peerGroup?.medians.dispersion_spread_km != null ? 'derived' : 'pending',
       note: `내비게이션 중심 관광지 좌표의 RMS 확산거리(km) · ${peerBasisNote}`,
       value: snapshot?.observed_indices.spatial_dispersion ?? null, peerMedian: peerGroup?.medians.dispersion_spread_km ?? null,
-      peerTop25: peerGroup?.top_quartile.dispersion_spread_km ?? null, peerBottom25: peerGroup?.bottom_quartile.dispersion_spread_km ?? null },
+      peerTop25: peerGroup?.top_quartile.dispersion_spread_km ?? null, peerBottom25: peerGroup?.bottom_quartile.dispersion_spread_km ?? null,
+      peerSampleSize: peerGroup?.sample_size.dispersion_spread_km ?? 0 },
     { key: 'stability', label: '단기 수요 안정성', diff: stabilityDiff, unit: 'p', tier: 'derived', note: `최근 7일 외지인 방문자 변동계수 역산값 · ${peerBasisNote} · 연간 계절성 지표가 아님`,
-      value: stabilityValue(regionId), peerMedian: peerStabilityMedian, peerTop25: null, peerBottom25: peerStabilityBottom25 },
+      value: stabilityValue(regionId), peerMedian: peerStabilityMedian, peerTop25: null, peerBottom25: peerStabilityBottom25,
+      peerSampleSize: peerStabilityValues.length },
   ];
   // 취약 판정은 "Peer 중앙값보다 몇 p 낮은가"라는 고정 상수가 아니라, 이 Peer
   // Group 자체의 하위 25% 문턱과 비교한다 — 그룹마다 실제 편차가 다르므로,
   // 같은 ±5p라도 어떤 그룹에서는 흔한 편차이고 어떤 그룹에서는 이례적일 수 있다.
+  // 단, Peer 표본이 4곳 미만이면 그 문턱 자체가 불안정하므로(선형보간상 "두
+  // 번째로 작은 값"에 가까워짐) 판정을 내리지 않는다 — 실데이터 100개 지역
+  // 배치 진단에서 표본 3~4곳짜리 문턱이 취약률을 56%까지 부풀리는 것을 확인했다.
   const severity = (axis: Axis) => {
     if (axis.value == null || axis.peerBottom25 == null || axis.peerMedian == null) return 0;
+    if (axis.peerSampleSize < MIN_PEER_SAMPLE_FOR_WEAK_JUDGMENT) return 0;
     const span = axis.peerMedian - axis.peerBottom25;
     if (span <= 0) return 0;
     return Math.max(0, (axis.peerBottom25 - axis.value) / span);
   };
-  const isWeak = (axis: Axis) => axis.value != null && axis.peerBottom25 != null && axis.value < axis.peerBottom25;
+  const isWeak = (axis: Axis) => axis.value != null && axis.peerBottom25 != null
+    && axis.peerSampleSize >= MIN_PEER_SAMPLE_FOR_WEAK_JUDGMENT && axis.value < axis.peerBottom25;
   // 차트·막대 정규화에 쓰는 편차 단위: Peer 중앙값과 하위 25% 사이 폭(없으면 5p로 대체).
   const axisSpan = (axis: Axis) => axis.peerMedian != null && axis.peerBottom25 != null && axis.peerMedian - axis.peerBottom25 > 0.01
     ? axis.peerMedian - axis.peerBottom25 : 5;
@@ -486,7 +504,15 @@ function App() {
             <i><b style={{ width: axis.diff == null ? '0%' : `${Math.min(100, 20 * Math.abs(axis.diff) / axisSpan(axis))}%`, background: axis.diff == null ? '#d7ddd4' : axis.diff < 0 ? '#d45f43' : '#8fbc7e' }} /></i>
             <em>{axis.diff == null ? '데이터 없음' : formatSigned(axis.diff, axis.unit)}</em>
           </div>)}
-          <div className="peer-value-table">{axes.filter((axis) => axis.value != null || axis.peerMedian != null).map((axis) => <p key={axis.key}><span>{axis.label}</span><b>{region.name} {axis.value != null ? axis.value.toFixed(1) : '--'}</b><b>Peer 중앙값 {axis.peerMedian != null ? axis.peerMedian.toFixed(1) : '--'}</b><b>Peer 상위25% {axis.peerTop25 != null ? axis.peerTop25.toFixed(1) : '--'}</b></p>)}</div>
+          <div className="peer-value-table">{axes.filter((axis) => axis.value != null || axis.peerMedian != null).map((axis) => <p key={axis.key}>
+            <span>{axis.label}</span>
+            <b>{region.name} {axis.value != null ? axis.value.toFixed(1) : '--'}</b>
+            <b>Peer 하위25% {axis.peerBottom25 != null ? axis.peerBottom25.toFixed(1) : '--'}</b>
+            <b>Peer 중앙값 {axis.peerMedian != null ? axis.peerMedian.toFixed(1) : '--'}</b>
+            <b>Peer 상위25% {axis.peerTop25 != null ? axis.peerTop25.toFixed(1) : '--'}</b>
+            {axis.peerBottom25 != null && axis.peerSampleSize < MIN_PEER_SAMPLE_FOR_WEAK_JUDGMENT
+              ? <b title="Peer 표본이 적어 하위25% 문턱이 불안정합니다 — 취약 판정에 쓰지 않습니다.">표본 {axis.peerSampleSize}곳 · 판정 보류</b> : null}
+          </p>)}</div>
           <p className="insight">{diagnosisText}</p>
         </article></div>
       </section>

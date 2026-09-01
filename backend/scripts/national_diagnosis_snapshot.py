@@ -55,7 +55,24 @@ def _first_metric(response: object, value_key: str, area_cd: str) -> float | Non
     return round(sum(values) / len(values), 2) if values else None
 
 
+_axis_memo: dict[str, dict[str, float | None] | None] = {}
+
+
 async def _axis_snapshot(area_cd: str, base_ym: str) -> dict[str, float | None] | None:
+    # Peers recur heavily across targets in the same demand bracket (the
+    # same handful of mid-sized 시 end up as everyone's Peer Group), so this
+    # memoizes within a single run — without it, a 20-target run could
+    # re-fetch the same popular peer a dozen times, burning quota that
+    # should go toward reaching more distinct municipalities instead.
+    memo_key = f"{area_cd}:{base_ym}"
+    if memo_key in _axis_memo:
+        return _axis_memo[memo_key]
+    result = await _axis_snapshot_uncached(area_cd, base_ym)
+    _axis_memo[memo_key] = result
+    return result
+
+
+async def _axis_snapshot_uncached(area_cd: str, base_ym: str) -> dict[str, float | None] | None:
     try:
         region_params = {"areaCd": area_cd[:2], "baseYm": base_ym}
         if area_cd != "52110":
