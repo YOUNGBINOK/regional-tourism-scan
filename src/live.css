@@ -11,10 +11,22 @@
 .peer-list{list-style:none;margin:10px 0 0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .peer-list li{padding:8px 10px;background:#f0f8ed;border:1px solid #d3e4cd;font:11px 'Noto Sans KR';color:#3d4a41;display:flex;justify-content:space-between;gap:8px}
 .peer-list li span{color:#68756e;white-space:nowrap}
-.peer-value-table{margin:14px 0;padding:12px 0;border-top:1px solid #e5e8e1;display:flex;flex-direction:column;gap:6px}
-.peer-value-table p{display:flex;flex-wrap:wrap;gap:10px;margin:0;font:11px 'Noto Sans KR';color:#68756e;align-items:center}
-.peer-value-table p>span{min-width:90px;font-weight:700;color:#3d4a41}
-.peer-value-table b{font:10px 'DM Mono';font-weight:600;background:#f1f1ee;padding:3px 7px;border-radius:3px}
+.peer-value-table{margin:14px 0;padding-top:14px;border-top:1px solid #e5e8e1;overflow-x:auto}
+.peer-value-table table{width:100%;min-width:520px;border-collapse:collapse}
+.peer-value-table th,.peer-value-table td{padding:9px 12px;text-align:right;font:11px 'DM Mono';color:#4f5d55;white-space:nowrap}
+.peer-value-table th:first-child,.peer-value-table td:first-child{text-align:left;font:700 12px 'Noto Sans KR';color:#3d4a41}
+.peer-value-table th{font:10px 'Noto Sans KR';font-weight:700;color:#78877f;letter-spacing:.02em;border-bottom:2px solid #d7ddd4;padding-bottom:8px}
+.peer-value-table th:last-child,.peer-value-table td.remark{text-align:left}
+.peer-value-table tbody tr{border-bottom:1px solid #edefe9}
+.peer-value-table tbody tr:last-child{border-bottom:0}
+.peer-value-table td.value{font-weight:700;color:#173b2b}
+.peer-value-table tr.weak td.value{color:#b8452e}
+.peer-value-table .badge{display:inline-block;padding:3px 8px;border-radius:9px;font:9px 'Noto Sans KR';font-weight:700;letter-spacing:.02em}
+.peer-value-table .badge.weak{background:#fde3dc;color:#b8452e}
+.peer-value-table .badge.caution{background:#f1f1ee;color:#8a8f87;cursor:help}
+@media(max-width:520px){
+  .peer-value-table th,.peer-value-table td{padding:8px 9px;font-size:10px}
+}
 .root-cause-evidence{margin-top:8px;padding-top:8px;border-top:1px dashed #d7ddd4}
 .root-cause-link{margin:6px 0 0;font:11px 'Noto Sans KR'}
 .root-cause-link a{color:#173b2b;font-weight:700}

@@ -504,15 +504,25 @@ function App() {
             <i><b style={{ width: axis.diff == null ? '0%' : `${Math.min(100, 20 * Math.abs(axis.diff) / axisSpan(axis))}%`, background: axis.diff == null ? '#d7ddd4' : axis.diff < 0 ? '#d45f43' : '#8fbc7e' }} /></i>
             <em>{axis.diff == null ? '데이터 없음' : formatSigned(axis.diff, axis.unit)}</em>
           </div>)}
-          <div className="peer-value-table">{axes.filter((axis) => axis.value != null || axis.peerMedian != null).map((axis) => <p key={axis.key}>
-            <span>{axis.label}</span>
-            <b>{region.name} {axis.value != null ? axis.value.toFixed(1) : '--'}</b>
-            <b>Peer 하위25% {axis.peerBottom25 != null ? axis.peerBottom25.toFixed(1) : '--'}</b>
-            <b>Peer 중앙값 {axis.peerMedian != null ? axis.peerMedian.toFixed(1) : '--'}</b>
-            <b>Peer 상위25% {axis.peerTop25 != null ? axis.peerTop25.toFixed(1) : '--'}</b>
-            {axis.peerBottom25 != null && axis.peerSampleSize < MIN_PEER_SAMPLE_FOR_WEAK_JUDGMENT
-              ? <b title="Peer 표본이 적어 하위25% 문턱이 불안정합니다 — 취약 판정에 쓰지 않습니다.">표본 {axis.peerSampleSize}곳 · 판정 보류</b> : null}
-          </p>)}</div>
+          <div className="peer-value-table">
+            <table>
+              <thead><tr><th>지표</th><th>{region.name}</th><th>Peer 하위25%</th><th>Peer 중앙값</th><th>Peer 상위25%</th><th>비고</th></tr></thead>
+              <tbody>{axes.filter((axis) => axis.value != null || axis.peerMedian != null).map((axis) => {
+                const lowSample = axis.peerBottom25 != null && axis.peerSampleSize < MIN_PEER_SAMPLE_FOR_WEAK_JUDGMENT;
+                return <tr key={axis.key} className={isWeak(axis) ? 'weak' : undefined}>
+                  <td>{axis.label}</td>
+                  <td className="value">{axis.value != null ? axis.value.toFixed(1) : '--'}</td>
+                  <td>{axis.peerBottom25 != null ? axis.peerBottom25.toFixed(1) : '--'}</td>
+                  <td>{axis.peerMedian != null ? axis.peerMedian.toFixed(1) : '--'}</td>
+                  <td>{axis.peerTop25 != null ? axis.peerTop25.toFixed(1) : '--'}</td>
+                  <td className="remark">
+                    {lowSample ? <span className="badge caution" title="Peer 표본이 적어 하위25% 문턱이 불안정합니다 — 취약 판정에 쓰지 않습니다.">표본 {axis.peerSampleSize}곳 · 판정 보류</span>
+                      : isWeak(axis) ? <span className="badge weak">취약</span> : null}
+                  </td>
+                </tr>;
+              })}</tbody>
+            </table>
+          </div>
           <p className="insight">{diagnosisText}</p>
         </article></div>
       </section>
