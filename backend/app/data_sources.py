@@ -747,8 +747,79 @@ def _quantile(values: list[float], q: float) -> float | None:
 def _percentile_within(value: float, pool_values: list[float]) -> float:
     return _percentile_rank(value, pool_values) if pool_values else 50.0
 
+def classify_pg_category(admin_type: str, density_percentile_within_type: float | None) -> str | None:
+    """PG-1~4: a density-based city-character label layered ON TOP OF the
+    행정유형(시/군/자치구) split — never a replacement for it, and deliberately
+    built from population density alone, not from tourism demand or lodging
+    supply (관광수요·숙박공급은 이 진단이 "취약한가"를 판정하는 그 지표들 자체다.
+    이걸로 Peer Group을 나누면 같은 약점끼리 묶여 약점이 구조적으로 안 보이는
+    자기참조 순환이 생긴다 — 이 프로젝트의 모든 Peer Group 로직이 지키는 원칙).
+
+    density_percentile_within_type must be computed within the region's OWN
+    admin-type pool (자치구끼리, 시/군끼리 따로) — comparing a 자치구's density
+    against a 군's would always rank the 자치구 "denser" and say nothing about
+    which 자치구 specifically stands out among other 자치구.
+
+    - 자치구, 밀도 상위 50%ile 초과 → PG-1 (도심/상업 집중형 — 예: 종로구·중구)
+    - 자치구, 밀도 50%ile 이하     → PG-3 (대도시 주거/위성형 — 예: 일반 주거 자치구)
+    - 시/군, 밀도 상위 50%ile 초과   → PG-2 (도농복합 관광거점형 — 예: 경주시·강릉시)
+    - 시/군, 밀도 50%ile 이하       → PG-4 (일반 지방/농어촌형 — 예: 대다수 군)
+
+    Returns None when admin_type is unrecognized or density data is missing —
+    never guesses a category without density data behind it.
+    """
+    if admin_type not in ("시", "군", "자치구") or density_percentile_within_type is None:
+        return None
+    # _percentile_rank는 "이 값 이하인 후보 수 / 전체" 방식이라, 표본이 2곳뿐이면
+    # 더 작은 값도 정확히 50이 나온다(자기 자신 포함 1/2). >= 50으로 자르면 그
+    # 경계값이 "상위" 쪽으로 잘못 들어간다 — 엄격 부등호로 그 경계 사례를 하위에 둔다.
+    dense_half = density_percentile_within_type > 50
+    if admin_type == "자치구":
+        return "PG-1" if dense_half else "PG-3"
+    return "PG-2" if dense_half else "PG-4"
+
+PG_CATEGORY_LABELS = {
+    "PG-1": "도심/상업 집중형", "PG-2": "도농복합 관광거점형",
+    "PG-3": "대도시 주거/위성형", "PG-4": "일반 지방/농어촌형",
+}
+
+async def build_pg_categories(independent_ranking: list[dict[str, object]], base_ym: str) -> dict[str, str]:
+    """National, diagnosis-independent PG-1~4 assignment for every 기초지자체.
+
+    Computed once over the *whole* national pool (not the smaller, target-
+    specific candidate pool build_peer_group assembles) so a region's PG
+    category is a stable property of that region — "경주시 is PG-2" — not
+    something that shifts depending on which other region's diagnosis screen
+    happens to be open. One batched KOSIS population call regardless of how
+    many municipalities are being classified.
+    """
+    codes = [str(entry["area_cd"]) for entry in independent_ranking]
+    population_by_code = await fetch_population_by_codes(codes, base_ym)
+    by_admin_type: dict[str, list[dict[str, object]]] = {}
+    for entry in independent_ranking:
+        by_admin_type.setdefault(classify_admin_type(str(entry["area_name"])), []).append(entry)
+
+    result: dict[str, str] = {}
+    for admin_type, entries in by_admin_type.items():
+        densities: dict[str, float] = {}
+        for entry in entries:
+            area_cd, area_name = str(entry["area_cd"]), str(entry["area_name"])
+            population = population_by_code.get(area_cd)
+            area_km2 = resolve_region_area(area_cd, area_name)
+            if population is not None and area_km2:
+                densities[area_cd] = population / area_km2
+        pool_values = list(densities.values())
+        for entry in entries:
+            area_cd = str(entry["area_cd"])
+            density = densities.get(area_cd)
+            percentile = _percentile_rank(density, pool_values) if density is not None else None
+            category = classify_pg_category(admin_type, percentile)
+            if category is not None:
+                result[area_cd] = category
+    return result
+
 async def build_peer_group(ranking: list[dict[str, object]], target_area_cd: str, target_area_name: str,
-                           count: int, base_ym: str) -> dict[str, object]:
+                           count: int, base_ym: str, pg_categories: dict[str, str] | None = None) -> dict[str, object]:
     """Structural-condition peer group, NOT a "top-N by national demand" list.
 
     Peers must share the target's 행정유형(시/군/자치구) — a 시 is never
@@ -772,6 +843,11 @@ async def build_peer_group(ranking: list[dict[str, object]], target_area_cd: str
     region status, demand scale, population, and density, so the peer group
     is the target's *condition*, not a self-referential slice of the very
     outcomes being diagnosed.
+
+    pg_categories (optional): a density-based PG-1~4 label per area_cd from
+    build_pg_categories(). When supplied, same-category candidates are
+    preferred within the ranking — not filtered — so a thin admin-type pool
+    doesn't get thinner still.
     """
     admin_type = classify_admin_type(target_area_name)
     target_province = resolve_region_province(target_area_cd, target_area_name)
@@ -809,6 +885,8 @@ async def build_peer_group(ranking: list[dict[str, object]], target_area_cd: str
     target_density_pct = _percentile_within(target_density, pool_densities) if target_density is not None else None
     has_structure_data = bool(pool_populations) and target_population_pct is not None
 
+    target_pg_category = pg_categories.get(target_area_cd) if pg_categories else None
+
     def distance(entry: dict[str, object]) -> float:
         area_cd, area_name = str(entry["area_cd"]), str(entry["area_name"])
         diffs: list[float] = []
@@ -820,7 +898,16 @@ async def build_peer_group(ranking: list[dict[str, object]], target_area_cd: str
         density = _density(area_cd, area_name)
         if density is not None and target_density_pct is not None:
             diffs.append(abs(_percentile_within(density, pool_densities) - target_density_pct))
-        return sum(diffs) / len(diffs) if diffs else 100.0  # no comparable data at all: sort last
+        base = sum(diffs) / len(diffs) if diffs else 100.0  # no comparable data at all: sort last
+        # PG-1~4는 필터가 아니라 "얹는" 정렬 기준이다 — 같은 행정유형·수도권
+        # 안에서도 도시 성격(밀도대)이 같은 후보를 앞세우되, PG가 다르다는
+        # 이유만으로 후보를 완전히 배제하지는 않는다(admin_type 분리를 한 번
+        # 더 쪼개면 이미 얇은 Peer 표본이 더 얇아진다).
+        if pg_categories and target_pg_category is not None:
+            entry_pg = pg_categories.get(area_cd)
+            if entry_pg is not None and entry_pg != target_pg_category:
+                base += 15.0
+        return base
 
     pool = sorted(pool, key=distance)
     peers = []
@@ -829,14 +916,17 @@ async def build_peer_group(ranking: list[dict[str, object]], target_area_cd: str
         population = population_by_code.get(area_cd)
         density = _density(area_cd, area_name)
         peers.append({**entry, "population": population,
-                      "population_density": round(density, 1) if density is not None else None})
+                      "population_density": round(density, 1) if density is not None else None,
+                      "pg_category": pg_categories.get(area_cd) if pg_categories else None})
 
     base_note = f"{'수도권' if target_capital else '비수도권'} {admin_type}" if admin_type in ("시", "군") else admin_type
     region_note = f"{base_note} · 관광수요·인구·인구밀도 규모가 유사한 지역" if has_structure_data \
         else f"{base_note} · 관광수요 규모가 유사한 지역 (인구 데이터 미확보로 인구·밀도는 이번 비교에서 제외)"
+    if target_pg_category is not None:
+        region_note += f" · {PG_CATEGORY_LABELS[target_pg_category]}({target_pg_category}) 우선"
     return {
         "admin_type": admin_type, "capital_region": target_capital, "relaxed": relaxed,
-        "criteria_note": region_note, "peers": peers,
+        "criteria_note": region_note, "peers": peers, "pg_category": target_pg_category,
         "target_population": target_population, "target_population_density": round(target_density, 1) if target_density is not None else None,
     }
 

@@ -12,7 +12,8 @@ from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_reg
                            fetch_visitor_window, compute_visitor_stability,
                            fetch_national_visitor_ranking_window,
                            is_independent_municipality,
-                           build_peer_group, _percentile_rank, _quantile,
+                           build_peer_group, build_pg_categories, PG_CATEGORY_LABELS,
+                           _percentile_rank, _quantile,
                            fetch_kosis_statistics, fetch_mois_tourism_business,
                            summarize_mois_tourism_business, mois_tourism_business_regions,
                            fetch_mois_city_business_summary, _cached)
@@ -463,15 +464,20 @@ async def national_peers(payload: NationalPeersRequest):
     national_percentile = position["outside_visitor_percentile"]
     demand_level = position["demand_level"]
 
-    # ② Peer Group: 행정유형 + 수도권 여부 + 관광수요·인구·인구밀도 규모 유사도로 구성한다.
+    # ② Peer Group: 행정유형 + 수도권 여부 + 관광수요·인구·인구밀도 규모 유사도로 구성하고,
+    # 그 위에 밀도 기반 PG-1~4(도시 성격)를 추가 정렬 기준으로 얹는다 — 관광수요·숙박
+    # 같은 outcome 변수는 그룹 구성에 쓰지 않는다는 원칙은 그대로 지킨다(build_pg_categories 참고).
     base_ym = payload.base_ymd[:6]
-    group = await build_peer_group(independent_ranking, payload.area_cd, str(target["area_name"]), payload.peer_count, base_ym)
+    pg_categories = await build_pg_categories(independent_ranking, base_ym)
+    group = await build_peer_group(independent_ranking, payload.area_cd, str(target["area_name"]),
+                                   payload.peer_count, base_ym, pg_categories)
     peers = group["peers"]
     peer_axes = await asyncio.gather(*[_fetch_peer_axis_snapshot(peer["area_cd"], base_ym) for peer in peers])
     peer_rows = [{
         "area_cd": peer["area_cd"], "area_name": peer["area_name"], "rank": peer["rank"],
         "outside_visitors": peer["outside_visitors"], "percentile": peer["percentile"],
         "population": peer.get("population"), "population_density": peer.get("population_density"),
+        "pg_category": peer.get("pg_category"),
         "axes": axes, "fetch_ok": axes is not None,
     } for peer, axes in zip(peers, peer_axes)]
 
@@ -494,6 +500,8 @@ async def national_peers(payload: NationalPeersRequest):
             "capital_region": group["capital_region"],
             "relaxed": group["relaxed"],
             "criteria_note": group["criteria_note"],
+            "pg_category": group["pg_category"],
+            "pg_category_label": PG_CATEGORY_LABELS.get(group["pg_category"]) if group["pg_category"] else None,
             "count": len(peer_rows),
             "peers": peer_rows,
             "medians": {key: _median(_peer_values(key)) for key in axis_keys},
@@ -548,12 +556,19 @@ def tcei(payload: TceiInput):
     return calculate_tcei(payload)
 
 @app.post("/v1/regions/{region_code}/r-gap")
-def r_gap(region_code: str, actual_tcei: float, frontier_tcei: float):
+def r_gap(region_code: str, actual_tcei: float, frontier_tcei: float,
+          actual_pg_category: str | None = None, frontier_pg_category: str | None = None):
     """Reference implementation of AGENTS.md §4.6's R-GAP formula given two
     already-computed TCEI values. Not called by the live diagnosis pipeline
-    for the same reason as /v1/metrics/tcei — see its docstring."""
-    return {"region_code": region_code, "actual_tcei": actual_tcei, "frontier_tcei": frontier_tcei,
-            "r_gap": calculate_r_gap(actual_tcei, frontier_tcei)}
+    for the same reason as /v1/metrics/tcei — see its docstring. The optional
+    pg_category args enforce calculate_r_gap's same-category constraint when
+    supplied; see that function's docstring for why cross-category framing
+    would misrepresent a region's actual gap."""
+    try:
+        gap = calculate_r_gap(actual_tcei, frontier_tcei, actual_pg_category, frontier_pg_category)
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+    return {"region_code": region_code, "actual_tcei": actual_tcei, "frontier_tcei": frontier_tcei, "r_gap": gap}
 
 @app.post("/v1/budget/portfolio")
 def portfolio(payload: BudgetRequest):

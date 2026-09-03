@@ -36,9 +36,10 @@ type PeerAxisSet = {
   stay_intensity: number | null; spend_intensity: number | null; lodging_share_index: number | null;
   dispersion_spread_km: number | null;
 };
+type PgCategory = 'PG-1' | 'PG-2' | 'PG-3' | 'PG-4';
 type NationalPeer = {
   area_cd: string; area_name: string; rank: number; outside_visitors: number; percentile: number;
-  population: number | null; population_density: number | null;
+  population: number | null; population_density: number | null; pg_category: PgCategory | null;
   axes: PeerAxisSet | null;
   fetch_ok: boolean;
 };
@@ -46,9 +47,17 @@ type PeerAxisStats = PeerAxisSet;
 type PeerSampleSizes = { stay_intensity: number; spend_intensity: number; lodging_share_index: number; dispersion_spread_km: number };
 type PeerGroup = {
   admin_type: string; capital_region: boolean; relaxed: boolean; criteria_note: string;
+  pg_category: PgCategory | null; pg_category_label: string | null;
   count: number; peers: NationalPeer[]; medians: PeerAxisStats; top_quartile: PeerAxisStats;
   bottom_quartile: PeerAxisStats; sample_size: PeerSampleSizes;
   target_population: number | null; target_population_density: number | null;
+};
+// PG-1~4: 인구밀도(A축)만으로 근사한 도시 성격 분류 — 관광수요·숙박공급(outcome
+// 변수)은 진단 자체가 판정하려는 값이라 분류 기준에서 뺐다(자기참조 순환 방지).
+// 기존 행정유형(시/군/자치구)·수도권 여부 분리 위에 얹는 추가 정렬 기준이며,
+// PG가 다르다고 후보에서 제외하지는 않는다.
+const PG_CATEGORY_LABELS: Record<PgCategory, string> = {
+  'PG-1': '도심/상업 집중형', 'PG-2': '도농복합 관광거점형', 'PG-3': '대도시 주거/위성형', 'PG-4': '일반 지방/농어촌형',
 };
 type NationalPeersSnapshot = {
   available: true;
@@ -524,6 +533,7 @@ function App() {
     ['전국 위치 vs Peer Group', '전국 위치(①)는 기초지자체 전체 중 관광수요 백분위로 수요 수준만 판정합니다. Peer Group(②)은 체류·숙박·소비 취약성을 진단할 때만 쓰며, 같은 행정유형(시/군/자치구)·수도권 여부 안에서 관광수요·인구·인구밀도 규모가 가장 비슷한 지역으로 구성합니다(각 지표를 비교군 내 백분위로 바꿔 함께 비교). 전국 상위지역 중앙값을 그대로 비교기준으로 쓰지 않습니다.'],
     ['인구·인구밀도 출처', '주민등록인구(KOSIS 행정구역별 주민등록인구, 월간)를 KTO와 동일한 5자리 지역코드로 직접 조회합니다. 면적은 통계청 SGIS 행정동 경계를 시군구 단위로 합산해 추정했습니다(지도 좌표와 같은 출처, 오차 3% 이내). 인구 데이터를 못 가져오면 관광수요 규모만으로 비교군을 구성합니다.'],
     ['행정유형 분리', '자치구(강남구·해운대구)는 기초지자체이지만 일반구(수원시 팔달구처럼 상위 시 이름이 붙는 구)는 기초지자체가 아니므로 진단 대상·Peer Group 어디에도 포함하지 않습니다. 시는 시·군끼리만, 자치구는 자치구끼리만 비교합니다.'],
+    ['PG-1~4 (도시 성격)', '행정유형·수도권 분리 위에 얹는 추가 정렬 기준입니다. 같은 행정유형 안에서 인구밀도 상대 순위(자치구는 자치구끼리, 시/군은 시/군끼리)로만 나눕니다 — PG-1 도심/상업 집중형, PG-2 도농복합 관광거점형, PG-3 대도시 주거/위성형, PG-4 일반 지방/농어촌형. 관광수요·숙박공급으로는 절대 나누지 않습니다: 그 두 값은 이 진단이 "취약한가"를 판정하는 지표 자체라, 그걸로 비교군을 나누면 비슷하게 취약한 지역끼리만 묶여 약점이 보이지 않게 됩니다(자기참조 순환). PG가 다르다고 후보에서 제외하지는 않으며, 실제 밀도 데이터를 기준으로 하므로 "관광거점"으로 알려진 지역도 데이터상 PG-4로 분류될 수 있습니다.'],
     ['관광수요 판정 기준', '전국 기초지자체 백분위 50% 이상이면 “충분”, 미만이면 “부족”으로 1차 판정합니다. 부족 판정 지역은 체류·숙박 원인분해보다 관광수요 확보를 우선 과제로 제시합니다.'],
     ['Peer Group 상위 25%', 'Peer Group 중앙값과 함께, 그 안에서 실제로 잘하는 지역의 수준(상위 25% 지점)을 같이 보여줍니다. 중앙값보다 낮더라도 상위 25%와의 격차를 통해 개선 여지를 가늠할 수 있습니다.'],
     ['지도 좌표', '전국 시군구 중심좌표는 통계청 SGIS 행정동 경계(공공누리 제1유형)를 admdongkor 저장소(CC BY 4.0)가 가공한 2024년 자료를 시군구 단위로 평균해 만들었습니다. 구가 있는 시는 구 좌표 평균으로 근사합니다.'],
@@ -560,8 +570,13 @@ function App() {
           <p className="peer-note">{peerGroup
             ? `비교군: ${peerGroup.criteria_note} · ${peerGroup.count}곳${peerGroup.relaxed ? ' (수도권 조건을 완화해 표본을 채웠습니다)' : ''}${peerGroup.target_population != null ? ` · ${region.name} 인구 ${formatManUnit(peerGroup.target_population)}${peerGroup.target_population_density != null ? ` · 밀도 ${formatNumber.format(peerGroup.target_population_density)}명/km²` : ''}` : ''}`
             : nationalPeers && !nationalPeers.available ? `Peer Group 조회에 실패했습니다: ${nationalPeers.reason}` : 'Peer Group을 구성하는 중입니다…'}</p>
+          {peerGroup?.pg_category && <div className="pg-badge" title="인구밀도만으로 근사한 도시 성격 분류 — 행정유형·수도권 분리 위에 얹는 추가 정렬 기준이며, 다르다고 후보에서 빠지지는 않습니다. 06 용어 섹션에서 자세히 설명합니다.">
+            <span className="pg-chip">{peerGroup.pg_category}</span> {peerGroup.pg_category_label} 우선 정렬
+          </div>}
           {peerGroup && <details className="peer-list-disclosure"><summary>비교군 지역 목록 펼쳐보기 ({peerGroup.peers.length}곳)</summary>
-            <ul className="peer-list">{peerGroup.peers.map((peer) => <li key={peer.area_cd}>{peer.area_name} <span>전국 {peer.rank}위 · 상위 {(100 - peer.percentile).toFixed(0)}%{peer.population != null ? ` · 인구 ${formatManUnit(peer.population)}` : ''}{peer.population_density != null ? ` · 밀도 ${formatNumber.format(peer.population_density)}명/km²` : ''}</span></li>)}</ul>
+            <ul className="peer-list">{peerGroup.peers.map((peer) => <li key={peer.area_cd}>{peer.area_name}
+              {peer.pg_category && <span className={`pg-chip small${peer.pg_category === peerGroup.pg_category ? ' match' : ''}`}>{peer.pg_category}</span>}
+              <span>전국 {peer.rank}위 · 상위 {(100 - peer.percentile).toFixed(0)}%{peer.population != null ? ` · 인구 ${formatManUnit(peer.population)}` : ''}{peer.population_density != null ? ` · 밀도 ${formatNumber.format(peer.population_density)}명/km²` : ''}</span></li>)}</ul>
           </details>}
           {axes.map((axis) => <div className="sbar" key={axis.key}>
             <span>{axis.label} <Tier tier={axis.tier} /></span>

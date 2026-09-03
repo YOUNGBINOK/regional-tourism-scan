@@ -10,6 +10,7 @@ from app.data_sources import (compute_hub_spatial_spread, compute_visitor_stabil
                               classify_admin_type, is_independent_municipality,
                               is_capital_region, resolve_region_province, resolve_region_area,
                               build_peer_group, fetch_national_visitor_ranking_window,
+                              classify_pg_category, build_pg_categories,
                               build_live_visitor_snapshot)
 
 
@@ -154,6 +155,57 @@ def test_national_ranking_window_averages_across_days_not_a_single_spike(monkeyp
     by_code = {entry["area_cd"]: entry for entry in ranking}
     assert by_code["10"]["outside_visitors"] == pytest.approx(1000 / 3, rel=1e-3)
     assert by_code["20"]["outside_visitors"] == pytest.approx(300.0, rel=1e-3)
+
+
+def test_classify_pg_category_splits_by_admin_type_then_density():
+    assert classify_pg_category("자치구", 80) == "PG-1"   # 도심/상업 집중형
+    assert classify_pg_category("자치구", 20) == "PG-3"   # 대도시 주거/위성형
+    assert classify_pg_category("시", 80) == "PG-2"        # 도농복합 관광거점형
+    assert classify_pg_category("군", 20) == "PG-4"        # 일반 지방/농어촌형
+    assert classify_pg_category("일반구", 80) is None      # 기초지자체가 아닌 유형은 분류하지 않음
+    assert classify_pg_category("시", None) is None        # 밀도 데이터 없이는 추측하지 않음
+
+
+def test_pg_categories_computed_within_own_admin_type_pool_not_across_types(monkeypatch):
+    # 자치구 두 곳(밀도 100/10)과 시 두 곳(밀도 100/10)을 섞어 넣는다. 자치구끼리,
+    # 시끼리 각각 백분위를 매겨야 한다 — 전체를 한 풀로 섞으면 자치구 쪽 밀도가
+    # 시 쪽보다 항상 높아 보여, 그 안에서 누가 상대적으로 밀집됐는지가 사라진다.
+    ranking = [
+        {"area_cd": "10", "area_name": "가구"},   # 자치구, 밀도 100 -> PG-1
+        {"area_cd": "20", "area_name": "나구"},   # 자치구, 밀도 10  -> PG-3
+        {"area_cd": "30", "area_name": "다시"},   # 시, 밀도 100 -> PG-2 (같은 시 풀 안에서는 최고밀도)
+        {"area_cd": "40", "area_name": "라시"},   # 시, 밀도 10  -> PG-4
+    ]
+
+    async def fake_population(area_cds, base_ym):
+        return {"10": 1000.0, "20": 100.0, "30": 1000.0, "40": 100.0}
+
+    monkeypatch.setattr("app.data_sources.fetch_population_by_codes", fake_population)
+    monkeypatch.setattr("app.data_sources.resolve_region_area",
+                        lambda area_cd, area_name: 10.0)  # 밀도 = 인구/10, 모두 동일 면적
+    categories = asyncio.run(build_pg_categories(ranking, base_ym="202607"))
+    assert categories == {"10": "PG-1", "20": "PG-3", "30": "PG-2", "40": "PG-4"}
+
+
+def test_build_peer_group_prefers_same_pg_category_without_excluding_others(monkeypatch):
+    # 다섯 개 시가 관광수요 백분위상 대상(50)에 정확히 같은 거리(±10)로 두 곳씩
+    # 있다. PG 카테고리가 같은 쪽(遠 PG-2)을 앞세워야 한다 — 다른 쪽을 아예
+    # 제외하지는 않으므로 표본이 줄어들지 않는다는 것도 함께 확인한다.
+    items = [
+        _visitor_item("10", "가시", "외지인(b)", "600"),   # target, pct ~83
+        _visitor_item("20", "나시", "외지인(b)", "500"),   # 근접, PG-2 (같음)
+        _visitor_item("30", "다시", "외지인(b)", "300"),   # 근접, PG-4 (다름)
+        _visitor_item("40", "라시", "외지인(b)", "100"),   # 더 멂
+    ]
+    ranking = _ranking(items)
+    pg_categories = {"10": "PG-2", "20": "PG-2", "30": "PG-4", "40": "PG-4"}
+    monkeypatch.setattr("app.data_sources.fetch_population_by_codes", _no_population)
+    group_with_pg = asyncio.run(build_peer_group(ranking, "10", "가시", count=3, base_ym="202607",
+                                                  pg_categories=pg_categories))
+    peer_cds_with_pg = [peer["area_cd"] for peer in group_with_pg["peers"]]
+    assert peer_cds_with_pg[0] == "20"  # 같은 PG-2가 최우선으로 온다
+    assert set(peer_cds_with_pg) == {"20", "30", "40"}  # 그래도 후보가 빠지지는 않는다
+    assert group_with_pg["pg_category"] == "PG-2"
 
 
 def test_quantile_top_quarter_is_at_least_the_median():
