@@ -343,27 +343,52 @@ function App() {
       peerTop25: peerGroup?.top_quartile.dispersion_spread_km ?? null, peerBottom25: peerGroup?.bottom_quartile.dispersion_spread_km ?? null,
       peerSampleSize: peerGroup?.sample_size.dispersion_spread_km ?? 0 },
     { key: 'stability', label: '단기 수요 안정성', diff: stabilityDiff, unit: 'p', tier: 'derived', note: `최근 7일 외지인 방문자 변동계수 역산값 · ${peerBasisNote} · 연간 계절성 지표가 아님`,
-      value: stabilityValue(regionId), peerMedian: peerStabilityMedian, peerTop25: null, peerBottom25: peerStabilityBottom25,
+      value: stabilityValue(regionId), peerMedian: peerStabilityMedian,
+      peerTop25: quantile(peerStabilityValues, 0.75), peerBottom25: peerStabilityBottom25,
       peerSampleSize: peerStabilityValues.length },
   ];
+
   // 취약 판정은 "Peer 중앙값보다 몇 p 낮은가"라는 고정 상수가 아니라, 이 Peer
-  // Group 자체의 하위 25% 문턱과 비교한다 — 그룹마다 실제 편차가 다르므로,
-  // 같은 ±5p라도 어떤 그룹에서는 흔한 편차이고 어떤 그룹에서는 이례적일 수 있다.
-  // 단, Peer 표본이 4곳 미만이면 그 문턱 자체가 불안정하므로(선형보간상 "두
-  // 번째로 작은 값"에 가까워짐) 판정을 내리지 않는다 — 실데이터 100개 지역
-  // 배치 진단에서 표본 3~4곳짜리 문턱이 취약률을 56%까지 부풀리는 것을 확인했다.
-  const severity = (axis: Axis) => {
-    if (axis.value == null || axis.peerBottom25 == null || axis.peerMedian == null) return 0;
-    if (axis.peerSampleSize < MIN_PEER_SAMPLE_FOR_WEAK_JUDGMENT) return 0;
-    const span = axis.peerMedian - axis.peerBottom25;
-    if (span <= 0) return 0;
-    return Math.max(0, (axis.peerBottom25 - axis.value) / span);
-  };
-  const isWeak = (axis: Axis) => axis.value != null && axis.peerBottom25 != null
+  // Group 자체의 분포와 비교한다 — 그룹마다 실제 편차가 다르므로, 같은 ±5p라도
+  // 어떤 그룹에서는 흔한 편차이고 어떤 그룹에서는 이례적일 수 있다. 판정에는
+  // 두 개의 관문이 있다.
+  //
+  // ① Peer 표본이 4곳 미만이면 문턱 자체가 불안정하므로(선형보간상 "두 번째로
+  //    작은 값"에 가까워짐) 아예 판정하지 않는다 — 전국 100개 지역 배치에서
+  //    표본 3~4곳짜리 문턱이 취약률을 56%까지 부풀리는 것을 확인했다.
+  // ② 하위 25% 문턱을 "겨우" 밑도는 것과 "뚜렷하게" 밑도는 것을 구분한다.
+  //    미달 폭을 보지 않으면 취약 판정의 절반이 문턱 대비 3% 이내(최소 0.19%,
+  //    금정구 체류강도 66.95 vs 67.08)의 오차 수준 차이로 만들어지고, 그 상태로는
+  //    "1순위 정책 과제"의 근거가 될 수 없다.
+  //
+  // 미달 폭의 단위는 그 Peer Group의 사분위 범위(IQR = 상위25% − 하위25%)다.
+  // 또래가 촘촘히 모인 그룹에서는 작은 차이도 의미가 있고, 원래 편차가 큰
+  // 그룹에서는 같은 차이가 흔한 변동이기 때문이다. 0.5 IQR은 상자그림의 표준
+  // 이상치 울타리(Q1 − 1.5×IQR)를 정책진단용으로 완화한 값이다 — 통계적
+  // 이상치가 아니라 "또래보다 뚜렷하게 뒤처진 곳"을 찾는 것이 목적이다.
+  // 이 문턱에서 전국 100개 지역 축 판정 취약률은 29% → 15%로 내려가, 하위 25%
+  // 규칙이 정의상 만들어내던 25% 언저리의 고정값에서 실제로 벗어난다.
+  const WEAK_MATERIALITY_IQR = 0.5;
+
+  const peerIqr = (axis: Axis) => axis.peerTop25 != null && axis.peerBottom25 != null
+    ? axis.peerTop25 - axis.peerBottom25 : null;
+  // 하위 25% 미만이지만 미달 폭이 문턱에 못 미치는 상태(= "근소")도 값 자체는
+  // 그대로 보여준다. 취약이라고 부르지 않을 뿐, 숨기지는 않는다.
+  const isBelowBottomQuartile = (axis: Axis) => axis.value != null && axis.peerBottom25 != null
     && axis.peerSampleSize >= MIN_PEER_SAMPLE_FOR_WEAK_JUDGMENT && axis.value < axis.peerBottom25;
-  // 차트·막대 정규화에 쓰는 편차 단위: Peer 중앙값과 하위 25% 사이 폭(없으면 5p로 대체).
-  const axisSpan = (axis: Axis) => axis.peerMedian != null && axis.peerBottom25 != null && axis.peerMedian - axis.peerBottom25 > 0.01
-    ? axis.peerMedian - axis.peerBottom25 : 5;
+  // 취약도 = 하위 25% 문턱 아래로 IQR의 몇 배만큼 내려가 있는가. 단위가 다른
+  // 축들을 같은 척도로 비교할 수 있고, 그대로 우선순위 정렬 기준이 된다.
+  const severity = (axis: Axis) => {
+    const iqr = peerIqr(axis);
+    if (!isBelowBottomQuartile(axis) || iqr == null || iqr <= 0) return 0;
+    return (axis.peerBottom25! - axis.value!) / iqr;
+  };
+  const isWeak = (axis: Axis) => severity(axis) >= WEAK_MATERIALITY_IQR;
+  // 차트·막대 정규화 단위도 같은 IQR을 쓴다(산출 불가 시 5p로 대체).
+  const axisSpan = (axis: Axis) => {
+    const iqr = peerIqr(axis);
+    return iqr != null && iqr > 0.01 ? iqr : 5;
+  };
 
   // ①전국 위치 → ②수요 충분 여부 → ③Peer 성과비교 → ④유형판정 → ⑤원인분해.
   // "관광수요가 이미 확보된 지역의 숨은 취약점을 찾는다"는 문제의식을 지키기 위해,
@@ -429,9 +454,13 @@ function App() {
   const lodgingEvidenceData = lodgingEvidence && !('available' in lodgingEvidence) ? lodgingEvidence : null;
 
   // 정책 우선순위 TOP 3: 계산 가능한 축의 취약 정도로 순위를 매기고, 데이터가 없는 축은 "향후 분석" 항목으로 채운다.
-  const rankedWeak = axes.filter((axis) => severity(axis) > 0).sort((a, b) => severity(b) - severity(a));
+  // 우선순위에는 취약 판정을 통과한 축만 올린다 — 하위 25%를 근소하게 밑도는
+  // 축(severity > 0이지만 문턱 미달)은 표에만 표시하고 정책 과제로 세우지 않는다.
+  const rankedWeak = axes.filter(isWeak).sort((a, b) => severity(b) - severity(a));
   const pendingAxes = axes.filter((axis) => axis.diff == null);
   const priorities = [...rankedWeak, ...pendingAxes].slice(0, 3);
+  // 하위 25%를 밑돌지만 취약 문턱에는 못 미친 축 — 우선순위에서 뺀 이유를 밝히는 데 쓴다.
+  const nearMissAxes = axes.filter((axis) => isBelowBottomQuartile(axis) && !isWeak(axis));
   // 관광수요 자체는 이미 충분(전국 상위 절반)하므로, 홍보 확대보다 Peer 대비 취약축이 우선이다.
   const promotionLowPriority = demandLevel === '충분';
   const chartData = axes.filter((axis) => axis.diff != null).map((axis) => ({ name: axis.label, diff: (axis.diff as number) / axisSpan(axis) }));
@@ -464,7 +493,8 @@ function App() {
     ['관광수요 판정 기준', '전국 기초지자체 백분위 50% 이상이면 “충분”, 미만이면 “부족”으로 1차 판정합니다. 부족 판정 지역은 체류·숙박 원인분해보다 관광수요 확보를 우선 과제로 제시합니다.'],
     ['Peer Group 상위 25%', 'Peer Group 중앙값과 함께, 그 안에서 실제로 잘하는 지역의 수준(상위 25% 지점)을 같이 보여줍니다. 중앙값보다 낮더라도 상위 25%와의 격차를 통해 개선 여지를 가늠할 수 있습니다.'],
     ['지도 좌표', '전국 시군구 중심좌표는 통계청 SGIS 행정동 경계(공공누리 제1유형)를 admdongkor 저장소(CC BY 4.0)가 가공한 2024년 자료를 시군구 단위로 평균해 만들었습니다. 구가 있는 시는 구 좌표 평균으로 근사합니다.'],
-    ['취약도', '축별 음의 편차를 임계값으로 나눈 표준화 결손도입니다. 체류·숙박, 소비, 공간, 단기 안정성의 취약 정도를 비교해 정책 개입 순서를 정합니다. 예산 배분 비율이나 효과 예측이 아닙니다.'],
+    ['취약 판정 기준', 'Peer Group 하위 25% 문턱보다 낮고, 그 미달 폭이 해당 Peer Group의 사분위 범위(IQR = 상위25%−하위25%)의 0.5배 이상일 때만 “취약”으로 판정합니다. 문턱을 근소하게 밑도는 경우는 “근소”로만 표시하고 정책 과제로 세우지 않습니다 — 오차 수준의 차이가 정책 우선순위를 만드는 것을 막기 위해서입니다. Peer 표본이 4곳 미만이면 문턱 자체가 불안정하므로 판정을 보류합니다.'],
+    ['취약도', '하위 25% 문턱 아래로 Peer 사분위 범위(IQR)의 몇 배만큼 내려가 있는지를 나타냅니다. 단위가 다른 축들을 같은 척도로 비교해 정책 개입 순서를 정합니다. 예산 배분 비율이나 효과 예측이 아닙니다.'],
     ['TCEI', '체류(S)·소비(C)·공간분산(D)·계절안정성(B)의 백분위 기하평균입니다. 현재는 연간 계절성과 소비 잔차가 완성되지 않아 산출하지 않습니다.'],
     ['R-GAP', '유사 관광구조 75분위 프론티어 TCEI와 실제 TCEI의 양(+)의 차이입니다. 현재 화면의 규칙기반 유형·우선순위와 동일한 점수가 아닙니다.'],
   ];
@@ -517,7 +547,9 @@ function App() {
                   <td>{axis.peerTop25 != null ? axis.peerTop25.toFixed(1) : '--'}</td>
                   <td className="remark">
                     {lowSample ? <span className="badge caution" title="Peer 표본이 적어 하위25% 문턱이 불안정합니다 — 취약 판정에 쓰지 않습니다.">표본 {axis.peerSampleSize}곳 · 판정 보류</span>
-                      : isWeak(axis) ? <span className="badge weak">취약</span> : null}
+                      : isWeak(axis) ? <span className="badge weak" title={`하위25% 문턱보다 IQR의 ${severity(axis).toFixed(2)}배만큼 낮습니다 (판정 기준 ${WEAK_MATERIALITY_IQR}배 이상).`}>취약 · {severity(axis).toFixed(2)} IQR</span>
+                      : isBelowBottomQuartile(axis) ? <span className="badge near" title={`하위25% 문턱을 밑돌지만 미달 폭이 IQR의 ${severity(axis).toFixed(2)}배로, 판정 기준(${WEAK_MATERIALITY_IQR}배)에 못 미칩니다 — 오차 수준의 차이로 보고 정책 과제로 세우지 않습니다.`}>근소 · {severity(axis).toFixed(2)} IQR</span>
+                      : null}
                   </td>
                 </tr>;
               })}</tbody>
@@ -529,7 +561,7 @@ function App() {
       <section id="priority" className="section live-section"><div className="heading"><div><small>05 / WEAKNESS → ROOT CAUSE → PRIORITY</small><h2>{region.name} 정책 우선순위<br /><em>TOP 3</em></h2></div><span className="badges"><span>{regionType} <Tier tier="modeled" /></span></span></div>
         <p className="peer-note">{diagnosisText}</p>
         {chartData.length > 0 && <div className="priority-chart">
-          <small>축별 표준화 편차 · −1은 축별 취약 임계값</small>
+          <small>Peer 중앙값 대비 편차 · 단위는 Peer 사분위 범위(IQR) 배수</small>
           <ResponsiveContainer width="100%" height={Math.max(140, chartData.length * 42)}>
             <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 28, bottom: 4, left: 4 }}>
               <XAxis type="number" tick={{ fontSize: 10, fill: '#7e8983' }} tickFormatter={(value) => `${Number(value).toFixed(1)}×`} axisLine={false} tickLine={false} />
@@ -540,7 +572,7 @@ function App() {
             </BarChart>
           </ResponsiveContainer>
         </div>}
-        <div className="cards">{priorities.map((axis, index) => <article key={axis.key}><small>{index + 1}순위 · {axis.label} <Tier tier={axis.tier} /></small><strong>{axis.diff == null ? '데이터 연동 후 진단' : `${axis.label} 강화 필요`}</strong><p>근거: {axis.diff == null ? axis.note : `Peer Group 중앙값 대비 ${formatSigned(axis.diff, axis.unit)} · 취약도 ${severity(axis).toFixed(2)}`}</p>
+        <div className="cards">{priorities.map((axis, index) => <article key={axis.key}><small>{index + 1}순위 · {axis.label} <Tier tier={axis.tier} /></small><strong>{axis.diff == null ? '데이터 연동 후 진단' : `${axis.label} 강화 필요`}</strong><p>근거: {axis.diff == null ? axis.note : `Peer 하위25%(${axis.peerBottom25?.toFixed(1)}) 대비 IQR의 ${severity(axis).toFixed(2)}배 미달 · 중앙값 대비 ${formatSigned(axis.diff, axis.unit)}`}</p>
           {axis.key === 'stayShare' && lodgingIsWeak && (
             lodgingEvidenceData ? <div className="root-cause-evidence">
               <p className="root-cause-link">→ 원인 확인 (자동 연결): 관광사업자 원자료 기준 {region.name} 소재 영업 중 관광숙박업소 <b>{formatNumber.format(lodgingEvidenceData.operating_tourism_accommodation_business_count)}건</b> ({lodgingEvidenceData.province_group_record_count}건 중 {region.name} 주소로 필터링)</p>
@@ -551,6 +583,14 @@ function App() {
               : <p className="root-cause-link">→ 원인 확인: 관광사업자 원자료 자동 연결은 현재 경주·강릉·제주·전주만 지원합니다. <a href="#business-data">다른 지역은 원자료 화면에서 직접 확인하세요.</a></p>
           )}
         </article>)}</div>
+        {/* 취약 판정을 통과한 축이 하나도 없을 때 빈 영역을 남기지 않는다. "우선순위가
+            없다"는 것도 진단 결과이고, 근소하게 문턱을 밑돈 축이 있으면 그것까지 밝힌다. */}
+        {!priorities.length && <div className="cards"><article><small>정책 우선순위 없음 <Tier tier="modeled" /></small>
+          <strong>지금은 신규 정책 과제가 없습니다</strong>
+          <p>{nearMissAxes.length
+            ? `Peer Group 대비 취약으로 판정된 축이 없습니다. ${nearMissAxes.map((axis) => axis.label).join('·')}이(가) 하위 25% 문턱을 밑돌지만 미달 폭이 IQR의 ${WEAK_MATERIALITY_IQR}배에 못 미쳐, 오차 수준의 차이를 정책 과제로 세우지 않았습니다. 위 표의 "근소" 표시를 확인하세요.`
+            : 'Peer Group 대비 취약으로 판정된 축이 없습니다. 현재 수준의 유지·고도화가 적절합니다.'}</p>
+        </article></div>}
         {promotionLowPriority && <p className="insight low-priority">[우선순위 낮음] 추가 관광홍보 — 관광수요 자체는 이미 전국 기준으로 충분하므로, 홍보 확대보다 위 우선순위 항목을 먼저 검토합니다.</p>}
       </section>
       <section id="methodology" className="section live-section methodology"><div className="heading"><div><small>06 / TERMS &amp; ALGORITHM</small><h2>용어와 계산법을<br /><em>투명하게 공개합니다</em></h2></div><p>현재 제공값과 향후 R-GAP 산출을 구분합니다. 각 값의 단위·비교범위·한계를 함께 확인하세요.</p></div><div className="term-grid">{methodologyTerms.map(([term, description]) => <article key={term}><h3>{term}</h3><p>{description}</p></article>)}</div></section>
