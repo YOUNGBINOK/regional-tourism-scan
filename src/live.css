@@ -24,6 +24,7 @@
 .peer-value-table .badge{display:inline-block;padding:3px 8px;border-radius:9px;font:9px 'Noto Sans KR';font-weight:700;letter-spacing:.02em}
 .peer-value-table .badge.weak{background:#fde3dc;color:#b8452e}
 .peer-value-table .badge.near{background:#f6edda;color:#8a6420;cursor:help}
+.peer-value-table .badge.neutral{background:#eef0ec;color:#6b746e;cursor:help}
 .peer-value-table .badge.caution{background:#f1f1ee;color:#8a8f87;cursor:help}
 @media(max-width:520px){
   .peer-value-table th,.peer-value-table td{padding:8px 9px;font-size:10px}

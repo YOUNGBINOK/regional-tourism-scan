@@ -266,10 +266,51 @@ async def _safe_hub_attractions(area_cd: str, base_ym: str):
     try: return await fetch_municipal_hub_attractions(area_cd, base_ym)
     except Exception: return None
 
+async def _national_position(area_cd: str, base_ymd: str, window_days: int) -> tuple[list, dict | None]:
+    """The one place national demand percentile is computed, so every screen that
+    states a region's national position states the *same* number.
+
+    Before this, /v1/analysis/live-visitor computed its own same-day percentile
+    over every raw KTO code (including 일반구, ~264-270 municipalities) while
+    /v1/analysis/national-peers computed a separate 7-day-windowed percentile
+    over independent municipalities only (~229) — a live diagnosis screen could
+    show both side by side (e.g. "백분위 73.5%, 264개 지역" next to "백분위 76%,
+    229곳") for the same region, which undermines both once anyone compares them.
+
+    Returns (independent_ranking, position) — the filtered ranking so callers
+    that also need Peer Group construction don't have to re-filter it, and
+    position=None when the area isn't present in this window's feed.
+    """
+    ranking = await fetch_national_visitor_ranking_window(base_ymd, window_days)
+    independent_ranking = [entry for entry in ranking if is_independent_municipality(str(entry["area_name"]))]
+    target = next((entry for entry in independent_ranking if entry["area_cd"] == area_cd), None)
+    if target is None:
+        return independent_ranking, None
+    independent_values = [float(entry["outside_visitors"]) for entry in independent_ranking]
+    percentile = _percentile_rank(float(target["outside_visitors"]), independent_values)
+    return independent_ranking, {
+        "municipality_count": len(independent_ranking),
+        "outside_visitor_percentile": percentile,
+        "demand_level": "충분" if percentile >= 50 else "부족",
+        "window_days": window_days,
+        "target": target,
+    }
+
+async def _safe_national_position(area_cd: str, base_ymd: str) -> dict | None:
+    """National position is best-effort here: a scan failure must not break
+    the rest of the live snapshot, it just falls back to the same-day figure
+    build_live_visitor_snapshot already computed from the raw payload."""
+    try:
+        _, position = await _national_position(area_cd, base_ymd, window_days=7)
+        return position
+    except Exception:
+        return None
+
 async def _build_live_visitor_snapshot(payload: LiveVisitorRequest) -> dict:
         metric_payload = KtoAreaMetricRequest(area_cd=payload.area_cd, base_ym=payload.base_ymd[:6])
         (raw, stay, lodging_share, one_night, two_nights, three_plus_nights,
-         spend, visitor_diversity, spend_diversity, international_diversity, concentration_raw, hubs_raw) = await asyncio.gather(
+         spend, visitor_diversity, spend_diversity, international_diversity, concentration_raw, hubs_raw,
+         national_position) = await asyncio.gather(
             fetch_kto_regional_visitors("local", payload.base_ymd, payload.base_ymd, 1, 1000),
             area_metric("demand_intensity", "stay", metric_payload),
             area_metric("demand_intensity", "stay", metric_payload, {"tarSjrnDsIxCd": "2102"}),
@@ -282,10 +323,19 @@ async def _build_live_visitor_snapshot(payload: LiveVisitorRequest) -> dict:
             area_metric("tourism_diversity", "international", metric_payload),
             _safe_attraction_concentration(payload.area_cd),
             _safe_hub_attractions(payload.area_cd, payload.base_ymd[:6]),
+            _safe_national_position(payload.area_cd, payload.base_ymd),
         )
         snapshot = build_live_visitor_snapshot(raw, payload.area_cd, payload.base_ymd)
         concentration = summarize_attraction_concentration(concentration_raw)
         hub_spread = compute_hub_spatial_spread(hubs_raw)
+        if national_position is not None:
+            # Same 7일 평균·기초지자체-only figure §04 shows — see _national_position's
+            # docstring for why this used to be two different numbers.
+            snapshot["national_comparison"] = {
+                "municipality_count": national_position["municipality_count"],
+                "outside_visitor_percentile": national_position["outside_visitor_percentile"],
+                "window_days": national_position["window_days"],
+            }
 
         snapshot["observed_indices"] = {
             "base_ym": payload.base_ymd[:6],
@@ -403,19 +453,15 @@ async def national_peers(payload: NationalPeersRequest):
     available:false so the UI never has to render a bare error here.
     """
     try:
-        ranking = await fetch_national_visitor_ranking_window(payload.base_ymd, payload.window_days)
+        independent_ranking, position = await _national_position(payload.area_cd, payload.base_ymd, payload.window_days)
     except Exception as error:
         return {"available": False, "reason": str(error), "base_ymd": payload.base_ymd}
 
-    target = next((entry for entry in ranking if entry["area_cd"] == payload.area_cd), None)
-    if target is None:
+    if position is None:
         return {"available": False, "reason": "선택 지역이 최근 방문자 원천에 없습니다.", "base_ymd": payload.base_ymd}
-
-    # ① 전국 위치: 기초지자체(일반구 제외) 전체를 모집단으로 재계산한다.
-    independent_ranking = [entry for entry in ranking if is_independent_municipality(str(entry["area_name"]))]
-    independent_values = [float(entry["outside_visitors"]) for entry in independent_ranking]
-    national_percentile = _percentile_rank(float(target["outside_visitors"]), independent_values)
-    demand_level = "충분" if national_percentile >= 50 else "부족"
+    target = position["target"]
+    national_percentile = position["outside_visitor_percentile"]
+    demand_level = position["demand_level"]
 
     # ② Peer Group: 행정유형 + 수도권 여부 + 관광수요·인구·인구밀도 규모 유사도로 구성한다.
     base_ym = payload.base_ymd[:6]

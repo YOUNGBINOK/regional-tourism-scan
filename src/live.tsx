@@ -17,7 +17,7 @@ type LiveSnapshot = {
   source_status: 'live';
   base_ymd: string;
   area: { area_cd: string; area_name: string; resident_visitors: number; outside_visitors: number; foreign_visitors: number };
-  national_comparison: { municipality_count: number; outside_visitor_percentile: number };
+  national_comparison: { municipality_count: number; outside_visitor_percentile: number; window_days?: number };
   visitor_mix: { outside_share: number; foreign_share: number };
   observed_indices: {
     base_ym: string; aggregation: string;
@@ -151,7 +151,12 @@ type Axis = {
 const MIN_PEER_SAMPLE_FOR_WEAK_JUDGMENT = 4;
 
 function App() {
-  const [regionId, setRegionId] = useState('47130');
+  // 기본 진단 대상: 경주시는 전국 배치(data/national_diagnosis_findings.md)에서
+  // 취약 판정을 받은 축이 하나도 없어("성과우수형") 정책 우선순위 화면이 빈
+  // 상태로 뜬다 — 진단 기능을 보여주는 첫 화면으로는 부적절하다. 평택시는 같은
+  // 배치에서 실제로 소비강도가 취약(Peer 하위25% 대비 IQR 1.71배 미달)으로
+  // 잡힌, 재현 가능한 사례다.
+  const [regionId, setRegionId] = useState('41220');
   // KTO GW는 제공 완료된 기준일만 조회할 수 있다. 검증된 최근 기준일을 초기값으로 둔다.
   const [date, setDate] = useState('2025-08-25');
   const [snapshot, setSnapshot] = useState<LiveSnapshot | null>(null);
@@ -161,7 +166,10 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [businessOperation, setBusinessOperation] = useState<'info' | 'history'>('info');
-  const [businessRegionId, setBusinessRegionId] = useState('47130');
+  // 제주시가 4개 지원 지역 중 원자료가 가장 풍부하다(원자료 716건·관광숙박업
+  // 170건 vs 경주 4건·0건) — 첫 조회에서 빈 결과에 가까운 화면을 보여주지
+  // 않도록 기본값으로 둔다.
+  const [businessRegionId, setBusinessRegionId] = useState('50110');
   const [businessBaseDate, setBusinessBaseDate] = useState(date.replace(/-/g, ''));
   const [businessData, setBusinessData] = useState<MoisBusinessSnapshot | null>(null);
   const [businessLoading, setBusinessLoading] = useState(false);
@@ -175,6 +183,10 @@ function App() {
     if (ranked) return { id: ranked.area_cd, name: ranked.area_name, province: resolveCentroid(ranked.area_cd, ranked.area_name)?.province || '' };
     const fixed = regions.find((item) => item.id === regionId);
     if (fixed) return fixed;
+    // 전국 스캔이 아직 안 뜬 첫 렌더에서도(예: 4개 관광거점 밖 지역이 기본값일 때)
+    // 지역명이 코드 숫자로 잠깐 보이지 않도록, 정적 중심좌표 표에서 바로 찾는다.
+    const known = centroids[regionId];
+    if (known) return { id: regionId, name: known.name, province: known.province };
     return { id: regionId, name: snapshot?.area.area_name || regionId, province: '' };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [regionId, nationalRanking, snapshot]);
@@ -337,8 +349,13 @@ function App() {
       value: snapshot?.observed_indices.lodging_share_index ?? null, peerMedian: peerGroup?.medians.lodging_share_index ?? null,
       peerTop25: peerGroup?.top_quartile.lodging_share_index ?? null, peerBottom25: peerGroup?.bottom_quartile.lodging_share_index ?? null,
       peerSampleSize: peerGroup?.sample_size.lodging_share_index ?? 0 },
+    // 공간확산은 방향(넓게 퍼진 것이 좋은지 좁게 모인 것이 좋은지)이 자명하지
+    // 않다 — 다른 축은 전부 "낮으면 나쁘다"가 성립하지만, 관광지가 모여 있는
+    // 것은 동선 설계상 장점일 수도 있다. 그래서 Peer 비교값은 참고용으로만
+    // 보여주고, 아래 rankedWeak/우선순위 판정에서는 제외한다(informational로
+    // 별도 처리 — isWeak/근소 배지를 씌우지 않는다).
     { key: 'dispersion', label: '중심지 공간확산', diff: dispersionDiff, unit: 'p', tier: peerGroup?.medians.dispersion_spread_km != null ? 'derived' : 'pending',
-      note: `내비게이션 중심 관광지 좌표의 RMS 확산거리(km) · ${peerBasisNote}`,
+      note: `내비게이션 중심 관광지 좌표의 RMS 확산거리(km) · ${peerBasisNote} · 참고용(방향 미검증 — 우선순위 판정에서 제외)`,
       value: snapshot?.observed_indices.spatial_dispersion ?? null, peerMedian: peerGroup?.medians.dispersion_spread_km ?? null,
       peerTop25: peerGroup?.top_quartile.dispersion_spread_km ?? null, peerBottom25: peerGroup?.bottom_quartile.dispersion_spread_km ?? null,
       peerSampleSize: peerGroup?.sample_size.dispersion_spread_km ?? 0 },
@@ -397,12 +414,23 @@ function App() {
     { axis: axes[0], key: 'stay' as const }, { axis: axes[1], key: 'spend' as const }, { axis: axes[2], key: 'stayShare' as const },
   ];
   const weakCoreAxes = coreAxes.filter(({ axis }) => isWeak(axis));
-  const hasCoreData = stayDiff != null && spendDiff != null && lodgingDiff != null;
+  // 세 핵심 축 모두 값을 받았을 뿐 아니라, 그 값이 "취약 여부를 판정할 만큼"
+  // Peer 표본을 확보했을 때만 유형을 확정한다. 이 관문이 없으면 Peer 표본이
+  // 1~3곳뿐인 지역(예: 밀집 수도권 시 그룹)은 어떤 축도 isWeak를 통과할 수
+  // 없어 근거 없이 항상 "성과우수형"으로 잘못 분류된다 — 우수해서가 아니라
+  // 판정할 수 없어서인데, 화면은 그 차이를 구분하지 못했다.
+  const coreSampleSufficient = coreAxes.every(({ axis }) => axis.peerSampleSize >= MIN_PEER_SAMPLE_FOR_WEAK_JUDGMENT);
+  const hasCoreData = stayDiff != null && spendDiff != null && lodgingDiff != null && coreSampleSufficient;
   const hasWeakPerformance = weakCoreAxes.length > 0;
 
+  const coreDiffsArrived = stayDiff != null && spendDiff != null && lodgingDiff != null;
   let macroType: '수요부족형' | '잠재력형' | '성과우수형' | '숨은취약형' | null = null;
-  let regionType = '진단 데이터 수집 중';
-  let diagnosisText = peersAvailable ? 'Peer Group 데이터가 모두 모이면 진단을 표시합니다.' : '전국 관광수요 스캔 결과를 기다리는 중입니다.';
+  let regionType = coreDiffsArrived && !coreSampleSufficient ? '판정 보류 · Peer 표본 부족' : '진단 데이터 수집 중';
+  let diagnosisText = peersAvailable
+    ? (coreDiffsArrived && !coreSampleSufficient
+        ? `Peer Group(${peerGroup?.criteria_note})의 표본이 적어(${coreAxes.map(({ axis }) => axis.peerSampleSize).join('/')}곳) 체류·소비·숙박 취약 여부를 판정할 수 없습니다. "성과우수형"으로 단정하지 않고 유형 판정을 보류합니다.`
+        : 'Peer Group 데이터가 모두 모이면 진단을 표시합니다.')
+    : '전국 관광수요 스캔 결과를 기다리는 중입니다.';
 
   if (demandLevel != null && hasCoreData) {
     if (demandLevel === '부족') {
@@ -456,14 +484,16 @@ function App() {
   // 정책 우선순위 TOP 3: 계산 가능한 축의 취약 정도로 순위를 매기고, 데이터가 없는 축은 "향후 분석" 항목으로 채운다.
   // 우선순위에는 취약 판정을 통과한 축만 올린다 — 하위 25%를 근소하게 밑도는
   // 축(severity > 0이지만 문턱 미달)은 표에만 표시하고 정책 과제로 세우지 않는다.
-  const rankedWeak = axes.filter(isWeak).sort((a, b) => severity(b) - severity(a));
+  // 공간확산은 방향(넓게/좁게 중 무엇이 나은지)이 검증되지 않아 우선순위
+  // 판정에서 제외한다 — 위 axes 정의의 주석 참고.
+  const rankedWeak = axes.filter((axis) => axis.key !== 'dispersion' && isWeak(axis)).sort((a, b) => severity(b) - severity(a));
   const pendingAxes = axes.filter((axis) => axis.diff == null);
   const priorities = [...rankedWeak, ...pendingAxes].slice(0, 3);
   // 하위 25%를 밑돌지만 취약 문턱에는 못 미친 축 — 우선순위에서 뺀 이유를 밝히는 데 쓴다.
   const nearMissAxes = axes.filter((axis) => isBelowBottomQuartile(axis) && !isWeak(axis));
   // 관광수요 자체는 이미 충분(전국 상위 절반)하므로, 홍보 확대보다 Peer 대비 취약축이 우선이다.
   const promotionLowPriority = demandLevel === '충분';
-  const chartData = axes.filter((axis) => axis.diff != null).map((axis) => ({ name: axis.label, diff: (axis.diff as number) / axisSpan(axis) }));
+  const chartData = axes.filter((axis) => axis.diff != null).map((axis) => ({ name: axis.label, diff: (axis.diff as number) / axisSpan(axis), directionVerified: axis.key !== 'dispersion' }));
 
   const stats = snapshot ? [
     ['외지인 방문자', formatNumber.format(snapshot.area.outside_visitors), '선택 기준일 · 통신자료 기반 KTO 추정치', 'measured' as DataTier],
@@ -476,7 +506,11 @@ function App() {
     ['관광객 다양성', snapshot.observed_indices.visitor_diversity?.toFixed(2) || '--', '연령별 방문객 구성 지표', 'derived' as DataTier],
     ['관광소비 다양성', snapshot.observed_indices.spend_diversity?.toFixed(2) || '--', '연령별 관광소비 구성 지표', 'derived' as DataTier],
     ['국제적 다양성', snapshot.observed_indices.international_diversity?.toFixed(2) || '--', '외국인 소비·국적 다양성 지표', 'derived' as DataTier],
-    ['외지인 수요 백분위', `${snapshot.national_comparison.outside_visitor_percentile}%`, `${snapshot.national_comparison.municipality_count}개 지역 비교`, 'derived' as DataTier],
+    ['외지인 수요 백분위', `${snapshot.national_comparison.outside_visitor_percentile}%`,
+      snapshot.national_comparison.window_days
+        ? `기초지자체 ${snapshot.national_comparison.municipality_count}곳 · 최근 ${snapshot.national_comparison.window_days}일 평균`
+        : `${snapshot.national_comparison.municipality_count}개 지역 비교 · 선택일 단일 집계(전국 위치 재계산 실패로 대체값)`,
+      'derived' as DataTier],
     ['외지인 비중', `${snapshot.visitor_mix.outside_share}%`, '현지인·외지인·외국인 합계 대비', 'derived' as DataTier],
     ['관광지 혼잡 예측', snapshot.observed_indices.attraction_crowding_forecast?.toFixed(1) ?? '--', '관광지별 최혼잡 시점=100 · 향후 30일 평균', 'modeled' as DataTier],
     ['중심지 공간확산', snapshot.observed_indices.spatial_dispersion != null ? `${snapshot.observed_indices.spatial_dispersion.toFixed(2)} km` : '--', snapshot.observed_indices.spatial_dispersion_detail ? `내비게이션 중심 관광지 ${snapshot.observed_indices.spatial_dispersion_detail.hub_count}개 좌표` : '중심 관광지 API 조회 대기', snapshot.observed_indices.spatial_dispersion != null ? 'derived' as DataTier : 'pending' as DataTier],
@@ -485,7 +519,7 @@ function App() {
     ['외지인 방문자', '이동통신 자료로 추정한 일별 방문자입니다. 관광 목적을 직접 확인한 관광객 수가 아니며 여러 날 체류하면 날짜별로 다시 집계될 수 있습니다.'],
     ['KTO 강도·숙박지수', '체류·소비·숙박 비중·숙박일수별 지표의 상대적 강도를 나타내는 지수점수입니다. 87.9를 숙박률 87.9%로 읽으면 안 됩니다.'],
     ['관광지 혼잡 예측', '각 관광지의 가장 붐비는 시기를 100으로 둔 향후 30일 상대 혼잡도입니다. 관광지 간 방문 점유율이 아니므로 공간분산 지수로 사용하지 않습니다.'],
-    ['중심지 공간확산', '내비게이션 연계 중심 관광지 좌표가 지리적 중심에서 얼마나 넓게 퍼져 있는지를 RMS 거리(km)로 계산합니다. 실제 방문자 점유율의 균등도를 뜻하는 정식 공간분산 D와는 구분합니다.'],
+    ['중심지 공간확산', '내비게이션 연계 중심 관광지 좌표가 지리적 중심에서 얼마나 넓게 퍼져 있는지를 RMS 거리(km)로 계산합니다. 실제 방문자 점유율의 균등도를 뜻하는 정식 공간분산 D와는 구분합니다. 다른 축과 달리 “높을수록 좋다”가 성립하지 않습니다 — 관광지가 넓게 퍼진 것과 한곳에 모인 것 중 무엇이 나은지는 지역 여건에 따라 다르므로, Peer 비교값은 참고용으로만 제공하고 취약 판정·정책 우선순위에는 반영하지 않습니다.'],
     ['단기 수요 안정성', '최근 7일 외지인 방문자의 변동계수(CV)를 100×(1−CV)로 역산한 파생지표입니다. 연간 계절성을 대신하지 않습니다.'],
     ['전국 위치 vs Peer Group', '전국 위치(①)는 기초지자체 전체 중 관광수요 백분위로 수요 수준만 판정합니다. Peer Group(②)은 체류·숙박·소비 취약성을 진단할 때만 쓰며, 같은 행정유형(시/군/자치구)·수도권 여부 안에서 관광수요·인구·인구밀도 규모가 가장 비슷한 지역으로 구성합니다(각 지표를 비교군 내 백분위로 바꿔 함께 비교). 전국 상위지역 중앙값을 그대로 비교기준으로 쓰지 않습니다.'],
     ['인구·인구밀도 출처', '주민등록인구(KOSIS 행정구역별 주민등록인구, 월간)를 KTO와 동일한 5자리 지역코드로 직접 조회합니다. 면적은 통계청 SGIS 행정동 경계를 시군구 단위로 합산해 추정했습니다(지도 좌표와 같은 출처, 오차 3% 이내). 인구 데이터를 못 가져오면 관광수요 규모만으로 비교군을 구성합니다.'],
@@ -505,7 +539,7 @@ function App() {
       <section className="hero live-hero"><small>● DATA LAB CONNECTION · KTO TOURISM DATA LAB</small><div><article><h1>지금은 <em>Data Lab API 자료</em>로<br />확인합니다.</h1><p>선택한 기준일과 지자체의 한국관광공사 통신 기반 방문자 추정치와 관광지수를 서버에서 조회합니다. 전국 위치로 관광수요 수준을 먼저 판단한 뒤, 행정유형·수도권 여부·관광수요 규모가 비슷한 Peer Group과 비교해 &ldquo;무엇이 상대적으로 부족한가&rdquo;를 진단합니다.</p><a href="#map">기준일 데이터 보기 ↓</a></article><aside><span>DATA STATUS <b>{loading ? 'LOADING' : snapshot ? 'CONNECTED' : 'CONNECTION REQUIRED'}</b></span><strong>{snapshot ? 'OK' : '--'}</strong><div className="bars">{[28, 42, 36, 58, 49, 68, 57, 79].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}</div><p><b>{snapshot ? snapshot.source : 'KTO API 연결 확인 필요'}</b><span>{snapshot?.base_ymd || date.replace(/-/g, '.')}</span></p></aside></div></section>
       <section id="map" className="section"><div className="heading"><div><small>01 / REGION SELECT</small><h2>지역을 선택하면,<br /><em>진단이 시작됩니다</em></h2></div><div className="live-controls"><div className="region-search"><label>지역 검색<input type="text" value={regionQuery} placeholder="예: 강남구, 경상북도" onChange={(event) => setRegionQuery(event.target.value)} /></label>{regionMatches.length > 0 && <ul className="region-search-results">{regionMatches.map((item) => <li key={item.id}><button type="button" onClick={() => { select(item.id); setRegionQuery(''); }}>{regionLabel(item)}</button></li>)}</ul>}</div><label>기준일<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><button type="button" onClick={() => void loadDiagnosis(regionId, date.replace(/-/g, ''), () => false)} disabled={loading}>{loading ? '조회 중' : '기준일 데이터 조회'}</button></div></div>
         <div className="maplayout"><article className="map"><div>외지인 방문자 · KTO 일별 집계 <span>{mapRegions.length > regions.length ? `전국 ${mapRegions.length}개 시군구 중 클릭하세요` : '선택 지역을 클릭하세요'}</span></div><MapContainer center={[36.25, 127.8]} zoom={6.3} scrollWheelZoom={false}><TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />{mapRegions.map((item) => <CircleMarker key={item.id} center={[item.lat, item.lng]} radius={item.id === regionId ? 16 : 6} pathOptions={{ color: item.id === regionId ? '#173b2b' : '#7a1f0f', weight: item.id === regionId ? 4 : 1.5, fillColor: item.id === regionId ? '#4f8249' : '#e8622f', fillOpacity: item.id === regionId ? .95 : .9 }} eventHandlers={{ click: () => select(item.id) }}><Tooltip>{regionLabel(item)}</Tooltip></CircleMarker>)}</MapContainer><small>※ {mapRegions.length > regions.length ? `전국 기초지자체(시/군/자치구) 중 좌표를 확인할 수 있는 ${mapRegions.length}곳을 진단 대상으로 선택할 수 있습니다.` : '전국 스캔 결과를 불러오는 중입니다. 우선 4개 관광거점 중에서 선택하세요.'} Peer Group은 선택 지역과 같은 행정유형·수도권 여부·관광수요 규모의 지역으로 매번 다시 구성합니다.</small></article>
-          <aside className="summary"><small>SELECTED MUNICIPALITY</small><h3>{regionLabel(region)}</h3><label>기준일 외지인 방문자</label><strong>{snapshot ? formatNumber.format(snapshot.area.outside_visitors) : '--'}</strong><i><b style={{ width: `${snapshot?.national_comparison.outside_visitor_percentile || 0}%` }} /></i><p>전국 270개 코드 내 백분위 <b>{snapshot ? `${snapshot.national_comparison.outside_visitor_percentile}%` : '--'}</b></p><label>데이터 상태</label><div className="badges"><span>{snapshot ? 'KTO 통신기반 추정치' : '조회 대기'}</span><span>{snapshot ? snapshot.base_ymd : date.replace(/-/g, '')}</span></div><p className="desc">{error || (snapshot ? '선택 기준일의 외지인 방문자 추정치입니다. 아래 진단은 전국 위치(내 위치 확인)와 Peer Group 비교(내 문제 찾기)로 나눠 보여드립니다.' : '조회 버튼을 눌러 KTO 방문자 데이터를 불러오세요.')}</p></aside></div>
+          <aside className="summary"><small>SELECTED MUNICIPALITY</small><h3>{regionLabel(region)}</h3><label>기준일 외지인 방문자</label><strong>{snapshot ? formatNumber.format(snapshot.area.outside_visitors) : '--'}</strong><i><b style={{ width: `${snapshot?.national_comparison.outside_visitor_percentile || 0}%` }} /></i><p>{snapshot?.national_comparison.window_days ? `기초지자체 ${snapshot.national_comparison.municipality_count}곳 중 백분위` : '전국 코드 내 백분위'} <b>{snapshot ? `${snapshot.national_comparison.outside_visitor_percentile}%` : '--'}</b></p><label>데이터 상태</label><div className="badges"><span>{snapshot ? 'KTO 통신기반 추정치' : '조회 대기'}</span><span>{snapshot ? snapshot.base_ymd : date.replace(/-/g, '')}</span></div><p className="desc">{error || (snapshot ? '선택 기준일의 외지인 방문자 추정치입니다. 아래 진단은 전국 위치(내 위치 확인)와 Peer Group 비교(내 문제 찾기)로 나눠 보여드립니다.' : '조회 버튼을 눌러 KTO 방문자 데이터를 불러오세요.')}</p></aside></div>
       </section>
       <section id="diagnosis" className="section live-section"><div className="heading"><div><small>02 / OBSERVED METRICS</small><h2>{region.name}의<br /><em>관측자료 기반 진단</em></h2></div><label>진단 대상{mapRegions.length > regions.length && <em className="tier tier-derived">전국 {mapRegions.length}곳</em>}<select value={regionId} onChange={(event) => select(event.target.value)}>{mapRegions.map((item) => <option key={item.id} value={item.id}>{regionLabel(item)}</option>)}</select></label></div>
         <div className="live-stats">{stats.map(([label, value, caption, tier]) => <article key={label as string}><small>{label} <Tier tier={tier as DataTier} /></small><strong>{value}</strong><p>{caption}</p></article>)}</div>
@@ -531,7 +565,8 @@ function App() {
           </details>}
           {axes.map((axis) => <div className="sbar" key={axis.key}>
             <span>{axis.label} <Tier tier={axis.tier} /></span>
-            <i><b style={{ width: axis.diff == null ? '0%' : `${Math.min(100, 20 * Math.abs(axis.diff) / axisSpan(axis))}%`, background: axis.diff == null ? '#d7ddd4' : axis.diff < 0 ? '#d45f43' : '#8fbc7e' }} /></i>
+            <i><b style={{ width: axis.diff == null ? '0%' : `${Math.min(100, 20 * Math.abs(axis.diff) / axisSpan(axis))}%`,
+              background: axis.diff == null ? '#d7ddd4' : axis.key === 'dispersion' ? '#9aa39c' : axis.diff < 0 ? '#d45f43' : '#8fbc7e' }} /></i>
             <em>{axis.diff == null ? '데이터 없음' : formatSigned(axis.diff, axis.unit)}</em>
           </div>)}
           <div className="peer-value-table">
@@ -539,14 +574,18 @@ function App() {
               <thead><tr><th>지표</th><th>{region.name}</th><th>Peer 하위25%</th><th>Peer 중앙값</th><th>Peer 상위25%</th><th>비고</th></tr></thead>
               <tbody>{axes.filter((axis) => axis.value != null || axis.peerMedian != null).map((axis) => {
                 const lowSample = axis.peerBottom25 != null && axis.peerSampleSize < MIN_PEER_SAMPLE_FOR_WEAK_JUDGMENT;
-                return <tr key={axis.key} className={isWeak(axis) ? 'weak' : undefined}>
+                // 공간확산은 방향 미검증이라 취약/근소 판정을 아예 매기지 않는다(위 axes 정의 참고).
+                const directionVerified = axis.key !== 'dispersion';
+                return <tr key={axis.key} className={directionVerified && isWeak(axis) ? 'weak' : undefined}>
                   <td>{axis.label}</td>
                   <td className="value">{axis.value != null ? axis.value.toFixed(1) : '--'}</td>
                   <td>{axis.peerBottom25 != null ? axis.peerBottom25.toFixed(1) : '--'}</td>
                   <td>{axis.peerMedian != null ? axis.peerMedian.toFixed(1) : '--'}</td>
                   <td>{axis.peerTop25 != null ? axis.peerTop25.toFixed(1) : '--'}</td>
                   <td className="remark">
-                    {lowSample ? <span className="badge caution" title="Peer 표본이 적어 하위25% 문턱이 불안정합니다 — 취약 판정에 쓰지 않습니다.">표본 {axis.peerSampleSize}곳 · 판정 보류</span>
+                    {!directionVerified
+                      ? (axis.value != null && <span className="badge neutral" title="관광지가 넓게 퍼진 것과 좁게 모인 것 중 무엇이 나은지 검증되지 않아, 값은 참고용으로만 제공하고 취약 여부는 판정하지 않습니다.">참고용 · 방향 미검증</span>)
+                      : lowSample ? <span className="badge caution" title="Peer 표본이 적어 하위25% 문턱이 불안정합니다 — 취약 판정에 쓰지 않습니다.">표본 {axis.peerSampleSize}곳 · 판정 보류</span>
                       : isWeak(axis) ? <span className="badge weak" title={`하위25% 문턱보다 IQR의 ${severity(axis).toFixed(2)}배만큼 낮습니다 (판정 기준 ${WEAK_MATERIALITY_IQR}배 이상).`}>취약 · {severity(axis).toFixed(2)} IQR</span>
                       : isBelowBottomQuartile(axis) ? <span className="badge near" title={`하위25% 문턱을 밑돌지만 미달 폭이 IQR의 ${severity(axis).toFixed(2)}배로, 판정 기준(${WEAK_MATERIALITY_IQR}배)에 못 미칩니다 — 오차 수준의 차이로 보고 정책 과제로 세우지 않습니다.`}>근소 · {severity(axis).toFixed(2)} IQR</span>
                       : null}
@@ -567,7 +606,7 @@ function App() {
               <XAxis type="number" tick={{ fontSize: 10, fill: '#7e8983' }} tickFormatter={(value) => `${Number(value).toFixed(1)}×`} axisLine={false} tickLine={false} />
               <YAxis type="category" dataKey="name" width={96} tick={{ fontSize: 11, fill: '#3f4a44' }} axisLine={false} tickLine={false} />
               <Bar dataKey="diff" radius={3}>
-                {chartData.map((item) => <Cell key={item.name} fill={item.diff < 0 ? '#d45f43' : '#8fbc7e'} />)}
+                {chartData.map((item) => <Cell key={item.name} fill={!item.directionVerified ? '#9aa39c' : item.diff < 0 ? '#d45f43' : '#8fbc7e'} />)}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
