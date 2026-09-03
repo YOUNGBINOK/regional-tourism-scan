@@ -83,6 +83,14 @@ type MoisBusinessSnapshot = {
 type RankedRegion = { area_cd: string; area_name: string; resident_visitors: number; outside_visitors: number; foreign_visitors: number; rank: number; percentile: number };
 type NationalRankingSnapshot = { available: true; base_ymd: string; window_days: number; regions: RankedRegion[] } | { available: false; reason: string; base_ymd: string };
 
+type PgRegionRow = {
+  area_cd: string; area_name: string; admin_type: string; pg_category: PgCategory | null;
+  percentile: number; population: number | null; population_density: number | null;
+};
+type PgCategoryRegionsSnapshot = { available: true; base_ymd: string; window_days: number; regions: PgRegionRow[] } | { available: false; reason: string; base_ymd: string };
+type CompareRegionRow = PgRegionRow & { axes: PeerAxisSet | null; fetch_ok: boolean };
+type CompareRegionsSnapshot = { available: true; base_ymd: string; window_days: number; regions: CompareRegionRow[] } | { available: false; reason: string; base_ymd: string };
+
 const centroids = sigunguCentroids as Record<string, { name: string; province: string; lat: number; lng: number }>;
 // KTO 방문자 원천은 구가 있는 시(수원·전주 등)를 시 단위로 집계해 별도 코드를 쓰지만,
 // 중심좌표 표는 구 단위로만 존재한다. 코드가 표에 없으면 이름이 그 시로 시작하는
@@ -185,6 +193,16 @@ function App() {
   const [businessError, setBusinessError] = useState('');
   const [lodgingEvidence, setLodgingEvidence] = useState<MoisBusinessSnapshot | { available: false } | null>(null);
 
+  // PG 카테고리별 지역 비교: 카테고리를 고르면 그 안의 지역 목록을 보여주고,
+  // 사용자가 직접 2~5곳을 골라 지표를 나란히 비교할 수 있게 한다.
+  const [pgCategoryList, setPgCategoryList] = useState<PgCategoryRegionsSnapshot | null>(null);
+  const [selectedPgCategory, setSelectedPgCategory] = useState<PgCategory>('PG-1');
+  const [pgRegionQuery, setPgRegionQuery] = useState('');
+  const [compareSelection, setCompareSelection] = useState<string[]>([]);
+  const [compareResult, setCompareResult] = useState<CompareRegionsSnapshot | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
+  const [compareError, setCompareError] = useState('');
+
   // 진단 대상 확장: 전국 스캔이 뜨면 그 목록에서, 아직이면 기존 4개 관광거점에서 이름을 찾는다.
   const rankingRegions = nationalRanking?.available ? nationalRanking.regions : [];
   const region = useMemo(() => {
@@ -246,6 +264,48 @@ function App() {
     })();
     return () => { cancelled = true; };
   }, [date]);
+
+  // PG 카테고리별 지역 목록: 기준일이 바뀔 때만 다시 불러온다. 서버가 이미
+  // 캐시하는 순위·인구 조회를 재사용하므로, 이 섹션을 열지 않는 사용자에게도
+  // 추가 KTO 호출 비용은 없다(national-ranking과 같은 캐시 키를 공유).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(`${apiBase}/v1/analysis/pg-categories`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base_ymd: date.replace(/-/g, ''), window_days: 7 }),
+        });
+        const data = (await response.json()) as PgCategoryRegionsSnapshot;
+        if (!cancelled) setPgCategoryList(response.ok ? data : { available: false, reason: 'PG 카테고리 목록 요청에 실패했습니다.', base_ymd: date.replace(/-/g, '') });
+      } catch (cause) {
+        if (!cancelled) setPgCategoryList({ available: false, reason: cause instanceof Error ? cause.message : 'PG 카테고리 목록 요청에 실패했습니다.', base_ymd: date.replace(/-/g, '') });
+      }
+    })();
+    return () => { cancelled = true; setCompareSelection([]); setCompareResult(null); };
+  }, [date]);
+
+  const runCompareRegions = async () => {
+    if (compareSelection.length < 2) { setCompareError('2곳 이상 선택하세요.'); return; }
+    setCompareLoading(true); setCompareError(''); setCompareResult(null);
+    try {
+      const response = await fetch(`${apiBase}/v1/analysis/compare-regions`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ area_cds: compareSelection, base_ymd: date.replace(/-/g, ''), window_days: 7 }),
+      });
+      const data = (await response.json()) as CompareRegionsSnapshot;
+      if (!response.ok || !data.available) throw new Error(!data.available ? data.reason : '비교 요청에 실패했습니다.');
+      setCompareResult(data);
+    } catch (cause) {
+      setCompareError(cause instanceof Error ? cause.message : '비교 요청에 실패했습니다.');
+    } finally { setCompareLoading(false); }
+  };
+
+  const toggleCompareSelection = (areaCd: string) => {
+    setCompareSelection((current) => current.includes(areaCd)
+      ? current.filter((id) => id !== areaCd)
+      : current.length >= 5 ? current : [...current, areaCd]);
+  };
 
   // ② 잘 되는 곳들 중 취약점 탐지: 진단 대상 하나의 심층 지표 + 같은 기준일 전국
   // 순위에서 동적으로 뽑은 상위 수요 지역을 비교군으로 삼는다. 진단 대상이나
@@ -504,6 +564,27 @@ function App() {
   const promotionLowPriority = demandLevel === '충분';
   const chartData = axes.filter((axis) => axis.diff != null).map((axis) => ({ name: axis.label, diff: (axis.diff as number) / axisSpan(axis), directionVerified: axis.key !== 'dispersion' }));
 
+  const pgRegionsAvailable = pgCategoryList?.available === true;
+  const pgRegionsInCategory = useMemo(() => {
+    if (!pgRegionsAvailable) return [];
+    const query = pgRegionQuery.trim();
+    return pgCategoryList.regions
+      .filter((row) => row.pg_category === selectedPgCategory)
+      .filter((row) => !query || row.area_name.includes(query))
+      .sort((a, b) => b.percentile - a.percentile);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pgCategoryList, selectedPgCategory, pgRegionQuery]);
+  const pgCategoryCounts = useMemo(() => {
+    const counts: Record<PgCategory, number> = { 'PG-1': 0, 'PG-2': 0, 'PG-3': 0, 'PG-4': 0 };
+    if (pgRegionsAvailable) for (const row of pgCategoryList.regions) if (row.pg_category) counts[row.pg_category] += 1;
+    return counts;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pgCategoryList]);
+  const compareAxisKeys: Array<{ key: keyof PeerAxisSet; label: string }> = [
+    { key: 'stay_intensity', label: '체류강도' }, { key: 'spend_intensity', label: '소비강도' },
+    { key: 'lodging_share_index', label: '숙박비중' }, { key: 'dispersion_spread_km', label: '중심지 공간확산(km)' },
+  ];
+
   const stats = snapshot ? [
     ['외지인 방문자', formatNumber.format(snapshot.area.outside_visitors), '선택 기준일 · 통신자료 기반 KTO 추정치', 'measured' as DataTier],
     ['관광 체류 강도', snapshot.observed_indices.stay_intensity?.toFixed(2) || '--', `${snapshot.observed_indices.base_ym} · ${snapshot.observed_indices.aggregation}`, 'derived' as DataTier],
@@ -544,7 +625,7 @@ function App() {
   ];
 
   return <>
-    <header><div className="logo"><b>R</b>Regional Tourism Scan<i /></div><nav><a href="#map">전국 관광수요</a><a href="#diagnosis">관광현황 진단</a><a href="#business-data">관광사업자 원자료</a><a href="#peer">지역 비교</a><a href="#priority">정책 우선순위</a><a href="#methodology">용어·알고리즘</a></nav><button type="button">정책 브리프 PDF ↗</button></header>
+    <header><div className="logo"><b>R</b>Regional Tourism Scan<i /></div><nav><a href="#map">전국 관광수요</a><a href="#diagnosis">관광현황 진단</a><a href="#business-data">관광사업자 원자료</a><a href="#peer">지역 비교</a><a href="#pg-compare">카테고리별 비교</a><a href="#priority">정책 우선순위</a><a href="#methodology">용어·알고리즘</a></nav><button type="button">정책 브리프 PDF ↗</button></header>
     <main data-live-analysis="true">
       <section className="hero live-hero"><small>● DATA LAB CONNECTION · KTO TOURISM DATA LAB</small><div><article><h1>지금은 <em>Data Lab API 자료</em>로<br />확인합니다.</h1><p>선택한 기준일과 지자체의 한국관광공사 통신 기반 방문자 추정치와 관광지수를 서버에서 조회합니다. 전국 위치로 관광수요 수준을 먼저 판단한 뒤, 행정유형·수도권 여부·관광수요 규모가 비슷한 Peer Group과 비교해 &ldquo;무엇이 상대적으로 부족한가&rdquo;를 진단합니다.</p><a href="#map">기준일 데이터 보기 ↓</a></article><aside><span>DATA STATUS <b>{loading ? 'LOADING' : snapshot ? 'CONNECTED' : 'CONNECTION REQUIRED'}</b></span><strong>{snapshot ? 'OK' : '--'}</strong><div className="bars">{[28, 42, 36, 58, 49, 68, 57, 79].map((height, index) => <i key={index} style={{ height: `${height}%` }} />)}</div><p><b>{snapshot ? snapshot.source : 'KTO API 연결 확인 필요'}</b><span>{snapshot?.base_ymd || date.replace(/-/g, '.')}</span></p></aside></div></section>
       <section id="map" className="section"><div className="heading"><div><small>01 / REGION SELECT</small><h2>지역을 선택하면,<br /><em>진단이 시작됩니다</em></h2></div><div className="live-controls"><div className="region-search"><label>지역 검색<input type="text" value={regionQuery} placeholder="예: 강남구, 경상북도" onChange={(event) => setRegionQuery(event.target.value)} /></label>{regionMatches.length > 0 && <ul className="region-search-results">{regionMatches.map((item) => <li key={item.id}><button type="button" onClick={() => { select(item.id); setRegionQuery(''); }}>{regionLabel(item)}</button></li>)}</ul>}</div><label>기준일<input type="date" value={date} onChange={(event) => setDate(event.target.value)} /></label><button type="button" onClick={() => void loadDiagnosis(regionId, date.replace(/-/g, ''), () => false)} disabled={loading}>{loading ? '조회 중' : '기준일 데이터 조회'}</button></div></div>
@@ -611,6 +692,47 @@ function App() {
           </div>
           <p className="insight">{diagnosisText}</p>
         </article></div>
+      </section>
+      <section id="pg-compare" className="section live-section"><div className="heading"><div><small>04b / PG CATEGORY COMPARISON</small><h2>같은 도시 성격끼리,<br /><em>직접 골라 비교합니다</em></h2></div></div>
+        <p className="peer-note">위 Peer Group은 진단 대상 하나를 기준으로 자동 구성됩니다. 여기서는 PG-1~4 카테고리를 먼저 고르고, 그 안의 지역을 최대 5곳까지 직접 선택해 지표를 나란히 비교할 수 있습니다.</p>
+        <div className="pg-compare-tool">
+          <div className="pg-tabs">{(['PG-1', 'PG-2', 'PG-3', 'PG-4'] as PgCategory[]).map((category) => <button key={category} type="button"
+            className={category === selectedPgCategory ? 'active' : undefined}
+            onClick={() => setSelectedPgCategory(category)}>{category} <span>{PG_CATEGORY_LABELS[category]}</span><em>{pgCategoryCounts[category]}곳</em></button>)}</div>
+          {!pgRegionsAvailable && <p className="insight">{pgCategoryList && !pgCategoryList.available ? `카테고리 목록 조회에 실패했습니다: ${pgCategoryList.reason}` : 'PG 카테고리 목록을 불러오는 중입니다…'}</p>}
+          {pgRegionsAvailable && <>
+            <input className="pg-region-search" type="text" placeholder={`${selectedPgCategory} 안에서 지역명으로 찾기`} value={pgRegionQuery} onChange={(event) => setPgRegionQuery(event.target.value)} />
+            <ul className="pg-region-grid">{pgRegionsInCategory.map((row) => <li key={row.area_cd}>
+              <label className={compareSelection.includes(row.area_cd) ? 'checked' : undefined}>
+                <input type="checkbox" checked={compareSelection.includes(row.area_cd)}
+                  disabled={!compareSelection.includes(row.area_cd) && compareSelection.length >= 5}
+                  onChange={() => toggleCompareSelection(row.area_cd)} />
+                <span>{row.area_name}</span>
+                <small>상위 {(100 - row.percentile).toFixed(0)}%{row.population_density != null ? ` · 밀도 ${formatNumber.format(row.population_density)}명/km²` : ''}</small>
+              </label>
+            </li>)}</ul>
+            {pgRegionsInCategory.length === 0 && <p className="insight">검색어와 일치하는 {selectedPgCategory} 지역이 없습니다.</p>}
+          </>}
+          <div className="pg-compare-actions">
+            <span>{compareSelection.length}/5곳 선택됨</span>
+            <button type="button" onClick={() => void runCompareRegions()} disabled={compareSelection.length < 2 || compareLoading}>{compareLoading ? '비교 중…' : '선택한 지역 비교하기'}</button>
+            {compareSelection.length > 0 && <button type="button" className="ghost" onClick={() => { setCompareSelection([]); setCompareResult(null); }}>선택 초기화</button>}
+          </div>
+          {compareError && <p className="business-error">{compareError}</p>}
+          {compareResult?.available && <div className="peer-value-table pg-compare-result">
+            <table>
+              <thead><tr><th>지표</th>{compareResult.regions.map((row) => <th key={row.area_cd}>{row.area_name}{row.pg_category && <em className="pg-chip small">{row.pg_category}</em>}</th>)}</tr></thead>
+              <tbody>
+                <tr><td>전국 수요 백분위</td>{compareResult.regions.map((row) => <td key={row.area_cd} className="value">상위 {(100 - row.percentile).toFixed(0)}%</td>)}</tr>
+                <tr><td>인구</td>{compareResult.regions.map((row) => <td key={row.area_cd}>{row.population != null ? formatManUnit(row.population) : '--'}</td>)}</tr>
+                <tr><td>인구밀도</td>{compareResult.regions.map((row) => <td key={row.area_cd}>{row.population_density != null ? `${formatNumber.format(row.population_density)}명/km²` : '--'}</td>)}</tr>
+                {compareAxisKeys.map(({ key, label }) => <tr key={key}><td>{label}</td>{compareResult.regions.map((row) => <td key={row.area_cd} className="value">{row.fetch_ok && row.axes?.[key] != null ? row.axes[key]!.toFixed(1) : '--'}</td>)}</tr>)}
+              </tbody>
+            </table>
+            {compareResult.regions.some((row) => !row.axes || Object.values(row.axes).every((value) => value == null)) &&
+              <p className="business-caution">※ 일부 지역은 세부지표가 전부 &ldquo;--&rdquo;로 나옵니다 — 구가 있는 시(수원·성남·고양 등)는 KTO 세부지표가 시 통합 코드로 조회되지 않는 기존 한계입니다(전주시와 같은 이슈). 방문자 규모·인구·밀도는 이 한계와 무관하게 정상 표시됩니다.</p>}
+          </div>}
+        </div>
       </section>
       <section id="priority" className="section live-section"><div className="heading"><div><small>05 / WEAKNESS → ROOT CAUSE → PRIORITY</small><h2>{region.name} 정책 우선순위<br /><em>TOP 3</em></h2></div><span className="badges"><span>{regionType} <Tier tier="modeled" /></span></span></div>
         <p className="peer-note">{diagnosisText}</p>

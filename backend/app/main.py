@@ -11,7 +11,8 @@ from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_reg
                            fetch_municipal_hub_attractions, compute_hub_spatial_spread,
                            fetch_visitor_window, compute_visitor_stability,
                            fetch_national_visitor_ranking_window,
-                           is_independent_municipality,
+                           is_independent_municipality, classify_admin_type, resolve_region_area,
+                           fetch_population_by_codes,
                            build_peer_group, build_pg_categories, PG_CATEGORY_LABELS,
                            _percentile_rank, _quantile,
                            fetch_kosis_statistics, fetch_mois_tourism_business,
@@ -68,6 +69,15 @@ class NationalPeersRequest(BaseModel):
     window_days: int = Field(default=7, ge=3, le=14)
 
 class NationalRankingRequest(BaseModel):
+    base_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260701"])
+    window_days: int = Field(default=7, ge=3, le=14)
+
+class PgCategoryRegionsRequest(BaseModel):
+    base_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260701"])
+    window_days: int = Field(default=7, ge=3, le=14)
+
+class CompareRegionsRequest(BaseModel):
+    area_cds: list[str] = Field(min_length=2, max_length=5, examples=[["47130", "51150"]])
     base_ymd: str = Field(pattern=r"^\d{8}$", examples=["20260701"])
     window_days: int = Field(default=7, ge=3, le=14)
 
@@ -540,6 +550,68 @@ async def national_ranking(payload: NationalRankingRequest):
     try:
         ranking = await fetch_national_visitor_ranking_window(payload.base_ymd, payload.window_days)
         return {"available": True, "base_ymd": payload.base_ymd, "window_days": payload.window_days, "regions": ranking}
+    except Exception as error:
+        return {"available": False, "reason": str(error), "base_ymd": payload.base_ymd}
+
+def _region_population_row(entry: dict, population_by_code: dict[str, float], pg: str | None) -> dict:
+    area_cd, area_name = str(entry["area_cd"]), str(entry["area_name"])
+    population = population_by_code.get(area_cd)
+    area_km2 = resolve_region_area(area_cd, area_name)
+    density = population / area_km2 if population is not None and area_km2 else None
+    return {
+        "area_cd": area_cd, "area_name": area_name, "admin_type": classify_admin_type(area_name),
+        "pg_category": pg, "percentile": entry["percentile"],
+        "population": population, "population_density": round(density, 1) if density is not None else None,
+    }
+
+@app.post("/v1/analysis/pg-categories")
+async def pg_category_regions(payload: PgCategoryRegionsRequest):
+    """Every independent municipality's PG-1~4 label in one call, so a
+    "카테고리별로 도시 비교하기" UI can list candidates within a category
+    without running a full single-region diagnosis first. Never raises: a
+    scan or KOSIS failure degrades to available:false with HTTP 200.
+    """
+    try:
+        ranking = await fetch_national_visitor_ranking_window(payload.base_ymd, payload.window_days)
+        independent = [entry for entry in ranking if is_independent_municipality(str(entry["area_name"]))]
+        base_ym = payload.base_ymd[:6]
+        pg_categories = await build_pg_categories(independent, base_ym)
+        population_by_code = await fetch_population_by_codes([str(e["area_cd"]) for e in independent], base_ym)
+        regions = [_region_population_row(entry, population_by_code, pg_categories.get(str(entry["area_cd"])))
+                  for entry in independent]
+        return {"available": True, "base_ymd": payload.base_ymd, "window_days": payload.window_days, "regions": regions}
+    except Exception as error:
+        return {"available": False, "reason": str(error), "base_ymd": payload.base_ymd}
+
+@app.post("/v1/analysis/compare-regions")
+async def compare_regions(payload: CompareRegionsRequest):
+    """Side-by-side comparison for 2-5 user-picked municipalities — usually
+    picked from the same PG category via /v1/analysis/pg-categories, but not
+    required to be (cross-category comparison is allowed here; it's the Peer
+    Group *ranking* in build_peer_group that treats PG as a soft preference,
+    not this explicit user-driven comparison).
+
+    Reuses the same cached per-region axis fetch national-peers uses, so
+    comparing a handful of regions someone already viewed costs nothing extra.
+    """
+    try:
+        base_ym = payload.base_ymd[:6]
+        ranking = await fetch_national_visitor_ranking_window(payload.base_ymd, payload.window_days)
+        independent = [entry for entry in ranking if is_independent_municipality(str(entry["area_name"]))]
+        by_code = {str(entry["area_cd"]): entry for entry in independent}
+        missing = [area_cd for area_cd in payload.area_cds if area_cd not in by_code]
+        if missing:
+            return {"available": False, "reason": f"최근 방문자 원천에 없는 지역입니다: {', '.join(missing)}", "base_ymd": payload.base_ymd}
+
+        pg_categories = await build_pg_categories(independent, base_ym)
+        population_by_code = await fetch_population_by_codes(payload.area_cds, base_ym)
+        axes_list = await asyncio.gather(*[_fetch_peer_axis_snapshot(area_cd, base_ym) for area_cd in payload.area_cds])
+        regions = [
+            {**_region_population_row(by_code[area_cd], population_by_code, pg_categories.get(area_cd)),
+             "axes": axes, "fetch_ok": axes is not None}
+            for area_cd, axes in zip(payload.area_cds, axes_list)
+        ]
+        return {"available": True, "base_ymd": payload.base_ymd, "window_days": payload.window_days, "regions": regions}
     except Exception as error:
         return {"available": False, "reason": str(error), "base_ymd": payload.base_ymd}
 

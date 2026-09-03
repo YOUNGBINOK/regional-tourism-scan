@@ -29,6 +29,30 @@
 .pg-chip{display:inline-block;padding:2px 7px;border-radius:3px;background:#173b2b;color:#fff;font:700 10px 'DM Mono';letter-spacing:.02em;margin-right:5px}
 .pg-chip.small{margin:0 6px;padding:1px 6px;font-size:9px;background:#c7d2c4;color:#3d4a41}
 .pg-chip.small.match{background:#173b2b;color:#fff}
+
+.pg-compare-tool{display:flex;flex-direction:column;gap:16px}
+.pg-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pg-tabs button{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:12px 14px;border:1px solid #d7ddd4;background:#fffefa;cursor:pointer;text-align:left;font:700 12px 'Noto Sans KR';color:#3d4a41}
+.pg-tabs button span{font:11px 'Noto Sans KR';font-weight:400;color:#68756e}
+.pg-tabs button em{font:10px 'DM Mono';font-style:normal;color:#78877f}
+.pg-tabs button.active{border-color:#173b2b;background:#173b2b;color:#fff}
+.pg-tabs button.active span,.pg-tabs button.active em{color:#c7f6ae}
+.pg-region-search{width:100%;max-width:320px;padding:9px 12px;border:1px solid #ced5ca;background:#fffefa;font:600 12px 'Noto Sans KR'}
+.pg-region-grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px;max-height:280px;overflow-y:auto}
+.pg-region-grid label{display:flex;flex-direction:column;gap:3px;padding:9px 11px;border:1px solid #e4e8e1;background:#fffefa;cursor:pointer}
+.pg-region-grid label.checked{border-color:#173b2b;background:#eef4ea}
+.pg-region-grid label input{margin-right:6px}
+.pg-region-grid label span{font:700 12px 'Noto Sans KR';color:#3d4a41}
+.pg-region-grid label small{font:10px 'DM Mono';color:#78877f}
+.pg-compare-actions{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.pg-compare-actions span{font:11px 'Noto Sans KR';color:#68756e}
+.pg-compare-actions button{background:#173b2b;color:#fff;border:1px solid #173b2b;padding:10px 16px;font:700 12px 'Noto Sans KR';cursor:pointer}
+.pg-compare-actions button:disabled{opacity:.5;cursor:not-allowed}
+.pg-compare-actions button.ghost{background:none;color:#68756e;border-color:#d7ddd4}
+.pg-compare-result th em.pg-chip.small{margin-left:6px}
+@media(max-width:640px){
+  .pg-tabs{grid-template-columns:1fr 1fr}
+}
 .peer-value-table .badge.caution{background:#f1f1ee;color:#8a8f87;cursor:help}
 @media(max-width:520px){
   .peer-value-table th,.peer-value-table td{padding:8px 9px;font-size:10px}
