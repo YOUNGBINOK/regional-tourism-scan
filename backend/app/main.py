@@ -12,6 +12,7 @@ from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_reg
                            fetch_visitor_window, compute_visitor_stability,
                            fetch_national_visitor_ranking_window,
                            is_independent_municipality, classify_admin_type, resolve_region_area,
+                           resolve_region_province,
                            fetch_population_by_codes,
                            build_peer_group, build_pg_categories, PG_CATEGORY_LABELS,
                            SPLIT_CITY_DISTRICT_CODES, metric_source_codes,
@@ -563,6 +564,7 @@ def _region_population_row(entry: dict, population_by_code: dict[str, float], pg
     density = population / area_km2 if population is not None and area_km2 else None
     return {
         "area_cd": area_cd, "area_name": area_name, "admin_type": classify_admin_type(area_name),
+        "province": resolve_region_province(area_cd, area_name),
         "pg_category": pg, "percentile": entry["percentile"],
         "population": population, "population_density": round(density, 1) if density is not None else None,
     }

@@ -84,7 +84,7 @@ type RankedRegion = { area_cd: string; area_name: string; resident_visitors: num
 type NationalRankingSnapshot = { available: true; base_ymd: string; window_days: number; regions: RankedRegion[] } | { available: false; reason: string; base_ymd: string };
 
 type PgRegionRow = {
-  area_cd: string; area_name: string; admin_type: string; pg_category: PgCategory | null;
+  area_cd: string; area_name: string; province: string | null; admin_type: string; pg_category: PgCategory | null;
   percentile: number; population: number | null; population_density: number | null;
 };
 type PgCategoryRegionsSnapshot = { available: true; base_ymd: string; window_days: number; regions: PgRegionRow[] } | { available: false; reason: string; base_ymd: string };
@@ -109,6 +109,10 @@ const resolveCentroid = (areaCd: string, areaName: string): { lat: number; lng: 
 
 // 세종특별자치시처럼 도 이름과 지역명이 같으면 "세종특별자치시 세종특별자치시"로 겹쳐 보이므로 한 번만 표시한다.
 const regionLabel = (item: { province: string; name: string }) => item.province === item.name ? item.name : `${item.province} ${item.name}`;
+// PG-3에는 서울·부산·대구 등 서로 다른 광역시의 같은 이름 구가 함께 있다.
+// 목록과 비교표에서 시·도를 항상 앞에 붙여 "중구" 같은 모호한 이름을 없앤다.
+const pgRegionLabel = (item: { province: string | null; area_name: string }) =>
+  item.province && item.province !== item.area_name ? `${item.province} ${item.area_name}` : item.area_name;
 
 // 4단계 데이터 신뢰도 라벨 (AGENTS.md §3.3)
 type DataTier = 'measured' | 'derived' | 'modeled' | 'pending';
@@ -709,7 +713,7 @@ function App() {
                 <input type="checkbox" checked={compareSelection.includes(row.area_cd)}
                   disabled={!compareSelection.includes(row.area_cd) && compareSelection.length >= 5}
                   onChange={() => toggleCompareSelection(row.area_cd)} />
-                <span>{row.area_name}</span>
+                <span>{pgRegionLabel(row)}</span>
                 <small>상위 {(100 - row.percentile).toFixed(0)}%{row.population_density != null ? ` · 밀도 ${formatNumber.format(row.population_density)}명/km²` : ''}</small>
               </label>
             </li>)}</ul>
@@ -723,7 +727,7 @@ function App() {
           {compareError && <p className="business-error">{compareError}</p>}
           {compareResult?.available && <div className="peer-value-table pg-compare-result">
             <table>
-              <thead><tr><th>지표</th>{compareResult.regions.map((row) => <th key={row.area_cd}>{row.area_name}{row.pg_category && <em className="pg-chip small">{row.pg_category}</em>}</th>)}</tr></thead>
+              <thead><tr><th>지표</th>{compareResult.regions.map((row) => <th key={row.area_cd}>{pgRegionLabel(row)}{row.pg_category && <em className="pg-chip small">{row.pg_category}</em>}</th>)}</tr></thead>
               <tbody>
                 <tr><td>전국 수요 백분위</td>{compareResult.regions.map((row) => <td key={row.area_cd} className="value">상위 {(100 - row.percentile).toFixed(0)}%</td>)}</tr>
                 <tr><td>인구</td>{compareResult.regions.map((row) => <td key={row.area_cd}>{row.population != null ? formatManUnit(row.population) : '--'}</td>)}</tr>
