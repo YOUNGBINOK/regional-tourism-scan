@@ -16,7 +16,6 @@
 .peer-value-table th,.peer-value-table td{padding:9px 12px;text-align:right;font:11px 'DM Mono';color:#4f5d55;white-space:nowrap}
 .peer-value-table th:first-child,.peer-value-table td:first-child{text-align:left;font:700 12px 'Noto Sans KR';color:#3d4a41}
 .peer-value-table th{font:10px 'Noto Sans KR';font-weight:700;color:#78877f;letter-spacing:.02em;border-bottom:2px solid #d7ddd4;padding-bottom:8px}
-.peer-value-table th:last-child,.peer-value-table td.remark{text-align:left}
 .peer-value-table tbody tr{border-bottom:1px solid #edefe9}
 .peer-value-table tbody tr:last-child{border-bottom:0}
 .peer-value-table td.value{font-weight:700;color:#173b2b}
