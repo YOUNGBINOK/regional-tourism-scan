@@ -726,6 +726,7 @@ function App() {
           </div>
           {compareError && <p className="business-error">{compareError}</p>}
           {compareResult?.available && <div className="peer-value-table pg-compare-result">
+            <p className="compare-scroll-hint">지역이 많을 때는 표를 좌우로 밀어 전체 비교값을 확인하세요 <b>← →</b></p>
             <table>
               <thead><tr><th>지표</th>{compareResult.regions.map((row) => <th key={row.area_cd}>{pgRegionLabel(row)}{row.pg_category && <em className="pg-chip small">{row.pg_category}</em>}</th>)}</tr></thead>
               <tbody>
