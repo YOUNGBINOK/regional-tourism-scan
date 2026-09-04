@@ -12,7 +12,8 @@ from app.data_sources import (compute_hub_spatial_spread, compute_visitor_stabil
                               build_peer_group, fetch_national_visitor_ranking_window,
                               classify_pg_category, build_pg_categories,
                               build_live_visitor_snapshot, _cached,
-                              _response_cache, _inflight_cache)
+                              _response_cache, _inflight_cache,
+                              metric_source_codes)
 
 
 async def _no_population(area_cds: list, base_ym: str) -> dict:
@@ -37,6 +38,16 @@ def test_cached_coalesces_simultaneous_provider_requests():
         assert values == [{"ok": True}] * 6
 
     asyncio.run(run())
+
+
+def test_kto_analytics_expands_parent_cities_to_their_district_codes():
+    # The screenshot regression: the daily visitor ranking calls these
+    # municipalities "수원시/천안시/용인시", but the KTO index endpoints return
+    # only the lower-level 구 rows. Their aggregate must not become "--".
+    assert metric_source_codes("41110") == {"41111", "41113", "41115", "41117"}
+    assert metric_source_codes("44130") == {"44131", "44133"}
+    assert metric_source_codes("41460") == {"41461", "41463", "41465"}
+    assert metric_source_codes("41290") == {"41290"}
 
 
 def _build_peer_group_without_population(monkeypatch, ranking, target_cd, target_name, count):

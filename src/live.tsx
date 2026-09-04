@@ -732,7 +732,7 @@ function App() {
               </tbody>
             </table>
             {compareResult.regions.some((row) => !row.axes || Object.values(row.axes).every((value) => value == null)) &&
-              <p className="business-caution">※ 일부 지역은 세부지표가 전부 &ldquo;--&rdquo;로 나옵니다 — 구가 있는 시(수원·성남·고양 등)는 KTO 세부지표가 시 통합 코드로 조회되지 않는 기존 한계입니다(전주시와 같은 이슈). 방문자 규모·인구·밀도는 이 한계와 무관하게 정상 표시됩니다.</p>}
+              <p className="business-caution">※ 일부 지역은 선택 기준월의 KTO 세부지표가 제공되지 않아 &ldquo;--&rdquo;로 표시됩니다. 구가 있는 시는 하위 구 지표를 합산해 조회하며, 그래도 값이 없을 때만 원천자료 미제공으로 처리합니다.</p>}
           </div>}
         </div>
       </section>

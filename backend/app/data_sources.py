@@ -67,6 +67,29 @@ KTO_SERVICE_CATALOG = {
     "tourism_resource_demand": {"service": "AreaTarResDemService", "endpoints": {}, "coverage": ["SNS·카드·내비 기반 관광 자원 수요"], "integration_status": "awaiting_operation_name", "note": "승인된 동일 키를 사용합니다. 활용신청 상세의 오퍼레이션명만 환경변수에 입력하면 호출됩니다."},
 }
 
+# The daily visitor feed reports these municipalities with a city-level code,
+# while KTO's analytical products return their constituent districts only.
+# Keep the mapping next to the provider adapter so every KTO product (indices
+# and navigation hubs) expands the same source codes.
+SPLIT_CITY_DISTRICT_CODES: dict[str, set[str]] = {
+    "41110": {"41111", "41113", "41115", "41117"},  # 수원시
+    "41130": {"41131", "41133", "41135"},              # 성남시
+    "41170": {"41171", "41173"},                       # 안양시
+    "41270": {"41271", "41273"},                       # 안산시
+    "41280": {"41281", "41285", "41287"},              # 고양시
+    "41460": {"41461", "41463", "41465"},              # 용인시
+    "43110": {"43111", "43112", "43113", "43114"},  # 청주시
+    "44130": {"44131", "44133"},                       # 천안시
+    "47110": {"47111", "47113"},                       # 포항시
+    "48120": {"48121", "48123", "48125", "48127", "48129"},  # 창원시
+    "52110": {"52111", "52113"},                       # 전주시
+}
+
+
+def metric_source_codes(area_cd: str) -> set[str]:
+    """KTO analytics source codes that represent one selected municipality."""
+    return SPLIT_CITY_DISTRICT_CODES.get(area_cd, {area_cd})
+
 # 행정안전부 지방행정 인허가 데이터의 개방자치단체코드. 화면에는 지역명만
 # 노출하고 서버에서 코드로 변환한다. 현재 KTO 실시간 진단에 제공 중인 4개
 # 지역부터 시작하며, 전국 적재 단계에서 공식 코드표 전체로 확장한다.
@@ -430,9 +453,8 @@ async def fetch_attraction_concentration(area_cd: str) -> object | None:
 
 async def fetch_municipal_hub_attractions(area_cd: str, base_ym: str) -> object:
     """Fetch up to 100 navigation-network hub attractions for a municipality."""
-    # KTO exposes Jeonju through its two current district codes rather than the
-    # legacy city aggregate used by the daily visitor feed.
-    signgu_codes = ["52111", "52113"] if area_cd == "52110" else [area_cd]
+    # KTO exposes several parent cities only through their current districts.
+    signgu_codes = sorted(metric_source_codes(area_cd))
     responses = await asyncio.gather(*[
         fetch_kto_catalog_service_by_path("LocgoHubTarService1", "areaBasedList1", {
             "baseYm": base_ym, "areaCd": code[:2], "signguCd": code,

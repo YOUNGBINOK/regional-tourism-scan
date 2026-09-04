@@ -14,6 +14,7 @@ from .data_sources import (provider_statuses, fetch_provider_json, fetch_kto_reg
                            is_independent_municipality, classify_admin_type, resolve_region_area,
                            fetch_population_by_codes,
                            build_peer_group, build_pg_categories, PG_CATEGORY_LABELS,
+                           SPLIT_CITY_DISTRICT_CODES, metric_source_codes,
                            _percentile_rank, _quantile,
                            fetch_kosis_statistics, fetch_mois_tourism_business,
                            summarize_mois_tourism_business, mois_tourism_business_regions,
@@ -184,10 +185,11 @@ async def area_metric(dataset: str, metric: str, payload: KtoAreaMetricRequest,
         ("tourism_diversity", "international"): {"intlDivIxCd": "33"},
     }
     region_params = {"areaCd": payload.area_cd[:2], "baseYm": payload.base_ym}
-    # The visitor feed exposes Jeonju as 52110, while the analytical feeds
-    # expose its two districts (52111/52113). Fetch the province slice so the
-    # live analysis can aggregate only those two district records.
-    if payload.area_cd != "52110":
+    # The visitor feed has city-level codes (e.g. 수원시 41110), while the
+    # analytical feeds expose several cities only through their districts
+    # (e.g. 41111/41113/41115/41117). Fetch the province slice for those
+    # parent cities so _first_metric() can aggregate exactly their districts.
+    if payload.area_cd not in SPLIT_CITY_DISTRICT_CODES:
         region_params["signguCd"] = payload.area_cd
     raw = await fetch_kto_catalog_service(dataset, metric, {
         # KTO requires the 2-digit province code and 5-digit municipality
@@ -259,7 +261,7 @@ def _first_metric(response: object, value_key: str, area_cd: str) -> float | Non
     items = body.get("items") if isinstance(body, dict) else None
     item = items.get("item") if isinstance(items, dict) else None
     records = item if isinstance(item, list) else ([item] if isinstance(item, dict) else [])
-    target_codes = {"52111", "52113"} if area_cd == "52110" else {area_cd}
+    target_codes = metric_source_codes(area_cd)
     values = []
     for record in records:
         if record.get("signguCd") not in target_codes or record.get(value_key) is None: continue
@@ -350,7 +352,8 @@ async def _build_live_visitor_snapshot(payload: LiveVisitorRequest) -> dict:
 
         snapshot["observed_indices"] = {
             "base_ym": payload.base_ymd[:6],
-            "aggregation": "전주시 2개 구 단순평균" if payload.area_cd == "52110" else "해당 시군구",
+            "aggregation": (f"{len(metric_source_codes(payload.area_cd))}개 구 단순평균"
+                            if payload.area_cd in SPLIT_CITY_DISTRICT_CODES else "해당 시군구"),
             "stay_intensity": _first_metric(stay, "tarSjrnDsIxVal", payload.area_cd),
             "lodging_share_index": _first_metric(lodging_share, "tarSjrnDsIxVal", payload.area_cd),
             "one_night_index": _first_metric(one_night, "tarSjrnDsIxVal", payload.area_cd),
