@@ -29,14 +29,34 @@ from .settings import get_settings
 # in quick succession re-deriving the same national scan.
 _CACHE_TTL_SECONDS = 1800.0
 _response_cache: dict[str, tuple[float, object]] = {}
+# A page load can ask for the national ranking, PG categories and a selected
+# region's peer snapshot at nearly the same time. On a cold serverless
+# instance those requests used to miss the cache together and fan out into
+# duplicate KTO calls. Keep one producer per cache key so every concurrent
+# caller awaits the same result instead of spending the same API quota again.
+_inflight_cache: dict[str, asyncio.Task] = {}
+# The KTO gateway also applies a short-window throttle. The peer calculation
+# needs several independent KTO products, so cap in-process request fan-out;
+# retries alone cannot prevent the initial burst that causes HTTP 429.
+_kto_request_semaphore = asyncio.Semaphore(3)
 
 async def _cached(key: str, factory, ttl: float = _CACHE_TTL_SECONDS) -> object:
     entry = _response_cache.get(key)
     if entry is not None and time.monotonic() - entry[0] <= ttl:
         return entry[1]
-    value = await factory()
-    _response_cache[key] = (time.monotonic(), value)
-    return value
+    task = _inflight_cache.get(key)
+    if task is None:
+        task = asyncio.create_task(factory())
+        _inflight_cache[key] = task
+    try:
+        value = await task
+        _response_cache[key] = (time.monotonic(), value)
+        return value
+    finally:
+        # Do not retain failures or completed tasks. A later request can
+        # retry a transient provider error, while successful calls use cache.
+        if _inflight_cache.get(key) is task and task.done():
+            _inflight_cache.pop(key, None)
 
 KTO_SERVICE_CATALOG = {
     "regional_visitors": {"service": "DataLabService", "endpoints": {"metro": "metcoRegnVisitrDDList", "local": "locgoRegnVisitrDDList"}, "coverage": ["외지인·현지인·외국인 일별 방문자"], "integration_status": "verified"},
@@ -359,12 +379,13 @@ async def fetch_kto_catalog_service_by_path(service: str, endpoint: str, params:
     query = {"MobileOS": "ETC", "MobileApp": "RGAP", "numOfRows": "1000", "pageNo": "1", **params,
              "serviceKey": unquote(s.kto_tourism_datalab_api_key)}
     url = f"https://apis.data.go.kr/B551011/{service}/{endpoint}"
-    async with httpx.AsyncClient(timeout=30) as client:
-        response = await _get_with_retry(client, url, query, {"Accept": "application/json"})
-        _raise_for_status(response, f"KTO {service}/{endpoint}")
-        if "json" in response.headers.get("content-type", "").lower():
-            return response.json()
-        return {"format": "xml", "data": response.text}
+    async with _kto_request_semaphore:
+        async with httpx.AsyncClient(timeout=30) as client:
+            response = await _get_with_retry(client, url, query, {"Accept": "application/json"})
+            _raise_for_status(response, f"KTO {service}/{endpoint}")
+            if "json" in response.headers.get("content-type", "").lower():
+                return response.json()
+            return {"format": "xml", "data": response.text}
 
 def normalize_kto_xml(payload: object) -> object:
     """Convert standard Public Data Portal XML envelopes into API-friendly JSON."""

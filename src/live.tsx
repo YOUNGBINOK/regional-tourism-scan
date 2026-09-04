@@ -127,7 +127,7 @@ const regions: Region[] = [
 const apiBase = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '');
 const formatNumber = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 });
 const formatManUnit = (value: number) => `${(value / 10000).toFixed(1)}만`;
-const formatSigned = (value: number, unit: '%' | 'p') => `${value > 0 ? '+' : ''}${value.toFixed(1)}${unit}`;
+const formatSigned = (value: number, unit: 'p' | 'km') => `${value > 0 ? '+' : ''}${value.toFixed(1)}${unit === 'km' ? ' km' : unit}`;
 
 const median = (values: number[]) => {
   if (!values.length) return null;
@@ -156,7 +156,7 @@ const topicParticle = (name: string) => {
 };
 
 type Axis = {
-  key: string; label: string; diff: number | null; unit: '%' | 'p'; tier: DataTier; note: string;
+  key: string; label: string; diff: number | null; unit: 'p' | 'km'; tier: DataTier; note: string;
   value: number | null; peerMedian: number | null; peerTop25: number | null; peerBottom25: number | null;
   peerSampleSize: number;
 };
@@ -423,7 +423,7 @@ function App() {
     // 것은 동선 설계상 장점일 수도 있다. 그래서 Peer 비교값은 참고용으로만
     // 보여주고, 아래 rankedWeak/우선순위 판정에서는 제외한다(informational로
     // 별도 처리 — isWeak/근소 배지를 씌우지 않는다).
-    { key: 'dispersion', label: '중심지 공간확산', diff: dispersionDiff, unit: 'p', tier: peerGroup?.medians.dispersion_spread_km != null ? 'derived' : 'pending',
+    { key: 'dispersion', label: '중심지 공간확산', diff: dispersionDiff, unit: 'km', tier: peerGroup?.medians.dispersion_spread_km != null ? 'derived' : 'pending',
       note: `내비게이션 중심 관광지 좌표의 RMS 확산거리(km) · ${peerBasisNote} · 참고용(방향 미검증 — 우선순위 판정에서 제외)`,
       value: snapshot?.observed_indices.spatial_dispersion ?? null, peerMedian: peerGroup?.medians.dispersion_spread_km ?? null,
       peerTop25: peerGroup?.top_quartile.dispersion_spread_km ?? null, peerBottom25: peerGroup?.bottom_quartile.dispersion_spread_km ?? null,
@@ -555,9 +555,11 @@ function App() {
   // 축(severity > 0이지만 문턱 미달)은 표에만 표시하고 정책 과제로 세우지 않는다.
   // 공간확산은 방향(넓게/좁게 중 무엇이 나은지)이 검증되지 않아 우선순위
   // 판정에서 제외한다 — 위 axes 정의의 주석 참고.
-  const rankedWeak = axes.filter((axis) => axis.key !== 'dispersion' && isWeak(axis)).sort((a, b) => severity(b) - severity(a));
-  const pendingAxes = axes.filter((axis) => axis.diff == null);
-  const priorities = [...rankedWeak, ...pendingAxes].slice(0, 3);
+  // 정책 순위는 정책 방향이 검증된 체류·소비·숙박 축에서만 정한다. 공간확산은
+  // 방향성이 검증되지 않았고, 최근 7일 안정성은 연간 계절성의 대체값이므로
+  // 표에는 남기되 "정책 우선순위"로 오인시키지 않는다.
+  const rankedWeak = axes.filter((axis) => ['stay', 'spend', 'stayShare'].includes(axis.key) && isWeak(axis)).sort((a, b) => severity(b) - severity(a));
+  const priorities = rankedWeak.slice(0, 3);
   // 하위 25%를 밑돌지만 취약 문턱에는 못 미친 축 — 우선순위에서 뺀 이유를 밝히는 데 쓴다.
   const nearMissAxes = axes.filter((axis) => isBelowBottomQuartile(axis) && !isWeak(axis));
   // 관광수요 자체는 이미 충분(전국 상위 절반)하므로, 홍보 확대보다 Peer 대비 취약축이 우선이다.
@@ -674,10 +676,10 @@ function App() {
                 const directionVerified = axis.key !== 'dispersion';
                 return <tr key={axis.key} className={directionVerified && isWeak(axis) ? 'weak' : undefined}>
                   <td>{axis.label}</td>
-                  <td className="value">{axis.value != null ? axis.value.toFixed(1) : '--'}</td>
-                  <td>{axis.peerBottom25 != null ? axis.peerBottom25.toFixed(1) : '--'}</td>
-                  <td>{axis.peerMedian != null ? axis.peerMedian.toFixed(1) : '--'}</td>
-                  <td>{axis.peerTop25 != null ? axis.peerTop25.toFixed(1) : '--'}</td>
+                  <td className="value">{axis.value != null ? `${axis.value.toFixed(1)}${axis.unit === 'km' ? ' km' : ''}` : '--'}</td>
+                  <td>{axis.peerBottom25 != null ? `${axis.peerBottom25.toFixed(1)}${axis.unit === 'km' ? ' km' : ''}` : '--'}</td>
+                  <td>{axis.peerMedian != null ? `${axis.peerMedian.toFixed(1)}${axis.unit === 'km' ? ' km' : ''}` : '--'}</td>
+                  <td>{axis.peerTop25 != null ? `${axis.peerTop25.toFixed(1)}${axis.unit === 'km' ? ' km' : ''}` : '--'}</td>
                   <td className="remark">
                     {!directionVerified
                       ? (axis.value != null && <span className="badge neutral" title="관광지가 넓게 퍼진 것과 좁게 모인 것 중 무엇이 나은지 검증되지 않아, 값은 참고용으로만 제공하고 취약 여부는 판정하지 않습니다.">참고용 · 방향 미검증</span>)

@@ -11,11 +11,32 @@ from app.data_sources import (compute_hub_spatial_spread, compute_visitor_stabil
                               is_capital_region, resolve_region_province, resolve_region_area,
                               build_peer_group, fetch_national_visitor_ranking_window,
                               classify_pg_category, build_pg_categories,
-                              build_live_visitor_snapshot)
+                              build_live_visitor_snapshot, _cached,
+                              _response_cache, _inflight_cache)
 
 
 async def _no_population(area_cds: list, base_ym: str) -> dict:
     return {}
+
+
+def test_cached_coalesces_simultaneous_provider_requests():
+    """A cold start must not spend one KTO call for every simultaneous UI fetch."""
+    async def run():
+        _response_cache.clear()
+        _inflight_cache.clear()
+        calls = 0
+
+        async def factory():
+            nonlocal calls
+            calls += 1
+            await asyncio.sleep(0)
+            return {"ok": True}
+
+        values = await asyncio.gather(*[_cached("coalesce-test", factory) for _ in range(6)])
+        assert calls == 1
+        assert values == [{"ok": True}] * 6
+
+    asyncio.run(run())
 
 
 def _build_peer_group_without_population(monkeypatch, ranking, target_cd, target_name, count):
